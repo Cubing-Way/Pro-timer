@@ -258,13 +258,15 @@ button:hover, select:hover {
 }
 
 .main-footer .panel {
-  flex: 1;                   /* equal width panels */
+  flex: 1;                   /* keep equal width */
   display: flex;
-  justify-content: center;    /* center content horizontally */
+  justify-content: start;    /* center content horizontally */
   align-items: center;        /* center content vertically */
   background: #0b0b0b;
+  border: 1px solid #222;
   border-radius: 12px;
   padding: 10px;
+  height: 200px;               /* fixed height for all panels */
 }
 
 
