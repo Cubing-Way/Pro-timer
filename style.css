@@ -631,7 +631,7 @@ select,
   .main-footer {
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 16px;
+    margin-top: 15vh;
   }
 
   .main-footer .panel {
