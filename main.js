@@ -64,7 +64,74 @@ function setTimerDisplay(colorOrTime, content) {
 // Keyboard handling
 // ===============================
 
+function showOnlyTimerSafe() {
+  const timer = document.getElementById("timer");
+  const overlay = document.getElementById("touchOverlay"); // the invisible div
 
+  if (!timer || !overlay) return;
+
+  function hideRecursively(element) {
+    // Skip the timer and the overlay
+    if (element === timer || element === overlay) return;
+
+    // If element contains timer somewhere, recurse
+    if (element.contains(timer)) {
+      [...element.children].forEach(hideRecursively);
+    } else {
+      element.classList.add("focus-hidden");
+    }
+  }
+
+  hideRecursively(document.body);
+}
+
+
+function restoreUI() {
+  document.querySelectorAll(".focus-hidden").forEach(el => {
+    el.classList.remove("focus-hidden");
+  });
+}
+
+document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
+
+        e.preventDefault();
+        if (e.repeat) return;
+
+        timerPhases();
+
+
+    if (timerObj.timerPhase === 1 && !timerObj.inspecting) {
+        inspection();
+    }
+
+    if (timerObj.timerPhase === 3) {
+        stopTimer();
+        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection);
+        
+        if (block) {
+            addAverageBlock(block);
+            console.log(block)
+        }
+
+        renderHistory();
+        displayScramble(event);
+        restoreUI();
+    }
+});
+
+document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
+    e.preventDefault();
+    if (e.repeat) return;
+
+    if (timerObj.timerPhase === 1) {
+        wcaDelayFlag();
+    }
+
+    if (timerObj.timerPhase === 2) {
+        startTimer();
+        showOnlyTimerSafe();
+    }
+});
 
 document.addEventListener("keydown", (e) => {
     if (e.key === " ") {
@@ -89,6 +156,7 @@ document.addEventListener("keydown", (e) => {
 
         renderHistory();
         displayScramble(event);
+        restoreUI();
     }
 });
 
@@ -102,6 +170,7 @@ document.addEventListener("keyup", (e) => {
 
     if (e.key === " " && timerObj.timerPhase === 2) {
         startTimer();
+        showOnlyTimerSafe();
     }
 });
 

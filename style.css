@@ -13,6 +13,25 @@ body {
     overflow: hidden; /* 🔒 prevent page scroll */
 }
 
+.focus-hidden {
+  opacity: 0;          /* invisible */
+  pointer-events: none;    /* not clickable */
+  user-select: none;       /* optional */
+}
+
+#touchOverlay {
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 999;          /* make sure it’s above everything else */
+  background: transparent; /* invisible */
+  touch-action: none;      /* prevents scrolling on mobile */
+}
+
+
+
+
 /* =========================
    Top Bar
 ========================= */
@@ -148,6 +167,19 @@ button:hover, select:hover {
     justify-content: center;
     gap: 18px;
 }
+.main-center {
+  position: relative; /* only needed if overlay is absolute */
+}
+
+#touchOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
 
 #timer {
     font-size: 140px;
@@ -162,6 +194,7 @@ button:hover, select:hover {
 .penalty-bar {
     display: flex;
     gap: 10px;
+    z-index: 1000;
 }
 
 /* =========================
@@ -468,6 +501,16 @@ button:hover, select:hover {
   body {
     overflow: auto; /* allow scroll on mobile */
   }
+
+  #timer,
+button,
+select,
+#scrambleDisplay {
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
 
   /* -------------------------
      Top Bar
