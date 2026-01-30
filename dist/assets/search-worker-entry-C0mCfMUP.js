@@ -1,0 +1,1 @@
+import{n as s}from"./chunk-2AUSVPAU-DKMRyYRu.js";await import("./inside-TJAQBDDY-DTr9c1LF.js").then(function(o){return o.i}),(globalThis.postMessage?globalThis:await s()).postMessage("comlink-exposed");
