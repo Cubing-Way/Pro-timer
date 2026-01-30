@@ -1,11 +1,6 @@
-import { defineConfig } from "vite";
-
-export default defineConfig({
-  base: "/REPO_NAME/",
+export default {
+  base: "/Pro-timer/",
   server: {
-    port: 3000,
-  },
-  worker: {
-    format: "es",
-  },
-});
+    port: 3000
+  }
+};
