@@ -169,17 +169,6 @@ button:hover, select:hover {
     overflow: hidden;
 }
 
-#currentAverageValue {
-    font-size: 20px;
-    margin-right: 5px;
-    margin-left: 30px;
-}
-
-#current-stats {
-    font-size: 18px;
-    margin-left: 25px;
-    margin-right: 0px;
-}
 
 /* =========================
    Main Area
@@ -259,33 +248,28 @@ button:hover, select:hover {
    Main Footer
 ========================= */
 .main-footer {
-    background: #0b0b0b;
-    display: flex;                 /* 👈 change from grid */
-    justify-content: center;       /* 👈 centers horizontally */
-    gap: 12px;
-    padding: 10px;
-    align-items: stretch;
-    margin-top: 3vh;   /* 👈 THIS pushes it to the bottom */
+  display: flex;
+  justify-content: space-between;
+  align-items: stretch; /* same height for both panels */
+  width: 100%;
+  gap: 8px;
+  padding: 10px;
+  background: #0b0b0b;
 }
 
 .main-footer .panel {
-    max-width: 175px;
-    width: 100%;
+  flex: 1;                   /* equal width panels */
+  display: flex;
+  justify-content: center;    /* center content horizontally */
+  align-items: center;        /* center content vertically */
+  background: #0b0b0b;
+  border-radius: 12px;
+  padding: 10px;
 }
 
 
-.footer-panel {
-    background: #0b0b0b;
-    border: 1px solid #222;
-    border-radius: 12px;
-    padding: 10px;
-
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
 
 
-}
 
 
 .panel.cube {
