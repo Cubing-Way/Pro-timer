@@ -624,6 +624,14 @@ select,
     flex: 1;
 
   }
+  
+.timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 50px; /* bigger space between timer and penalty buttons */
+}
+
 
   /* -------------------------
      Footer Panels
@@ -631,7 +639,7 @@ select,
   .main-footer {
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 15vh;
+    margin-top: 1;
   }
 
   .main-footer .panel {
