@@ -136,7 +136,7 @@ async function displayScramble(event) {
     // Force reflow
     text.offsetHeight;
 
-    while (text.scrollHeight > container.clientHeight + 50) {
+    while (text.scrollHeight > container.clientHeight) {
         fontSize -= 1;
         text.style.fontSize = fontSize + "px";
     }

@@ -15,7 +15,7 @@ function timerPhases() {
     } else if (timerObj.timerPhase === 1) {        
         setTimerDisplay('color', 'red');
         timerObj.wcaInterval = setInterval(() =>{
-            setTimerDisplay('color', 'limeGreen')
+            setTimerDisplay('color', 'limeGreen');
             timerObj.wcaDelayCount++;
         }, 300);
     }

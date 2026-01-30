@@ -569,8 +569,7 @@ select,
   ------------------------- */
   #scrambleContainer {
     max-width: 100%;
-    height: auto;
-    padding: 0 12px;
+    padding: 0 12px;;
   }
 
   #scrambleDisplay {
