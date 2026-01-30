@@ -474,6 +474,7 @@ button:hover, select:hover {
   ------------------------- */
   .top-bar {
     flex-wrap: wrap;
+        align-self: stretch;
     gap: 8px;
   }
 
@@ -482,10 +483,12 @@ button:hover, select:hover {
     width: 100%;
   }
 
-  select, button {
-    flex: 1;
-    min-width: 0;
+  .top-bar select,.topbar button {
+    flex: 1 1;
+    min-width: 100px;
+    min-height: 10px;
   }
+
 
   /* -------------------------
      App Layout
@@ -546,7 +549,7 @@ button:hover, select:hover {
 
   .penalty-bar button {
     flex: 1;
-    min-width: 90px;
+
   }
 
   /* -------------------------
