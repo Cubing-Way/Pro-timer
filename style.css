@@ -459,3 +459,138 @@ button:hover, select:hover {
 .avg-table tr:hover {
   background: #1a1f2b;
 }
+
+/* =========================
+   MOBILE LAYOUT
+========================= */
+@media (max-width: 768px) {
+
+  body {
+    overflow: auto; /* allow scroll on mobile */
+  }
+
+  /* -------------------------
+     Top Bar
+  ------------------------- */
+  .top-bar {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .left-controls {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  select, button {
+    flex: 1;
+    min-width: 0;
+  }
+
+  /* -------------------------
+     App Layout
+  ------------------------- */
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Hide sidebars on mobile */
+  .left-sidebar,
+  .right-sidebar {
+    display: none;
+  }
+
+  /* -------------------------
+     Main Area
+  ------------------------- */
+  .main-layout {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  .main-center {
+    gap: 12px;
+  }
+
+  #timer {
+    font-size: 72px;
+    letter-spacing: 1px;
+  }
+
+  /* -------------------------
+     Scramble
+  ------------------------- */
+  #scrambleContainer {
+    max-width: 100%;
+    height: auto;
+    padding: 0 12px;
+  }
+
+  #scrambleDisplay {
+    font-size: 16px;
+  }
+
+  /* Disable cube visualizer (too cramped) */
+  #scrambleVis {
+    display: none;
+  }
+
+  /* -------------------------
+     Penalty Bar
+  ------------------------- */
+  .penalty-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  .penalty-bar button {
+    flex: 1;
+    min-width: 90px;
+  }
+
+  /* -------------------------
+     Footer Panels
+  ------------------------- */
+  .main-footer {
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .main-footer .panel {
+    max-width: none;
+    width: calc(50% - 4px);
+  }
+
+  .footer-value {
+    font-size: 16px;
+  }
+
+  /* -------------------------
+     Modal
+  ------------------------- */
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+    padding: 12px;
+  }
+
+  /* -------------------------
+     Stats Page
+  ------------------------- */
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .stat-value {
+    font-size: 20px;
+  }
+
+  .avg-table th,
+  .avg-table td {
+    padding: 6px;
+    font-size: 13px;
+  }
+}
+
