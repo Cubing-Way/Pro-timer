@@ -33,17 +33,22 @@ body {
   flex: 1;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* vertically center the timer-block */
-  align-items: center;     /* horizontally center timer-block */
-  min-height: 0;
+  justify-content: flex-start;  /* start from top, not center */
+  align-items: center;
+  position: relative;
 }
 
 .timer-block {
   display: flex;
   flex-direction: column;
-  align-items: center;   /* center timer + buttons horizontally */
-  gap: 18px;             /* space between timer and penalty buttons */
+  align-items: center;
+  gap: 18px;
+
+  /* Shift down from vertical center */
+  position: relative;
+  top: 25%;   /* 25% down from top of main-center */
 }
+
 
 #timer {
   font-size: 140px;      /* adjust for mobile */
