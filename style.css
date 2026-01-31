@@ -46,9 +46,12 @@ body {
 
   /* Shift down from vertical center */
   position: relative;
-  top: 17.5%;   /* 25% down from top of main-center */
+  top: 12.5%;   /* 25% down from top of main-center */
 }
 
+#scrambleVis2 {
+  display: none;
+}
 
 #timer {
   font-size: 140px;      /* adjust for mobile */
@@ -258,18 +261,20 @@ button:hover, select:hover {
 }
 
 .main-footer .panel {
-  flex: 1;                   /* keep equal width */
+  flex: 1;                   /* equal width panels */
   display: flex;
-  justify-content: start;    /* center content horizontally */
+  justify-content: center;    /* center content horizontally */
   align-items: center;        /* center content vertically */
   background: #0b0b0b;
-  border: 1px solid #222;
+
   border-radius: 12px;
   padding: 10px;
-  height: 200px;               /* fixed height for all panels */
 }
 
-
+.main-footer .panel .panel-content {
+  width: 100%;
+  text-align: center;         /* <-- key change */
+}
 
 
 
@@ -598,6 +603,16 @@ select,
     display: none;
   }
 
+    #scrambleVis2 {
+    display: block;
+    position: absolute;
+    bottom: 1vh;
+    left: 30vw;
+    right: 30vw;
+    height: 100px;
+    width: 150px;
+  }
+
   /* -------------------------
      Penalty Bar
   ------------------------- */
@@ -622,7 +637,7 @@ select,
   .main-footer {
     flex-wrap: wrap;
     gap: 8px;
-    margin-top: 10vh;
+    margin-top: 5vh;
   }
 
   .main-footer .panel {
