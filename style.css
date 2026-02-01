@@ -30,13 +30,23 @@ body {
 }
 
 .main-center {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;  /* start from top, not center */
-  align-items: center;
-  position: relative;
+    height: 100vh;
+    display: grid;
+
+    grid-template-rows:
+        auto        /* scramble */
+        auto        /* timer */
+        180px       /* ← FIXED footer height */
+                /* scramble visual */
+      ;
+
+    gap: 24px;
+    padding: 24px;
 }
+
+
+
+
 
 .timer-block {
   display: flex;
@@ -179,14 +189,7 @@ button:hover, select:hover {
     min-height: 0;
 }
 
-.main-center {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-}
+
 .main-center {
   position: relative; /* only needed if overlay is absolute */
 }
@@ -248,32 +251,24 @@ button:hover, select:hover {
    Main Footer
 ========================= */
 .main-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: stretch; /* same height for both panels */
-  width: 100%;
+  display: grid;
+
+  grid-template-columns: auto auto; /* 👈 content-sized columns */
+  justify-content: center;          /* 👈 center the pair */
   gap: 8px;
+
   padding: 10px;
   background: #0b0b0b;
 }
+
 
 .main-footer .panel {
-  flex: 1;                   /* equal width panels */
   display: flex;
-  justify-content: start;    /* center content horizontally */
-  align-items: start;        /* center content vertically */
-  background: #0b0b0b;
-  height: 20vh;
   padding: 10px;
+
+  /* ❌ remove this */
+  /* flex: 1; */
 }
-
-.main-footer .panel .panel-content {
-  width: 100%;
-  text-align: center;         /* <-- key change */
-}
-
-
-
 
 .panel.cube {
     padding-top: 130px;   /* 👈 move down */
@@ -602,7 +597,7 @@ select,
 
     #scrambleVis2 {
     display: block;
-
+  justify-self: center;
     height: 100px;
     width: 150px;
   }
@@ -628,16 +623,8 @@ select,
   /* -------------------------
      Footer Panels
   ------------------------- */
-  .main-footer {
-    flex-wrap: wrap;
-    gap: 8px;
 
-  }
 
-  .main-footer .panel {
-    max-width: none;
-    width: calc(50% - 4px);
-  }
 
   .footer-value {
     font-size: 16px;
