@@ -36,12 +36,11 @@ body {
     grid-template-rows:
         auto        /* scramble */
         auto        /* timer */
-        180px       /* ← FIXED footer height */
-                /* scramble visual */
+        180px       /* ← FIXED footer height */        /* scramble visual */
       ;
 
     gap: 24px;
-    padding: 24px;
+
 }
 
 
