@@ -119,7 +119,12 @@ async function displayScramble(event) {
     text.textContent = displayScr;
 
     // Keep original scramble for visualizer
-    const vis = document.querySelector("#scrambleVis2");
+    let vis = null 
+    if (window.innerWidth > 768) {
+        vis = document.querySelector("#scrambleVis");
+    } else {
+        vis = document.querySelector("#scrambleVis2");
+    }
     vis.scramble = scr;
     vis.event = `${event}`;
 

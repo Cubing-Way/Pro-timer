@@ -36,16 +36,12 @@ body {
     grid-template-rows:
         auto        /* scramble */
         auto        /* timer */
-        180px       /* ← FIXED footer height */        /* scramble visual */
+        1fr       /* ← FIXED footer height */        /* scramble visual */
       ;
 
-    gap: 24px;
+gap: 12px;
 
 }
-
-
-
-
 
 .timer-block {
   display: flex;
@@ -515,13 +511,13 @@ button:hover, select:hover {
   }
 
   #timer,
-button,
-select,
-#scrambleDisplay {
-  -webkit-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-}
+  button,
+  select,
+  #scrambleDisplay {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
 
 
   /* -------------------------
@@ -566,6 +562,18 @@ select,
     width: 100%;
     padding: 0 8px;
   }
+
+.main-center {
+    height: 100vh;
+    display: grid;
+
+    grid-template-rows:
+        auto        /* scramble */
+        auto        /* timer */
+        180px       /* ← FIXED footer height */        /* scramble visual */
+      ;
+      overflow: scroll;
+}
 
   .main-center {
     gap: 12px;

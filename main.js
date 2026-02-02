@@ -14,6 +14,12 @@ import { renderStatsPage } from "./stats.js";
 
 const eventSelect = document.getElementById("eventSelect");
 let event = getCurrentSession().scrambleType || "333";
+let vis = null;
+    if (window.innerWidth > 768) {
+        vis = document.querySelector("#scrambleVis");
+    } else {
+        vis = document.querySelector("#scrambleVis2");
+    }
 // Default scramble
 // Init scramble from session
 const session = getCurrentSession();
@@ -22,7 +28,7 @@ eventSelect.value = event;
 
 syncModeWithEvent(event);   // ✅
 
-displayScramble(event);
+displayScramble(event, vis);
 
 eventSelect.addEventListener("change", () => {
     const session = getCurrentSession();
@@ -34,7 +40,7 @@ eventSelect.addEventListener("change", () => {
 
     syncModeWithEvent(event);   // ✅ AUTO FORCE MODE
 
-    displayScramble(event);
+    displayScramble(event, vis);
 });
 
 document.addEventListener("sessionChanged", () => {
@@ -45,7 +51,7 @@ document.addEventListener("sessionChanged", () => {
 
     syncModeWithEvent(event);   // ✅ AUTO FIX MODE
 
-    displayScramble(event);
+    displayScramble(event, vis);
 });
 
 // ===============================
@@ -114,7 +120,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         }
 
         renderHistory();
-        displayScramble(event);
+        displayScramble(event, vis);
         restoreUI();
     }
 });
@@ -155,7 +161,7 @@ document.addEventListener("keydown", (e) => {
         }
 
         renderHistory();
-        displayScramble(event);
+        displayScramble(event, vis);
         restoreUI();
     }
 });
