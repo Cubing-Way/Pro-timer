@@ -39,8 +39,8 @@ function inspection() {
         setTimerDisplay('time', `${timerObj.inspection}`)
         timerObj.interval = setInterval(()=> {
             timerObj.inspection++;
-            if (timerObj.inspection === 8) new Audio("./8seconds.mp3").play();
-            if (timerObj.inspection === 12) new Audio("./12seconds.mp3").play();
+            if (timerObj.inspection === 8) new Audio("./audio/8seconds.mp3").play();
+            if (timerObj.inspection === 12) new Audio("./audio/12seconds.mp3").play();
             if (timerObj.inspection === 17) clearInterval(timerObj.interval);
             setTimerDisplay('time',  timerObj.inspection)
         }, 1000)

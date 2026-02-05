@@ -1,22 +1,42 @@
 // ✅ Import the generator from cubing (relative path to Vite-friendly ESM)
-import * as CubingScramble from "./node_modules/cubing/dist/lib/cubing/scramble/index.js";
+let CubingScramble = null;
+
+async function loadCubing() {
+  if (CubingScramble) return CubingScramble;
+
+  try {
+    CubingScramble = await import(
+      "https://cdn.cubing.net/js/cubing/scramble"
+    );
+    await import("https://cdn.cubing.net/js/cubing/twisty");
+    return CubingScramble;
+  } catch (e) {
+    console.error("Cubing failed to load:", e);
+    return null;
+  }
+}
+
 let currentScramble = ""; // 👈 GLOBAL CURRENT SCRAMBLE
 
 
 // Generates and returns a scramble string
 async function generate3x3Scramble(event = "333") {
-  const scramble = await CubingScramble.randomScrambleForEvent(event);
+  const cubing = await loadCubing();
+
+  if (!cubing) {
+    return "Scramble unavailable on this device";
+  }
+
+  const scramble = await cubing.randomScrambleForEvent(event);
   let scrStr = scramble.toString();
 
-  // =========================
-  // Megaminx formatting
-  // =========================
   if (event === "minx" || event === "megaminx") {
     scrStr = formatMegaminxScramble(scrStr);
   }
 
   return scrStr;
 }
+
 
 // Insert line breaks after each U move
 function formatMegaminxScramble(scr) {
