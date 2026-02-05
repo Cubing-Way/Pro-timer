@@ -79,6 +79,7 @@ gap: 12px;
     border-bottom: 1px solid #222;
 }
 
+
 .left-controls {
     display: flex;
     gap: 8px;
@@ -572,7 +573,6 @@ button:hover, select:hover {
         auto        /* timer */
         180px       /* ← FIXED footer height */        /* scramble visual */
       ;
-      overflow: scroll;
 }
 
   .main-center {
