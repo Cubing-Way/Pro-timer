@@ -42,7 +42,7 @@ function formatMegaminxScramble(scr) {
   return out.join("\n");
 }
 
-async function displayScramble(event) {
+async function displayScramble(event, vis) {
     const scr = await generate3x3Scramble(event);
     if (scr) {
     if (event === "333" ||
@@ -119,12 +119,9 @@ async function displayScramble(event) {
     text.textContent = displayScr;
 
     // Keep original scramble for visualizer
-    let vis = null 
-    if (window.innerWidth > 768) {
-        vis = document.querySelector("#scrambleVis");
-    } else {
-        vis = document.querySelector("#scrambleVis2");
-    }
+
+
+
     vis.scramble = scr;
     vis.event = `${event}`;
 
