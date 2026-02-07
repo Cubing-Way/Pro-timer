@@ -103,13 +103,10 @@ button:hover, select:hover {
 .app-layout {
     flex: 1;
     display: grid;
-    grid-template-columns: 220px 1fr 220px;  /* 👈 left | main | right */
-    grid-template-rows: 1fr 205px;   /* or 150px */
+    grid-template-columns: 220px 1fr 220px;
     min-height: 0;
-    overflow: hidden;
-
-    align-items: start;
 }
+
 
 
 .left-sidebar, .right-sidebar {
