@@ -582,6 +582,7 @@ bottom: 20px;
         1fr  
         auto     /* ← FIXED footer height */        /* scramble visual */
       ;
+      overflow: scroll;
 }
 
   .main-center {
