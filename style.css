@@ -103,10 +103,13 @@ button:hover, select:hover {
 .app-layout {
     flex: 1;
     display: grid;
-    grid-template-columns: 220px 1fr 220px;
+    grid-template-columns: 220px 1fr 220px;  /* 👈 left | main | right */
+    grid-template-rows: 1fr 205px;   /* or 150px */
     min-height: 0;
-}
+    overflow: hidden;
 
+    align-items: start;
+}
 
 
 .left-sidebar, .right-sidebar {
@@ -216,6 +219,8 @@ button:hover, select:hover {
   background: red;
   border : 1px #0b0b0b;
     z-index: 1001;
+    justify-self: center;
+    align-self: center;
 }
 
 /* =========================
@@ -574,9 +579,9 @@ bottom: 20px;
     grid-template-rows:
         1fr        /* scramble */
         auto   /* timer */
-        180px  /* ← FIXED footer height */        /* scramble visual */
+        1fr 
       ;
-      overflow: w
+      overflow: auto;
 }
 
   .main-center {
