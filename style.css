@@ -30,14 +30,12 @@ body {
 }
 
 .main-center {
-    height: 100vh;
+    min-height: 0;
     display: grid;
-
     grid-template-rows:
-        auto        /* scramble */
-        auto        /* timer */
-        1fr       /* ← FIXED footer height */        /* scramble visual */
-      ;
+        auto
+        auto
+        1fr;
 
 gap: 12px;
 
@@ -579,9 +577,9 @@ bottom: 20px;
     grid-template-rows:
         1fr        /* scramble */
         auto   /* timer */
-        180px   /* ← FIXED footer height */        /* scramble visual */
+        180px  /* ← FIXED footer height */        /* scramble visual */
       ;
-      overflow: scroll;
+      overflow: w
 }
 
   .main-center {
