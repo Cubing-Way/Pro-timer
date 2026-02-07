@@ -192,6 +192,7 @@ function setVisualizerScale(scale, right, bottom, vis) {
         wrapper.style.width = originalWidth * scale + "px";
         wrapper.style.height = originalHeight * scale + "px";
     } else {
+        bottom += 50;
         wrapper = document.querySelector(".panel-cube2");
         // Set transform scale
         wrapper.style.transformOrigin = "bottom center"; // Important!
