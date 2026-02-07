@@ -1,4 +1,4 @@
-const worker = new Worker(new URL('./cstimer_module.js', import.meta.url));
+const worker = new Worker('/cstimer_module.js?worker_file&type=classic');
 
 let msgid = 0;
 const callbacks = {};
