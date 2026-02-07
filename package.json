@@ -14,9 +14,10 @@
   "license": "ISC",
   "type": "module",
   "dependencies": {
+    "cstimer_module": "^0.1.4",
     "cube-solver": "^2.4.1",
-    "cubing": "^0.62.2",
-    "scramble-display": "^0.59.1",
+    "scrambler-util": "^0.3.0",
+    "scrambow": "^1.8.1",
     "vite": "^7.3.1"
   },
   "devDependencies": {

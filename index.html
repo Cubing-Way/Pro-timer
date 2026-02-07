@@ -80,9 +80,7 @@
                     Solves: -
             </div>
 
-            <div class="panel cube">
-                    <scramble-display id="scrambleVis"></scramble-display>
-            </div>
+
         </div>
 
         <!-- Main Area -->
@@ -108,6 +106,7 @@
   <div class="main-footer">
 
 
+
     <div class="panel">
         <div class="panel-content" id="currentAverageValue">
             <!-- you already use this id in JS -->
@@ -118,14 +117,21 @@
         <div class="panel-content" id= "current-stats">
         </div>
     </div>
+
     </div>
+            <div class="panel-cube2">
         <scramble-display id="scrambleVis2"></scramble-display>
+        </div>
+    <button id="scramble-button">Scramble visualizer</button>
+
 </div>
 
 </main>
 
   </div>
-
+            <div class="panel-cube">
+                    <scramble-display id="scrambleVis"></scramble-display>
+            </div>
     <!-- Modal -->
     <div id="detailsModal" class="modal hidden">
         <div class="modal-content">
@@ -205,6 +211,7 @@
     "cubing/": "/node_modules/cubing/dist/"
   }
 }
+
 </script>
     <script type="module" src="main.js"></script>
     <script type="module" src="./scramble.js"></script>

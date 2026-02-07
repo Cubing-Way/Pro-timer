@@ -1,5 +1,4 @@
-import { generate3x3Scramble, displayScramble, currentScramble } from "./scramble.js";
-import "./node_modules/scramble-display/dist/esm/index.js";
+import { displayScramble, currentScramble } from "./scramble.js";
 import { timerObj, timerPhases, wcaDelayFlag, inspection, startTimer, stopTimer } from "./timer.js";
 import { addAverageBlock, applyPenaltyToLast, removeLastSolve, penalty2, remove2 } from "./solve.js";
 import { getCurrentSession, saveSessions, toggleMode, clearAverages, changedSession } from "./session.js";
@@ -7,6 +6,8 @@ import { renderHistory } from "./render.js";
 import { averageOfN, averageObj } from "./average.js";
 import { openDetailsModal, modal } from "./modal.js";
 import { renderStatsPage } from "./stats.js";
+
+
 
 // ===============================
 // Event select
@@ -98,11 +99,20 @@ function restoreUI() {
   });
 }
 
+
+let scrDisplayFlag = false;
+
+
 document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
+    e.preventDefault();
+    if (e.repeat) return;
 
-        e.preventDefault();
-        if (e.repeat) return;
-
+    if (scrDisplayFlag) {
+        document.querySelector(".panel-cube2").style.display = "none";
+        document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
+        scrDisplayFlag = false;
+        return;
+    }
         timerPhases();
 
 
@@ -223,15 +233,6 @@ function shouldForceMo3(event) {
     ].includes(event);
 }
 
-async function preloadCubingEvents() {
-    const events = ["333", "444", "555", "222", "666"];
-    for (const e of events) {
-        await generate3x3Scramble(e); // generates but you can discard it
-    }
-}
-
-preloadCubingEvents(); // call this on page load
-
 // ===============================
 // Buttons
 // ===============================
@@ -239,6 +240,18 @@ preloadCubingEvents(); // call this on page load
 document.getElementById("modeBtn").addEventListener("click", () => {
     toggleMode();
     renderHistory();
+});
+
+document.getElementById("scramble-button").addEventListener("click", () => {
+    if (scrDisplayFlag) {
+        document.querySelector(".panel-cube2").style.display = "none";
+        document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
+        scrDisplayFlag = false;
+        return;
+    }
+    scrDisplayFlag = true;
+    document.querySelector(".panel-cube2").style.display = "grid";
+    document.getElementById("scramble-button").innerHTML = "close";
 });
 
 // ===============================

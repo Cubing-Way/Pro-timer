@@ -12,7 +12,7 @@ const timerObj = {
 function timerPhases() {
     if (timerObj.timerPhase !== 1) {
         timerObj.timerPhase++;
-    } else if (timerObj.timerPhase === 1) {        
+    } else if (timerObj.timerPhase === 1) {
         setTimerDisplay('color', 'red');
         timerObj.wcaInterval = setInterval(() =>{
             setTimerDisplay('color', 'limeGreen');
