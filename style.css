@@ -84,16 +84,7 @@ gap: 12px;
     align-items: center;
 }
 
-select {
-    background: #1a1a1a;
-    color: #f0f0f0;
-    border: 1px solid #2a2a2a;
-    border-radius: 6px;
-    padding: 6px 10px;
-    cursor: pointer;
-}
-
-button {
+.top-bar button, .penalty-bar button, .top-bar select {
     background: #1a1a1a;
     color: #f0f0f0;
     border: 1px solid #2a2a2a;
@@ -628,6 +619,7 @@ bottom: 20px;
 
   #scramble-button {
     display: block;
+    color: #f0f0f0;
    background: #0b0b0b;
     border : 1px #0b0b0b;
     z-index: 1001;
