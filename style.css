@@ -19,16 +19,6 @@ body {
   user-select: none;       /* optional */
 }
 
-#touchOverlay {
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
-  z-index: 999;          /* make sure it’s above everything else */
-  background: transparent; /* invisible */
-  touch-action: none;      /* prevents scrolling on mobile */
-}
-
 .main-center {
     min-height: 0;
     display: grid;
