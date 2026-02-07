@@ -216,6 +216,11 @@ button:hover, select:hover {
   border : 1px #0b0b0b;
     z-index: 1000;
 }
+#scramble-button {
+  position: absolute;
+  justify-self: center;
+  bottom: 10px;
+}
 
 /* =========================
    Scramble

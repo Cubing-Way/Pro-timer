@@ -109,6 +109,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
 
     if (scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
+        document.getElementById("scramble-button").style.justifySelf = "center";
         document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
         scrDisplayFlag = false;
         return;
@@ -246,11 +247,13 @@ document.getElementById("scramble-button").addEventListener("click", () => {
     if (scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
         document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
+        document.getElementById("scramble-button").style.justifySelf = "center";
         scrDisplayFlag = false;
         return;
     }
     scrDisplayFlag = true;
     document.querySelector(".panel-cube2").style.display = "grid";
+    document.getElementById("scramble-button").style.justifySelf = "left";
     document.getElementById("scramble-button").innerHTML = "close";
 });
 
