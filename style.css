@@ -216,12 +216,7 @@ button:hover, select:hover {
 }
 
 #scramble-button {
-  border : 1px #0b0b0b;
-    z-index: 1001;
-    position: absolute;
-    bottom: 10vh;
-    justify-self: center;
-    align-self: center;
+  display: none;
 }
 
 /* =========================
@@ -622,7 +617,16 @@ bottom: 20px;
   z-index: 1001;
 }
 
-  
+  #scramble-button {
+    display: block;
+  background: #0b0b0b;
+  border : 1px #0b0b0b;
+    z-index: 1001;
+    position: absolute;
+    bottom: 10vh;
+    justify-self: center;
+    align-self: center;
+  }
 
     #scrambleVis2 {
 
