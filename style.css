@@ -579,8 +579,7 @@ bottom: 20px;
     grid-template-rows:
         1fr        /* scramble */
         auto   /* timer */
-        1fr  
-        auto     /* ← FIXED footer height */        /* scramble visual */
+        180px   /* ← FIXED footer height */        /* scramble visual */
       ;
       overflow: scroll;
 }

@@ -103,7 +103,7 @@ function restoreUI() {
 let scrDisplayFlag = false;
 
 
-document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
+document.getElementById("timer").addEventListener("touchstart", (e) => {
     e.preventDefault();
     if (e.repeat) return;
 
@@ -136,7 +136,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     }
 });
 
-document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
+document.getElementById("timer").addEventListener("touchend", (e) => {
     e.preventDefault();
     if (e.repeat) return;
 
