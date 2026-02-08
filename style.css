@@ -563,9 +563,9 @@ bottom: 20px;
     display: grid;
 
     grid-template-rows:
-        1fr        /* scramble */   /* timer */
-        auto
-        180px
+        1.5fr        /* scramble */
+        auto   /* timer */
+        180px 
         1fr
       ;
       overflow: auto;
