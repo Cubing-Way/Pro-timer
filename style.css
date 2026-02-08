@@ -563,7 +563,7 @@ bottom: 20px;
     display: grid;
 
     grid-template-rows:
-        1.5fr        /* scramble */
+        1.75fr        /* scramble */
         auto   /* timer */
         180px 
         1fr
