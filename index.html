@@ -11,8 +11,14 @@
     <!-- Top Bar -->
     <header class="top-bar">
         <div class="left-controls">
+          <button id="settingsBtn">⚙️</button>
             <button id="clearBtn">Clear</button>
-            <button id="modeBtn">Mode: ao5</button>
+            <select id="modeSelect">
+              <option value="ao5">ao5</option>
+              <option value="mo3">mo3</option>
+              <option value="bo3">bo3</option>
+              <option value="bo5">bo5</option>
+            </select>
 
             <select id="eventSelect">
                 <option value="222">2x2</option>
@@ -88,11 +94,22 @@
 
 <div class="main-center">
             <div id="touchOverlay"></div>
-            <div id="scrambleContainer">
-            <div id="scrambleDisplay"></div>
+            <div  id="scrambleContainer">
+            <div class="scramble-container" id="scrambleDisplay"></div>
         </div>
   <div class="timer-block">
-    <div id="timer">0.00</div>
+ 
+<div id="timerins">
+     <div id="timer">0.00</div>
+        <div id="timerins-Buttons"></div>
+        <div id="typing-container" style="display:none;">
+          <div class="typing-controls">
+            <input id="typed-time">
+           <button id="typed-time-add">Add</button>
+          </div>
+          <button id="inspection-btn">Inspection (space)</button>
+        </div>
+</div>
         <div class="penalty-bar">
             <button id="penaltyOkBtn">OK</button>
             <button id="penaltyPlus2Btn">+2</button>
@@ -202,6 +219,117 @@
   </section>
 
 </div>
+
+<div id="settingsOverlay" class="overlay">
+  <div id="settingsPanel" class="settings-panel">
+    <button id="closeSettings">✖</button>
+    <h2>Settings</h2>
+
+    <!-- LAYOUT -->
+    <div class="settings-section">
+      <div class="section-title">Layout</div>
+
+      <div class="setting-row">
+        <label>Scramble visualizer</label>
+        <div class="setting-control">
+          <select id="toggle-scramble-visualizer">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Statistics</label>
+        <div class="setting-control">
+          <select id="toggle-statistics">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Session History</label>
+        <div class="setting-control">
+          <select id="toggle-session-history">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Scramble text</label>
+        <div class="setting-control">
+          <select id="toggle-scramble-text">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Penalty bar</label>
+        <div class="setting-control">
+          <select id="toggle-penalty-bar">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Average preview</label>
+        <div class="setting-control">
+          <select id="toggle-average-preview">
+            <option value="show">Display</option>
+            <option value="hide">None</option>
+          </select>
+        </div>
+      </div>
+
+    </div> <!-- ✅ CLOSE LAYOUT HERE -->
+
+    <!-- TIMER OPTIONS -->
+    <div class="settings-section">
+      <div class="section-title">Timer Options</div>
+
+      <div class="setting-row">
+        <label>Inspection type</label>
+        <div class="setting-control">
+          <select id="inspection-type">
+            <option value="WCA" selected>WCA</option>
+            <option value="Free">Free</option>
+            <option value="None">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Delay flag</label>
+        <div class="setting-control">
+          <select id="delay-flag">
+            <option value="WCA" selected>0.3s (WCA)</option>
+            <option value="None">None</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="setting-row">
+        <label>Time insertion</label>
+        <div class="setting-control">
+          <select id="time-insertion">
+            <option value="Timer" selected>Timer</option>
+            <option value="Typing">Typing</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- settings-panel -->
+</div> <!-- overlay -->
+
 
 
     <!-- Scripts -->

@@ -1,11 +1,130 @@
 import { displayScramble, currentScramble } from "./scramble.js";
-import { timerObj, timerPhases, wcaDelayFlag, inspection, startTimer, stopTimer } from "./timer.js";
+import { timerObj, timerPhases, wcaDelayFlag, inspection, startTimer, stopTimer, inspection2 } from "./timer.js";
 import { addAverageBlock, applyPenaltyToLast, removeLastSolve, penalty2, remove2 } from "./solve.js";
 import { getCurrentSession, saveSessions, toggleMode, clearAverages, changedSession } from "./session.js";
 import { renderHistory } from "./render.js";
-import { averageOfN, averageObj } from "./average.js";
+import { averageOfN, averageObj, parseTimeToSeconds, formatSecondsToTime } from "./average.js";
 import { openDetailsModal, modal } from "./modal.js";
 import { renderStatsPage } from "./stats.js";
+
+function bindVisibilityToggle(selectId, targetId) {
+    const select = document.getElementById(selectId);
+    const target = document.querySelector(`.${targetId}`);
+
+    if (!select || !target) return;
+
+    function apply() {
+        target.style.display = select.value === "show" ? "" : "none";
+    }
+
+    select.addEventListener("change", apply);
+    apply(); // run once on load
+}
+
+bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
+bindVisibilityToggle("toggle-statistics", "right-sidebar");
+bindVisibilityToggle("toggle-session-history", "left-sidebar");
+bindVisibilityToggle("toggle-scramble-text", "scramble-container");
+bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
+bindVisibilityToggle("toggle-average-preview", "main-footer");
+
+let inspectionType = localStorage.getItem("inspectionType") || "WCA";
+let previousInspectionType = inspectionType;
+document.getElementById("inspection-type").value = inspectionType;
+document.getElementById("inspection-type").addEventListener("change", () => {
+    previousInspectionType = inspectionType;
+    inspectionType = document.getElementById("inspection-type").value;
+    localStorage.setItem("inspectionType", inspectionType);
+});
+
+let delayFlagType = localStorage.getItem("delayFlagType") || "WCA";
+document.getElementById("delay-flag").value = delayFlagType;
+document.getElementById("delay-flag").addEventListener("change", () => {
+    delayFlagType = document.getElementById("delay-flag").value;
+    localStorage.setItem("delayFlagType", delayFlagType);
+});
+
+// Time insertion setting (Timer or Typing)
+let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
+let timerFlag = false;
+    if (timeInsertion === "Typing") {
+        timerFlag = true;
+    } else {
+        timerFlag = false;
+    }
+document.getElementById("time-insertion").value = timeInsertion;
+document.getElementById("time-insertion").addEventListener("change", () => {
+    timeInsertion = document.getElementById("time-insertion").value;
+    if (timeInsertion === "Typing") {
+        timerFlag = true;
+    } else {
+        timerFlag = false;
+    }
+    localStorage.setItem("timeInsertion", timeInsertion);
+    updateTypingUI();
+});
+
+function updateTypingUI() {
+    const container = document.getElementById("typing-container");
+    if (!container) return;
+    if (timeInsertion === "Typing") {
+        container.style.display = "block";
+        const input = document.getElementById("typed-time");
+        if (input) input.focus();
+    } else {
+        container.style.display = "none";
+    }
+}
+
+
+let lastTime = null;
+// Handle typed time submission
+document.addEventListener("DOMContentLoaded", () => {
+    updateTypingUI();
+    const addBtn = document.getElementById("typed-time-add");
+    const input = document.getElementById("typed-time");
+    const inspectionLeaveBtn = document.getElementById("inspection-leave-btn");
+
+    if (addBtn && input) {
+        addBtn.addEventListener("click", () => {
+            const raw = input.value.trim().replace(',', '.');
+            if (!raw) return;
+            const seconds = parseTimeToSeconds(raw);
+            if (!Number.isFinite(seconds)) {
+                input.style.border = '2px solid #e74c3c';
+                input.focus();
+                setTimeout(() => input.style.border = '', 1500);
+                return;
+            }
+            lastTime = formatSecondsToTime(seconds);
+            document.getElementById("timer").textContent = lastTime;
+            const block = averageOfN(seconds, currentScramble, timerObj.inspection, inspectionType);
+            if (block) addAverageBlock(block);
+            renderHistory();
+            displayScramble(event, vis);
+            input.value = "";
+        });
+
+        input.addEventListener("keydown", (ev) => {
+            if (ev.key === "Enter") {
+                ev.preventDefault();
+                addBtn.click();
+            }
+        });
+    }
+});
+
+const overlay = document.getElementById("settingsOverlay");
+const openBtn = document.getElementById("settingsBtn");
+const closeBtn = document.getElementById("closeSettings");
+
+openBtn.addEventListener("click", () => {
+    overlay.classList.add("open");
+});
+
+closeBtn.addEventListener("click", () => {
+    overlay.classList.remove("open");
+});
 
 
 
@@ -40,6 +159,18 @@ eventSelect.addEventListener("change", () => {
     saveSessions();
 
     syncModeWithEvent(event);   // ✅ AUTO FORCE MODE
+
+    // Auto-set inspection to None for BLD events, restore for non-BLD
+    if (event.includes("bf")) {
+        previousInspectionType = inspectionType;
+        inspectionType = "None";
+        document.getElementById("inspection-type").value = "None";
+        localStorage.setItem("inspectionType", "None");
+    } else {
+        inspectionType = previousInspectionType;
+        document.getElementById("inspection-type").value = previousInspectionType;
+        localStorage.setItem("inspectionType", previousInspectionType);
+    }
 
     displayScramble(event, vis);
 });
@@ -104,8 +235,13 @@ let scrDisplayFlag = false;
 
 
 document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
+    // If the touch originated inside an input or the typing UI, ignore it
+    const touchTarget = e.target;
+    if (touchTarget && touchTarget.closest && (touchTarget.closest('input') || touchTarget.closest('#typing-container'))) {
+        return;
+    }
     e.preventDefault();
-    if (e.repeat) return;
+    if (e.repeat || timerFlag) return;
 
     if (scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
@@ -114,20 +250,22 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         scrDisplayFlag = false;
         return;
     }
-        timerPhases();
+    if (timerObj.timerPhase === 0 && inspectionType === "None") {
+        timerObj.timerPhase = 1; // skip inspection
+    }
 
+    timerPhases(delayFlagType);
 
-    if (timerObj.timerPhase === 1 && !timerObj.inspecting) {
-        inspection();
+    if (timerObj.timerPhase === 1 && !timerObj.inspecting && inspectionType !== "None") {
+        inspection(inspectionType);
     }
 
     if (timerObj.timerPhase === 3) {
         stopTimer();
-        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection);
+        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection, inspectionType);
         
         if (block) {
             addAverageBlock(block);
-            console.log(block)
         }
 
         renderHistory();
@@ -137,6 +275,11 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
 });
 
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
+    // If the touch ended inside an input or the typing UI, ignore it
+    const touchTarget = e.target;
+    if (touchTarget && touchTarget.closest && (touchTarget.closest('input') || touchTarget.closest('#typing-container'))) {
+        return;
+    }
     e.preventDefault();
     if (e.repeat) return;
 
@@ -150,21 +293,43 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     }
 });
 
+
+document.getElementById("inspection-btn").addEventListener("click", () => {
+    if (!timerFlag) return;
+    inspection2();
+});
+
+
+document.addEventListener("keydown", (e) => {
+    if (!timerFlag) return;
+    if (e.code !== "Space" || e.repeat) return;
+    inspection2();
+});
+
+
+
+
 document.addEventListener("keydown", (e) => {
     if (e.key === " ") {
-        e.preventDefault();
-        if (e.repeat) return;
+    e.preventDefault();
+    if (e.repeat || timerFlag) return;
 
-        timerPhases();
+
+    if (timerObj.timerPhase === 0 && inspectionType === "None") {
+        timerObj.timerPhase = 1; // skip inspection
+    }
+    
+    timerPhases(delayFlagType);
+
     }
 
-    if (e.key === " " && timerObj.timerPhase === 1 && !timerObj.inspecting) {
-        inspection();
+    if (e.key === " " && timerObj.timerPhase === 1 && !timerObj.inspecting && inspectionType !== "None") {
+        inspection(inspectionType);
     }
 
     if (e.key === " " && timerObj.timerPhase === 3) {
         stopTimer();
-        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection);
+        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection, inspectionType);
         
         if (block) {
             addAverageBlock(block);
@@ -178,14 +343,16 @@ document.addEventListener("keydown", (e) => {
 });
 
 document.addEventListener("keyup", (e) => {
+    // Only intercept Space key so typing in inputs isn't blocked
+    if (e.key !== " ") return;
     e.preventDefault();
     if (e.repeat) return;
 
-    if (e.key === " " && timerObj.timerPhase === 1) {
+    if (timerObj.timerPhase === 1) {
         wcaDelayFlag();
     }
 
-    if (e.key === " " && timerObj.timerPhase === 2) {
+    if (timerObj.timerPhase === 2) {
         startTimer();
         showOnlyTimerSafe();
     }
@@ -207,14 +374,14 @@ closeStatsBtn.addEventListener("click", () => {
 function syncModeWithEvent(event) {
     const session = getCurrentSession();
 
-    const mustBeMo3 = shouldForceMo3(event);
-    const desiredMode = mustBeMo3 ? "mo3" : "ao5";
+    const desiredMode = getDefaultModeForEvent(event);
 
     if (averageObj.mode !== desiredMode) {
         averageObj.mode = desiredMode;
         session.mode = desiredMode;
 
-        document.getElementById("modeBtn").textContent = "Mode: " + desiredMode;
+        const sel = document.getElementById("modeSelect");
+        if (sel) sel.value = desiredMode;
 
         // Reset current average buffer
         averageObj.solvesArray = [];
@@ -224,24 +391,35 @@ function syncModeWithEvent(event) {
     }
 }
 
-function shouldForceMo3(event) {
-    return [
-        "333bf",
-        "444bf",
-        "555bf",
-        "666",
-        "777"
-    ].includes(event);
+function getDefaultModeForEvent(event) {
+    // BLD events: specific modes
+    if (event === "333bf") return "bo5"; // 3x3 blindfolded: best of 5
+    if (event === "444bf") return "bo3"; // 4x4 blindfolded: best of 3
+    if (event === "555bf") return "bo3"; // 5x5 blindfolded: best of 3
+    
+    // Other events that force mo3
+    if (["666", "777"].includes(event)) return "mo3";
+    
+    // Default to ao5
+    return "ao5";
 }
 
 // ===============================
 // Buttons
 // ===============================
 
-document.getElementById("modeBtn").addEventListener("click", () => {
-    toggleMode();
-    renderHistory();
-});
+const modeSelectEl = document.getElementById("modeSelect");
+if (modeSelectEl) {
+    modeSelectEl.addEventListener("change", (ev) => {
+        const val = ev.target.value;
+        const session = getCurrentSession();
+        averageObj.mode = val;
+        session.mode = val;
+        saveSessions();
+
+        renderHistory();
+    });
+}
 
 document.getElementById("scramble-button").addEventListener("click", () => {
     if (scrDisplayFlag) {
@@ -262,7 +440,7 @@ document.getElementById("scramble-button").addEventListener("click", () => {
 // ===============================
 
 const avgObj = {
-    modeBtn: document.getElementById("modeBtn"),
+    modeSelect: document.getElementById("modeSelect"),
     clearBtn: document.getElementById("clearBtn"),
     openSessionBtn: document.getElementById("modal-button"),
     penaltyOkBtn: document.getElementById("penaltyOkBtn"),
@@ -347,4 +525,4 @@ renderHistory();
 // Exports
 // ===============================
 
-export { setTimerDisplay, currentScramble };
+export { setTimerDisplay, currentScramble, lastTime };

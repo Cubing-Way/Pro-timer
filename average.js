@@ -4,6 +4,12 @@ const averageObj = {
   solvesArray: [] // array of solve objects
 };
 
+const saved = JSON.parse(localStorage.getItem("cube_average_buffer"));
+if (saved) Object.assign(averageObj, saved);
+
+
+
+
 function parseTimeToSeconds(str) {
     if (typeof str === "number") return str;
     if (str.includes(":")) {
@@ -66,70 +72,124 @@ function computeAverage(solves, mode) {
     let best = null;
     let worst = null;
 
-if (mode === "ao5") {
-    const dnfs = times.filter(t => t === Infinity).length;
-    if (dnfs >= 2) {
-        return { dnf: true };
-    }
-
-    const sorted = [...times].sort((a, b) => a - b);
-
-    best = sorted[0];
-    worst = sorted[sorted.length - 1];
-
-    // Trim for average only
-    const trimmed = sorted.slice(1, 4);
-
     // =========================
-    // Average (WCA style)
+    // BO3 (Best of 3)
     // =========================
-    let avg = null;
-    if (trimmed.includes(Infinity)) {
-        avg = "DNF";
-    } else {
-        avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;  
-    }
+    if (mode === "bo3") {
+        const dnfs = times.filter(t => t === Infinity).length;
+        if (dnfs >= 2) {
+            return { dnf: true };
+        }
 
-    // =========================
-    // σ using ALL 5 solves
-    // =========================
+        const sorted = [...times].sort((a, b) => a - b);
+        best = sorted[0];
+        worst = sorted[sorted.length - 1];
 
-    const validTimes = times.filter(t => t !== Infinity);
+        // For BO3, avg is the mean of all 3 solves
+        const validTimes = times.filter(t => t !== Infinity);
+        const avg = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
+        const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / validTimes.length;
+        const sigma = Math.sqrt(varianceAll);
 
-    const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
-
-    const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
-
-    const sigma = Math.sqrt(varianceAll);
-
-    if (sorted.length === 4) {
-        const bpAo5 = (sorted[0] + sorted [1] + sorted[2]) / 3;
-        const wpA05 = (sorted[3] + sorted[2] + sorted [1]) / 3;
         return {
             dnf: false,
             avg,
             best,
             worst,
-            sigma,
-            bpAo5,
-            wpA05
-        }
+            sigma
+        };
     }
 
-    return {
-        dnf: false,
-        avg,
-        best,
-        worst,
-        sigma
-    };
-}
+    // =========================
+    // BO5 (Best of 5)
+    // =========================
+    if (mode === "bo5") {
+        const dnfs = times.filter(t => t === Infinity).length;
+        if (dnfs >= 2) {
+            return { dnf: true };
+        }
 
+        const sorted = [...times].sort((a, b) => a - b);
+        best = sorted[0];
+        worst = sorted[sorted.length - 1];
+
+        // For BO5, avg is the mean of all 5 solves
+        const validTimes = times.filter(t => t !== Infinity);
+        const avg = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
+        const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / validTimes.length;
+        const sigma = Math.sqrt(varianceAll);
+
+        return {
+            dnf: false,
+            avg,
+            best,
+            worst,
+            sigma
+        };
+    }
+
+    if (mode === "ao5") {
+        const dnfs = times.filter(t => t === Infinity).length;
+        if (dnfs >= 2) {
+            return { dnf: true };
+        }
+
+        const sorted = [...times].sort((a, b) => a - b);
+
+        best = sorted[0];
+        worst = sorted[sorted.length - 1];
+
+        // Trim for average only
+        const trimmed = sorted.slice(1, 4);
+
+        // =========================
+        // Average (WCA style)
+        // =========================
+        let avg = null;
+        if (trimmed.includes(Infinity)) {
+            avg = "DNF";
+        } else {
+            avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;  
+        }
+
+        // =========================
+        // σ using ALL 5 solves
+        // =========================
+
+        const validTimes = times.filter(t => t !== Infinity);
+
+        const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
+
+        const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
+
+        const sigma = Math.sqrt(varianceAll);
+
+        if (sorted.length === 4) {
+            const bpAo5 = (sorted[0] + sorted [1] + sorted[2]) / 3;
+            const wpA05 = (sorted[3] + sorted[2] + sorted [1]) / 3;
+            return {
+                dnf: false,
+                avg,
+                best,
+                worst,
+                sigma,
+                bpAo5,
+                wpA05
+            }
+        }
+
+        return {
+            dnf: false,
+            avg,
+            best,
+            worst,
+            sigma
+        };
+    }
 
     // =========================
-    // MO3
+    // MO3 (Mean of 3)
     // =========================
-
     const dnfs = times.filter(t => t === Infinity).length;
     if (dnfs >= 1) {
         return { dnf: true };
@@ -153,13 +213,16 @@ if (mode === "ao5") {
     };
 }
 
-function averageOfN(time, scramble, inspection) {
+function averageOfN(time, scramble, inspection, inspectionType) {
 
-    let inspecPenalty = null
-    if (inspection === 16) {
-        inspecPenalty = "+2"
-    } else if (inspection === 17) {
-        inspecPenalty = "DNF"
+    let inspecPenalty = null;
+
+    if (inspectionType === "WCA") {
+        if (inspection >= 15) {
+            inspecPenalty = "+2";
+        } else if (inspection >= 17) {
+            inspecPenalty = "DNF";
+        }
     }
 
     const seconds = parseTimeToSeconds(time);
@@ -174,9 +237,13 @@ function averageOfN(time, scramble, inspection) {
 
     averageObj.solveCounter++;
 
-    const needed = averageObj.mode === "ao5" ? 5 : 3;
+    // Determine how many solves needed for this mode
+    let neededSolves = 3; // default for mo3 and bo3
+    if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
+        neededSolves = 5;
+    }
 
-    if (averageObj.solveCounter === needed) {
+    if (averageObj.solveCounter === neededSolves) {
         const avgObj = computeAverage(averageObj.solvesArray, averageObj.mode);
 
         const block = {
@@ -196,7 +263,7 @@ function averageOfN(time, scramble, inspection) {
 
         return block;
     }
-
+    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
     return null;
 }
 

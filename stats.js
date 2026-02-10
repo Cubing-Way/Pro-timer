@@ -61,7 +61,6 @@ function getStatisticsFromSolves(solves, session) {
 
   // process solves
   solves.forEach(solve => {
-    console.log(new Date(solve.createdAt))
 
     if (solve.penalty === null) {
       allSolvesArr.push(solve.time);
@@ -173,19 +172,22 @@ function renderStatsPage() {
   // BUILD HEADER
   // =========================
 
-  let headHtml = `<tr><th>#</th><th>Type</th><th>Avg</th>`;
+let headHtml = `<tr>
+  <th>#</th>
+  <th>Type</th>
+  <th>Avg</th>
+  <th>Best</th>
+  <th>Worst</th>
 
-  for (let i = 0; i < maxSolves; i++) {
-    headHtml += `<th>${i + 1}</th>`;
-  }
+`;
 
-  headHtml += `
-    <th>Best</th>
-    <th>Worst</th>
-    <th>σ</th>
-  </tr>`;
+for (let i = 0; i < maxSolves; i++) {
+  headHtml += `<th>${i + 1}</th>`;
+}
 
-  thead.innerHTML = headHtml;
+headHtml += `  <th>σ</th></tr>`;
+
+thead.innerHTML = headHtml;
 
   // =========================
   // BUILD ROWS
@@ -194,10 +196,15 @@ function renderStatsPage() {
   session.averages.forEach((block, i) => {
     const tr = document.createElement("tr");
 
+    const isBOMode = block.mode === "bo3" || block.mode === "bo5";
+
     let rowHtml = `
       <td>${session.averages.length - i}</td>
       <td>${block.mode.toUpperCase()}</td>
-      <td><strong>${block.average}</strong></td>
+      <td>${block.average}</td>
+      <td><strong>${block.best}</strong></td>
+      <td>${block.worst}</td>
+
     `;
 
     // Solves
@@ -205,18 +212,7 @@ function renderStatsPage() {
       rowHtml += `<td>${formatDisplayTime(solve)}</td>`;
     });
 
-    // Fill empty columns (for mo3)
-    const missing = maxSolves - block.solves.length;
-    for (let i = 0; i < missing; i++) {
-      rowHtml += `<td></td>`;
-    }
-
-    // Summary columns
-    rowHtml += `
-      <td>${block.best}</td>
-      <td>${block.worst}</td>
-      <td>${block.sigma}</td>
-    `;
+    rowHtml += `<td>${block.sigma}</td>`
 
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);

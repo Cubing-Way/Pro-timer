@@ -23,4 +23,5 @@ export const csTimer = {
   getScramble: (type, len = 0) => call('scramble', [type, len]),
   getImage: (scramble, type) => call('image', [scramble, type]),
   setSeed: (seed) => call('seed', [seed]),
+  setGlobal: (key, value) => call('set', [key, value]),
 };

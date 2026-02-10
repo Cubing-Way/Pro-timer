@@ -20,7 +20,8 @@ const sessionsObj = {
 // Now it's safe:
 const session = getCurrentSession();
 averageObj.mode = session.mode || "ao5";
-document.getElementById("modeBtn").textContent = "Mode: " + averageObj.mode;
+const modeSel = document.getElementById("modeSelect");
+if (modeSel) modeSel.value = averageObj.mode;
 
 
 // ===============================
@@ -142,13 +143,30 @@ renderSessionSelect();
 
 function toggleMode() {
     const session = getCurrentSession();
+    const event = session.scrambleType || "333";
 
-    averageObj.mode = averageObj.mode === "ao5" ? "mo3" : "ao5";
+    // Define mode cycles for each event/category
+    let availableModes = ["ao5", "mo3"]; // default
+
+    if (event === "333bf") {
+        availableModes = ["bo5", "ao5", "mo3"];
+    } else if (event === "444bf" || event === "555bf") {
+        availableModes = ["bo3", "ao5", "mo3"];
+    } else if (["666", "777"].includes(event)) {
+        availableModes = ["mo3", "ao5"];
+    }
+
+    // Find current mode index and cycle to next
+    const currentIndex = availableModes.indexOf(averageObj.mode);
+    const nextIndex = (currentIndex + 1) % availableModes.length;
+    averageObj.mode = availableModes[nextIndex];
+
     session.mode = averageObj.mode;   // ✅ STORE IN SESSION
 
     saveSessions();
 
-    document.getElementById("modeBtn").textContent = "Mode: " + averageObj.mode;
+    const sel = document.getElementById("modeSelect");
+    if (sel) sel.value = averageObj.mode;
 
     // Reset current average buffer
     averageObj.solvesArray = [];
@@ -171,7 +189,8 @@ function changedSession() {
 
     // Load mode from session
     averageObj.mode = session.mode || "ao5";
-    document.getElementById("modeBtn").textContent = "Mode: " + averageObj.mode;
+    const sel = document.getElementById("modeSelect");
+    if (sel) sel.value = averageObj.mode;
 
     // Reset current average buffer
     averageObj.solvesArray = [];

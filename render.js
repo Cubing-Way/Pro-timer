@@ -2,6 +2,7 @@ import { averageObj } from "./average.js";
 import { parseTimeToSeconds, formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
+import { lastTime } from "./main.js";
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";
@@ -52,6 +53,7 @@ function renderCurrentAverage(currentType, currentBlock) {
 }
 
 function renderHistoryList(averages, currentType) {
+    if (lastTime) document.getElementById("timer").textContent = lastTime;
     let html = "";
 
     for (let i = 0; i < averages.length; i++) {
@@ -59,6 +61,21 @@ function renderHistoryList(averages, currentType) {
 
         // Skip the one currently shown as current
         if (currentType === "saved" && i === 0) continue;
+
+        let titleText = `${block.mode}: ${block.average}`;
+
+        // For bo3, show secondary mo3 average
+        if (block.mode === "bo3") {
+            const mo3Avg = computeAverage(block.solves, "mo3");
+            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(mo3Avg.avg);
+            titleText = `${block.mode}: ${block.average} (mo3: ${mo3Value})`;
+        }
+        // For bo5, show secondary ao5 average
+        else if (block.mode === "bo5") {
+            const ao5Avg = computeAverage(block.solves, "ao5");
+            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
+            titleText = `${block.mode}: ${block.average} (ao5: ${ao5Value})`;
+        }
 
         html += `
             <div class="history-block history-average">
@@ -76,7 +93,7 @@ function renderHistoryList(averages, currentType) {
         html += `
                 </div>
                 <div class="history-title">
-                    ${block.mode}: ${block.average}
+                    ${titleText}
                 </div>
             </div>
         `;
