@@ -2,7 +2,7 @@ import { averageObj } from "./average.js";
 import { parseTimeToSeconds, formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
-import { lastTime } from "./main.js";
+import { lastTime, timerFlag } from "./main.js";
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";
@@ -53,7 +53,7 @@ function renderCurrentAverage(currentType, currentBlock) {
 }
 
 function renderHistoryList(averages, currentType) {
-    if (lastTime) document.getElementById("timer").textContent = lastTime;
+    if (lastTime && timerFlag) document.getElementById("timer").textContent = lastTime;
     let html = "";
 
     for (let i = 0; i < averages.length; i++) {

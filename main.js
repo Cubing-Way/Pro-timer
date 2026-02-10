@@ -531,4 +531,4 @@ renderHistory();
 // Exports
 // ===============================
 
-export { setTimerDisplay, currentScramble, lastTime };
+export { setTimerDisplay, currentScramble, lastTime, timerFlag };
