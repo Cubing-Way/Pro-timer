@@ -295,6 +295,10 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     }
 });
 
+document.getElementById("touchOverlay").addEventListener("touchstart", () => {
+    if (!timerFlag) return;
+    inspection2();
+});
 
 document.getElementById("inspection-btn").addEventListener("click", () => {
     if (!timerFlag) return;
