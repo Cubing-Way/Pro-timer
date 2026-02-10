@@ -9,12 +9,14 @@ import { renderStatsPage } from "./stats.js";
 
 function bindVisibilityToggle(selectId, targetId) {
     const select = document.getElementById(selectId);
-    const target = document.querySelector(`.${targetId}`);
+    const target = document.querySelectorAll(`.${targetId}`);
 
     if (!select || !target) return;
 
     function apply() {
-        target.style.display = select.value === "show" ? "" : "none";
+        target.forEach(el => {
+            el.style.display = select.value === "show" ? "" : "none";
+        });
     }
 
     select.addEventListener("change", apply);

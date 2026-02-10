@@ -640,6 +640,9 @@ bottom: 20px;
    MOBILE LAYOUT
 ========================= */
 @media (max-width: 768px) {
+#pc1, #pc2 {
+  display: none;
+}
 
   body {
     overflow: hidden; /* allow scroll on mobile */
