@@ -1,5 +1,4 @@
 import { averageObj } from "./average.js";
-import { clearSessionAverages } from "./solve.js";
 
 // ===============================
 // Session state
@@ -176,8 +175,9 @@ function toggleMode() {
 
 function clearAverages() {
     if (!confirm("Delete all averages in this session?")) return;
-
-    clearSessionAverages();
+    const session = getCurrentSession();
+    session.averages = [];
+    saveSessions();
 
     averageObj.solvesArray = [];
     averageObj.scramblesArray = [];
