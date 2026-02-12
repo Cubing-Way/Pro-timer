@@ -182,6 +182,7 @@ function clearAverages() {
     averageObj.solvesArray = [];
     averageObj.scramblesArray = [];
     averageObj.solveCounter = 0;
+    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
 }
 
 function changedSession() {

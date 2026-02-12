@@ -1,8 +1,9 @@
 import { averageObj } from "./average.js";
-import { parseTimeToSeconds, formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
+import { formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
-import { lastTime, timerFlag } from "./main.js";
+import { lastTime } from "./timer/timeTyping.js";
+import { timerFlag } from "./settings/timerSett.js";
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";

@@ -1,8 +1,9 @@
 // solves.js
-
+import { renderHistory } from "./render.js";
+import { openDetailsModal } from "./topbar/modal.js";
 import { getCurrentSession, saveSessions } from "./session.js";
 import { averageObj, computeAverage, formatSecondsToTime } from "./average.js";
-import { modal } from "./modal.js";
+import { modal } from "./topbar/modal.js";
 
 function ensureSessionShape() {
     const session = getCurrentSession();
@@ -51,6 +52,27 @@ function getLastSolveTarget() {
         solveIndex: newestBlock.solves.length - 1
     };
 }
+
+window.setPenalty = function(blockIndex, solveIndex, penalty) {
+    penalty2(blockIndex, solveIndex, penalty);
+    saveSessions();
+    renderHistory();
+
+    if (!modal.classList.contains("hidden")) {
+        openDetailsModal();
+    }
+};
+
+window.removeSolve = function(blockIndex, solveIndex) {
+    remove2(blockIndex, solveIndex)
+    saveSessions();
+    renderHistory();
+    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
+    if (!modal.classList.contains("hidden")) {
+        openDetailsModal();
+    }
+};
+
 
 function penalty2(blockIndex, solveIndex, penalty) {
     const averages = getSessionAverages();

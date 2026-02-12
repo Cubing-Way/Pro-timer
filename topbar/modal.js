@@ -1,14 +1,6 @@
-import { getSessionAverages } from "./solve.js";
-import { formatDisplayTime, computeAverage, formatSecondsToTime } from "./average.js";
-
-const modal = document.getElementById("detailsModal");
-const modalBody = document.getElementById("modalBody");
-const closeModalBtn = document.getElementById("closeModalBtn");
-
-closeModalBtn.onclick = () => modal.classList.add("hidden");
-modal.onclick = e => {
-    if (e.target === modal) modal.classList.add("hidden");
-};
+import { getSessionAverages } from "../solve.js";
+import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../average.js";
+import { modal } from "./topbarButtons.js";
 
 function openDetailsModal() {
     const averages = getSessionAverages();

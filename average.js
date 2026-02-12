@@ -7,9 +7,6 @@ const averageObj = {
 const saved = JSON.parse(localStorage.getItem("cube_average_buffer"));
 if (saved) Object.assign(averageObj, saved);
 
-
-
-
 function parseTimeToSeconds(str) {
     if (typeof str === "number") return str;
     if (str.includes(":")) {
@@ -41,6 +38,10 @@ function formatDisplayTime(solveObj) {
 }
 
 function formatSecondsToTime(sec) {
+    if (averageObj.mode === "fmc3") {
+    return `${sec.toFixed(2)} moves`;
+}
+
     if (sec === "DNF") return "DNF";
 
     sec = Number(sec);               // 🔥 normalize here
@@ -104,28 +105,37 @@ function computeAverage(solves, mode) {
     // BO5 (Best of 5)
     // =========================
     if (mode === "bo5") {
-        const dnfs = times.filter(t => t === Infinity).length;
-        if (dnfs >= 2) {
-            return { dnf: true };
-        }
+        // BO5 (BLD format)
+        // Best single is the result, but we also compute Ao5 stats
 
         const sorted = [...times].sort((a, b) => a - b);
         best = sorted[0];
         worst = sorted[sorted.length - 1];
 
-        // For BO5, avg is the mean of all 5 solves
+        // ---- Ao5 for the same 5 solves ----
+        const trimmed = sorted.slice(1, 4);
+
+        let avg = null;
+        if (trimmed.includes(Infinity)) {
+            avg = "DNF";
+        } else {
+            avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+        }
+
+        // sigma still uses all 5
         const validTimes = times.filter(t => t !== Infinity);
-        const avg = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
-        const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / validTimes.length;
+        const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
+        const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
         const sigma = Math.sqrt(varianceAll);
 
         return {
             dnf: false,
-            avg,
-            best,
+            avg,      // ← now Ao5
+            best,     // ← BLD result
             worst,
             sigma
         };
+
     }
 
     if (mode === "ao5") {
@@ -186,6 +196,45 @@ function computeAverage(solves, mode) {
             sigma
         };
     }
+
+// =========================
+// FMC Ao3 (WCA rules)
+// =========================
+
+if (mode === "fmc3") {
+    const values = solves.map(s => {
+        if (s.penalty === "DNF") return Infinity;
+        if (s.penalty === "+2") return s.time + 2; // +2 moves
+        return s.time;
+    });
+
+    const dnfs = values.filter(v => v === Infinity).length;
+
+    if (dnfs >= 2) {
+        return { dnf: true };
+    }
+
+    const valid = values.filter(v => v !== Infinity);
+
+    // WCA FMC average rule
+    const avg = valid.reduce((a, b) => a + b, 0) / valid.length;
+
+    const best = Math.min(...valid);
+    const worst = Math.max(...valid);
+
+    // ✅ sigma over move counts
+    const meanAll = valid.reduce((a, b) => a + b, 0) / valid.length;
+    const variance = valid.reduce((sum, v) => sum + Math.pow(v - meanAll, 2), 0) / valid.length;
+    const sigma = Math.sqrt(variance);
+
+    return {
+        dnf: false,
+        avg,
+        best,
+        worst,
+        sigma
+    };
+}
 
     // =========================
     // MO3 (Mean of 3)
