@@ -8,6 +8,8 @@ import { timerSettObj } from "../settings/timerSett";
 import { previousInspectionType } from "../settings/timerSett";
 import { renderStatsPage } from "../stats";
 import { timerDOMObj } from "../timer/timerDOM.js";
+import { applyPenaltyToLast } from "../solve.js";
+import { handleFMC } from "../FMC.js";
 
 eventSelect.addEventListener("change", () => {
     const session = getCurrentSession();
@@ -21,11 +23,23 @@ eventSelect.addEventListener("change", () => {
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (eventObj.event.includes("bf")) {
+        document.getElementById("penaltyOkBtn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
+        document.getElementById("penaltyDnfBtn").style.display = "block";
+        document.getElementById("removeLastBtn").style.display = "block";
+        document.getElementById("submit-moves").style.display = "none";
         previousInspectionType = timerSettObj.inspectionType;
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
         localStorage.setItem("inspectionType", "None");
+    } else if(eventObj.event === "333fm") {
+        handleFMC();
     } else {
+        document.getElementById("penaltyOkBtn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
+        document.getElementById("penaltyDnfBtn").style.display = "block";
+        document.getElementById("removeLastBtn").style.display = "block";
+        document.getElementById("submit-moves").style.display = "none";
         timerSettObj.inspectionType = previousInspectionType;
         document.getElementById("inspection-type").value = previousInspectionType;
         localStorage.setItem("inspectionType", previousInspectionType);

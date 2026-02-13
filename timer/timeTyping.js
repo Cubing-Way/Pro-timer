@@ -13,7 +13,6 @@ document.addEventListener("DOMContentLoaded", () => {
     updateTypingUI();
     const addBtn = document.getElementById("typed-time-add");
     const input = document.getElementById("typed-time");
-    const inspectionLeaveBtn = document.getElementById("inspection-leave-btn");
 
     if (addBtn && input) {
         addBtn.addEventListener("click", () => {

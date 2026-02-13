@@ -1,7 +1,6 @@
-import { currentScramble } from "../scramble.js";
+import { currentScramble, displayScramble } from "../scramble.js";
 import { vis, eventObj } from "../topbar/event.js";
-import { timerSettObj, delayFlagType } from "../settings/timerSett.js";
-import { timerFlag } from "../settings/timerSett.js";
+import { timerSettObj, delayFlagType, timerFlag } from "../settings/timerSett.js";
 import { timerObj } from "./timerState.js";
 import { timerPhases } from "./timerPhases.js";
 import { inspection, inspection2 } from "./inspection.js";
@@ -9,7 +8,6 @@ import { wcaDelayFlag } from "./timerPhases.js";
 import { startTimer, stopTimer } from "./timer.js";
 import { averageOfN } from "../average.js";
 import { renderHistory } from "../render.js";
-import { displayScramble } from "../scramble.js";
 import { addAverageBlock } from "../solve.js";
 
 const timerDOMObj = {
@@ -68,11 +66,11 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     e.preventDefault();
     if (e.repeat || timerFlag) return;
 
-    if (scrDisplayFlag) {
+    if (timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
         document.getElementById("scramble-button").style.justifySelf = "center";
         document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
-        scrDisplayFlag = false;
+        timerDOMObj.scrDisplayFlag = false;
         return;
     }
     if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None") {
@@ -135,13 +133,21 @@ document.addEventListener("keydown", (e) => {
     inspection2();
 });
 
-
+function isTyping() {
+  const el = document.activeElement;
+  return (
+    el.tagName === "INPUT" ||
+    el.tagName === "TEXTAREA" ||
+    el.isContentEditable
+  );
+}
 
 
 document.addEventListener("keydown", (e) => {
     if (e.key === " ") {
+    if (e.repeat || timerFlag || isTyping()) return;
     e.preventDefault();
-    if (e.repeat || timerFlag) return;
+
 
 
     if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None") {

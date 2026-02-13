@@ -56,9 +56,6 @@ export async function displayScramble(event = "333", vis) {
   autoFitText();
 }
 
-export { currentScramble };
-
-
 // =========================
 // Megaminx formatting
 // =========================
@@ -211,3 +208,4 @@ function setVisualizerScale(scale, right, bottom, vis) {
 
 }
 
+export {currentScramble}

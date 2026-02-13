@@ -310,6 +310,7 @@ function averageOfN(time, scramble, inspection, inspectionType) {
         averageObj.solvesArray = [];
         averageObj.solveCounter = 0;
 
+        localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
         return block;
     }
     localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));

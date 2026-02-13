@@ -224,6 +224,16 @@ button:hover, select:hover {
   display: none;
 }
 
+#submit-moves, 
+#fmc-cube, 
+#fmc-solution-test,
+#fmc-move-count,
+#fmc-solution,
+#fmc-form {
+  display: none;
+  z-index: 1000;
+}
+
 /* =========================
    Scramble
 ========================= */
@@ -706,7 +716,7 @@ bottom: 20px;
     display: grid;
 
     grid-template-rows:
-        1.75fr        /* scramble */
+        2fr        /* scramble */
         auto   /* timer */
         180px 
         1fr
