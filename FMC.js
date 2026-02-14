@@ -1,8 +1,14 @@
 import { mountCube, setSize, setView, applyScramble, applySolution, getLastMoveCount, checkSolved } from "./cubisz/api.js";
-import { currentScramble } from "./scramble.js";
+import { displayScramble, currentScramble } from "./scramble.js";
+import { averageOfN } from "./average.js";
+import { timerObj } from "./timer/timerState.js";
+import { timerSettObj } from "./settings/timerSett.js";
+import { renderHistory } from "./render.js";
+import { eventObj, vis } from "./topbar/event.js";
+import { addAverageBlock } from "./solve.js";
 
 let solutionFlag = false;
-function handleFMC() {
+async function handleFMC() {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -27,16 +33,33 @@ document.getElementById("fmc-solution").addEventListener("input", (e) => {
     solutionFlag = true;
 });
 
+let moveCount = null;
+
 document.getElementById("fmc-form").addEventListener("submit", (e) => {
   e.preventDefault();
   if (solutionFlag) {
-      document.getElementById("fmc-move-count").innerHTML = `${getLastMoveCount()} moves 
+    moveCount = getLastMoveCount();
+      document.getElementById("fmc-move-count").innerHTML = `${moveCount} moves 
       <br>
       Result: ${checkSolved() ? "Solved" : "DNF"}`;
   } else {
     document.getElementById("fmc-move-count").innerHTML = `no moves`;
   }
 
+});
+
+document.getElementById("submit-moves").addEventListener("click", async () => {
+  moveCount = getLastMoveCount();
+  const fmcObj = {
+    moveCount,
+    solution: document.getElementById("fmc-solution").value
+  };
+  const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);
+  if (block) addAverageBlock(block);
+  renderHistory();
+  await displayScramble(eventObj.event, vis);
+  applyScramble(currentScramble);
+  document.getElementById("fmc-solution").value = "";
 });
 
 

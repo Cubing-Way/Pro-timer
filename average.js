@@ -32,14 +32,23 @@ function formatIntoMinutes(num) {
 }
 
 function formatDisplayTime(solveObj) {
+    if (solveObj.time == null) return "-";   // ✅ safety
+
+    if (averageObj.mode === "fmc3") {
+        if (solveObj.penalty === "DNF") return "DNF";
+        if (solveObj.penalty === "+2") return `${solveObj.time + 2} moves (+2)`;
+        return `${solveObj.time} moves`;
+    }
+
     if (solveObj.penalty === "DNF") return "DNF";
     if (solveObj.penalty === "+2") return formatIntoMinutes(solveObj.time + 2) + " (+2)";
     return formatIntoMinutes(solveObj.time);
 }
 
+
 function formatSecondsToTime(sec) {
     if (averageObj.mode === "fmc3") {
-    return `${sec.toFixed(2)} moves`;
+    return `${sec} moves`;
 }
 
     if (sec === "DNF") return "DNF";
@@ -262,7 +271,7 @@ if (mode === "fmc3") {
     };
 }
 
-function averageOfN(time, scramble, inspection, inspectionType) {
+function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
 
     let inspecPenalty = null;
 
@@ -274,15 +283,24 @@ function averageOfN(time, scramble, inspection, inspectionType) {
         }
     }
 
-    const seconds = parseTimeToSeconds(time);
+    let seconds = null; 
+    if (isFMC) {
+        seconds = time.moveCount;
+    } else {
+        seconds = parseTimeToSeconds(time);
+    }
+    const solution = time.solution ? time.solution : null;
 
     averageObj.solvesArray.push({
         time: seconds,
         penalty: inspecPenalty ? inspecPenalty : null,
         scramble: scramble,
         inspection,
-        createdAt: Date.now()
+        createdAt: Date.now(),
+        solution
     });
+
+    console.log(averageObj.solvesArray[0])
 
     averageObj.solveCounter++;
 
@@ -301,8 +319,6 @@ function averageOfN(time, scramble, inspection, inspectionType) {
             worst: formatSecondsToTime(avgObj.worst),
             best: formatSecondsToTime(avgObj.best),
             sigma: formatSecondsToTime(avgObj.sigma),
-
-            // 👇 single source of truth
             solves: structuredClone(averageObj.solvesArray)
         };
 

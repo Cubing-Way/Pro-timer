@@ -11,7 +11,9 @@ import { timerDOMObj } from "../timer/timerDOM.js";
 import { applyPenaltyToLast } from "../solve.js";
 import { handleFMC } from "../FMC.js";
 
-eventSelect.addEventListener("change", () => {
+
+
+eventSelect.addEventListener("change", async () => {
     const session = getCurrentSession();
 
     eventObj.event = eventSelect.value;
@@ -23,11 +25,17 @@ eventSelect.addEventListener("change", () => {
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (eventObj.event.includes("bf")) {
-        document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus2Btn").style.display = "block";
-        document.getElementById("penaltyDnfBtn").style.display = "block";
-        document.getElementById("removeLastBtn").style.display = "block";
-        document.getElementById("submit-moves").style.display = "none";
+    document.getElementById("penaltyOkBtn").style.display = "block";
+    document.getElementById("penaltyPlus2Btn").style.display = "block";
+    document.getElementById("penaltyDnfBtn").style.display = "block";
+    document.getElementById("removeLastBtn").style.display = "block";
+    document.getElementById("submit-moves").style.display = "none";
+    document.getElementById("fmc-cube").style.display = "none";
+    document.getElementById("fmc-solution").style.display = "none";
+    document.getElementById("fmc-solution-test").style.display = "none";
+    document.getElementById("fmc-move-count").style.display = "none";
+    document.getElementById("fmc-form").style.display = "none"
+
         previousInspectionType = timerSettObj.inspectionType;
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
@@ -35,17 +43,22 @@ eventSelect.addEventListener("change", () => {
     } else if(eventObj.event === "333fm") {
         handleFMC();
     } else {
-        document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus2Btn").style.display = "block";
-        document.getElementById("penaltyDnfBtn").style.display = "block";
-        document.getElementById("removeLastBtn").style.display = "block";
-        document.getElementById("submit-moves").style.display = "none";
+    document.getElementById("penaltyOkBtn").style.display = "block";
+    document.getElementById("penaltyPlus2Btn").style.display = "block";
+    document.getElementById("penaltyDnfBtn").style.display = "block";
+    document.getElementById("removeLastBtn").style.display = "block";
+    document.getElementById("submit-moves").style.display = "none";
+    document.getElementById("fmc-cube").style.display = "none";
+    document.getElementById("fmc-solution").style.display = "none";
+    document.getElementById("fmc-solution-test").style.display = "none";
+    document.getElementById("fmc-move-count").style.display = "none";
+    document.getElementById("fmc-form").style.display = "none"
         timerSettObj.inspectionType = previousInspectionType;
         document.getElementById("inspection-type").value = previousInspectionType;
         localStorage.setItem("inspectionType", previousInspectionType);
     }
 
-    displayScramble(eventObj.event, vis);
+    await displayScramble(eventObj.event, vis);
 });
 
 const modeSelectEl = document.getElementById("modeSelect");
@@ -118,15 +131,19 @@ closeStatsBtn.addEventListener("click", () => {
   statsPage.classList.remove("open");
 });
 
-document.addEventListener("sessionChanged", () => {
+document.addEventListener("sessionChanged", async () => {
     const session = getCurrentSession();
 
     eventObj.event = session.scrambleType || "333";
     eventSelect.value = eventObj.event;
 
-    syncModeWithEvent(eventObj.event);   // ✅ AUTO FIX MODE
+    if (eventObj.event === "333fm") {
+        await displayScramble(eventObj.event, vis);
+        handleFMC();
+        return;
+    }
 
-    displayScramble(eventObj.event, vis);
+    await displayScramble(eventObj.event, vis);
 });
 
 const avgObj = {

@@ -1,6 +1,7 @@
 import { getCurrentSession } from "../session.js";
 import { syncModeWithEvent } from "./topbarButtons.js"
 import { displayScramble } from "../scramble.js";
+import { handleFMC } from "../FMC.js";
 
 
 const eventObj = {
@@ -23,9 +24,9 @@ eventSelect.value = eventObj.event;
 
 syncModeWithEvent(eventObj.event);   // ✅
 
-displayScramble(eventObj.event, vis);
+await displayScramble(eventObj.event, vis);
 
-
+if (eventObj.event === "333fm") handleFMC();
 
 
 export { eventObj, vis };

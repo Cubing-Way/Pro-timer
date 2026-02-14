@@ -56,6 +56,7 @@ export async function displayScramble(event = "333", vis) {
   autoFitText();
 }
 
+
 // =========================
 // Megaminx formatting
 // =========================
