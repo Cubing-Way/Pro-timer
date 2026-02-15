@@ -12,8 +12,8 @@
 }
 
 </script>
-  <script type="module" crossorigin src="/Pro-timer/assets/index-BD5qptAO.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-Rmw6VkcX.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-B9nMyJFi.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BIUc71r1.css">
 </head>
 <body>
 
@@ -27,27 +27,11 @@
               <option value="mo3">mo3</option>
               <option value="bo3">bo3</option>
               <option value="bo5">bo5</option>
+              <option value="fmc3">ao3</option>
             </select>
 
-            <select id="eventSelect">
-                <option value="222">2x2</option>
-                <option value="333" selected>3x3</option>
-                <option value="444">4x4</option>
-                <option value="555">5x5</option>
-                <option value="666">6x6</option>
-                <option value="777">7x7</option>
-                <option value="333bf">3x3 Blind</option>
-                <option value="333oh">3x3 OH</option>
-                <option value="333fm">3x3 FMC</option>
-                <option value="clock">Clock</option>
-                <option value="minx">Megaminx</option>
-                <option value="pyram">Pyraminx</option>
-                <option value="skewb">Skewb</option>
-                <option value="sq1">Square-1</option>
-                <option value="444bf">4BLD</option>
-                <option value="555bf">5BLD</option>
-                <option value="333mbf">MultiBLD</option>
-            </select>
+            <select id="categorySelect"></select>
+            <select id="eventSelect"></select>
 
              <select id="sessionSelect"></select>
             <button id="modal-button">Open Session</button>
@@ -110,6 +94,14 @@
  
 <div id="timerins">
      <div id="timer">0.00</div>
+     <div id="fmc-cube"></div>
+<form id="fmc-form">
+  <label>Solution: </label>
+  <input id="fmc-solution">
+  <button id="fmc-solution-test">Test solution</button>
+</form>
+
+     <div id ="fmc-move-count">0 moves<br>result: DNF</div>
         <div id="timerins-Buttons"></div>
         <div id="typing-container" style="display:none;">
           <div class="typing-controls">
@@ -124,7 +116,8 @@
             <button id="penaltyPlus2Btn">+2</button>
             <button id="penaltyDnfBtn">DNF</button>
             <button id="removeLastBtn">X</button>
-
+            <button id="countdown">Start attempt</button>
+            <button id="submit-moves">Submit solution</button>
   </div>
         </div>
 
@@ -301,7 +294,7 @@
     </div> <!-- ✅ CLOSE LAYOUT HERE -->
 
     <!-- TIMER OPTIONS -->
-    <div class="settings-section">
+    <div class="settings-section timerOpt">
       <div class="section-title">Timer Options</div>
 
       <div class="setting-row">
@@ -342,7 +335,6 @@
 
 
     <!-- Scripts -->
-
-
+
 </body>
 </html>
