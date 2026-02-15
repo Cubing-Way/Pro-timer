@@ -1,6 +1,5 @@
-const timerSettObj = { inspectionType: localStorage.getItem("inspectionType") || "WCA", timerFlag: false };
+const timerSettObj = { inspectionType: localStorage.getItem("inspectionType") || "WCA", timerFlag: false, previousInspectionType:timerSettObj.inspectionType;  };
 
-let previousInspectionType = timerSettObj.inspectionType;
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
     previousInspectionType = timerSettObj.inspectionType;

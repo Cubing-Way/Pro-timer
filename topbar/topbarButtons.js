@@ -5,7 +5,6 @@ import { renderHistory } from "../render";
 import { displayScramble } from "../scramble.js";
 import { openDetailsModal } from "./modal.js";
 import { timerSettObj } from "../settings/timerSett";
-import { previousInspectionType } from "../settings/timerSett";
 import { renderStatsPage } from "../stats";
 import { timerDOMObj } from "../timer/timerDOM.js";
 import { applyPenaltyToLast } from "../solve.js";
@@ -141,7 +140,7 @@ eventSelect.addEventListener("change", async () => {
 
         document.getElementById("timer").textContent = "0.00";
 
-        previousInspectionType = timerSettObj.inspectionType;
+        timerSettObj.previousInspectionType = timerSettObj.inspectionType;
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
         localStorage.setItem("inspectionType", "None");
