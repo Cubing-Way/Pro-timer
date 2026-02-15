@@ -4,7 +4,7 @@ import { averageObj } from "../average";
 import { renderHistory } from "../render";
 import { displayScramble } from "../scramble.js";
 import { openDetailsModal } from "./modal.js";
-import { timerSettObj } from "../settings/timerSett";
+import { timerSettObj } from "../settings/timerSetObj.js";
 import { renderStatsPage } from "../stats";
 import { timerDOMObj } from "../timer/timerDOM.js";
 import { applyPenaltyToLast } from "../solve.js";
@@ -166,9 +166,9 @@ eventSelect.addEventListener("change", async () => {
         }
         
         document.getElementById("timer").textContent = "0.00";
-        timerSettObj.inspectionType = previousInspectionType;
-        document.getElementById("inspection-type").value = previousInspectionType;
-        localStorage.setItem("inspectionType", previousInspectionType);
+        timerSettObj.inspectionType = timerSettObj.previousInspectionType;
+        document.getElementById("inspection-type").value = timerSettObj.previousInspectionType;
+        localStorage.setItem("inspectionType", timerSettObj.previousInspectionType);
     }
 
     await displayScramble(eventObj.event, vis);
