@@ -5,5 +5,8 @@ export default {
   },
   worker: {
     format: "es"
+  },
+    build: {
+    minify: false
   }
 };
