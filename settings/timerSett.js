@@ -52,7 +52,6 @@ function updateTypingUI() {
 export { 
     delayFlagType, 
     timeInsertion, 
-    previousInspectionType, 
     updateTypingUI,
     timerSettObj
 };
