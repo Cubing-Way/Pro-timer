@@ -19,6 +19,7 @@ function parseTimeToSeconds(str) {
 function manageTime(time) {
     const t = Number(time);
     if (!Number.isFinite(t)) return "-";
+    if (averageObj.mode === "fmc3") return `${Number.isInteger(time) ? time : time.toFixed(2)} moves`;
     return t.toFixed(2);
 }
 
@@ -47,10 +48,6 @@ function formatDisplayTime(solveObj) {
 
 
 function formatSecondsToTime(sec) {
-    if (averageObj.mode === "fmc3") {
-    return `${sec} moves`;
-}
-
     if (sec === "DNF") return "DNF";
 
     sec = Number(sec);               // 🔥 normalize here
@@ -275,12 +272,9 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
 
     let inspecPenalty = null;
 
-    if (inspectionType === "WCA") {
-        if (inspection >= 15) {
-            inspecPenalty = "+2";
-        } else if (inspection >= 17) {
-            inspecPenalty = "DNF";
-        }
+    if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
+        if (inspection >= 15) inspecPenalty = "+2"; 
+        if (inspection >= 17) inspecPenalty = "DNF";
     }
 
     let seconds = null; 

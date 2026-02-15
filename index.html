@@ -21,25 +21,8 @@
               <option value="fmc3">ao3</option>
             </select>
 
-            <select id="eventSelect">
-                <option value="222">2x2</option>
-                <option value="333" selected>3x3</option>
-                <option value="444">4x4</option>
-                <option value="555">5x5</option>
-                <option value="666">6x6</option>
-                <option value="777">7x7</option>
-                <option value="333bf">3x3 Blind</option>
-                <option value="333oh">3x3 OH</option>
-                <option value="333fm">3x3 FMC</option>
-                <option value="clock">Clock</option>
-                <option value="minx">Megaminx</option>
-                <option value="pyram">Pyraminx</option>
-                <option value="skewb">Skewb</option>
-                <option value="sq1">Square-1</option>
-                <option value="444bf">4BLD</option>
-                <option value="555bf">5BLD</option>
-                <option value="333mbf">MultiBLD</option>
-            </select>
+            <select id="categorySelect"></select>
+            <select id="eventSelect"></select>
 
              <select id="sessionSelect"></select>
             <button id="modal-button">Open Session</button>
@@ -104,11 +87,12 @@
      <div id="timer">0.00</div>
      <div id="fmc-cube"></div>
 <form id="fmc-form">
+  <label>Solution: </label>
   <input id="fmc-solution">
-  <button id="fmc-solution-test">Test</button>
+  <button id="fmc-solution-test">Test solution</button>
 </form>
 
-     <div id ="fmc-move-count">no moves</div>
+     <div id ="fmc-move-count">0 moves<br>result: DNF</div>
         <div id="timerins-Buttons"></div>
         <div id="typing-container" style="display:none;">
           <div class="typing-controls">
@@ -123,8 +107,8 @@
             <button id="penaltyPlus2Btn">+2</button>
             <button id="penaltyDnfBtn">DNF</button>
             <button id="removeLastBtn">X</button>
-            <button id="submit-moves">Submit</button>
-
+            <button id="countdown">Start attempt</button>
+            <button id="submit-moves">Submit solution</button>
   </div>
         </div>
 
@@ -301,7 +285,7 @@
     </div> <!-- ✅ CLOSE LAYOUT HERE -->
 
     <!-- TIMER OPTIONS -->
-    <div class="settings-section">
+    <div class="settings-section timerOpt">
       <div class="section-title">Timer Options</div>
 
       <div class="setting-row">

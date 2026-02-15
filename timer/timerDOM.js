@@ -1,6 +1,6 @@
 import { currentScramble, displayScramble } from "../scramble.js";
-import { vis, eventObj } from "../topbar/event.js";
-import { timerSettObj, delayFlagType, timerFlag } from "../settings/timerSett.js";
+import { eventObj, vis } from "../topbar/event.js";
+import { timerSettObj, delayFlagType } from "../settings/timerSett.js";
 import { timerObj } from "./timerState.js";
 import { timerPhases } from "./timerPhases.js";
 import { inspection, inspection2 } from "./inspection.js";
@@ -64,7 +64,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         return;
     }
     e.preventDefault();
-    if (e.repeat || timerFlag) return;
+    if (e.repeat || timerSettObj.timerFlag) return;
 
     if (timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
@@ -117,19 +117,22 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
 });
 
 document.getElementById("touchOverlay").addEventListener("touchstart", () => {
-    if (!timerFlag) return;
+    if (!timerSettObj.timerFlag) return;
+    if (eventObj.event === "333fm") return;
     inspection2();
 });
 
 document.getElementById("inspection-btn").addEventListener("click", () => {
-    if (!timerFlag) return;
+    if (!timerSettObj.timerFlag) return;
+    if (eventObj.event === "333fm") return;
     inspection2();
 });
 
 
 document.addEventListener("keydown", (e) => {
-    if (!timerFlag) return;
+    if (!timerSettObj.timerFlag) return;
     if (e.code !== "Space" || e.repeat) return;
+    if (eventObj.event === "333fm") return;
     inspection2();
 });
 
@@ -145,7 +148,7 @@ function isTyping() {
 
 document.addEventListener("keydown", (e) => {
     if (e.key === " ") {
-    if (e.repeat || timerFlag || isTyping()) return;
+    if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
     e.preventDefault();
 
 

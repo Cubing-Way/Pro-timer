@@ -1,4 +1,12 @@
-import { mountCube, setSize, setView, applyScramble, applySolution, getLastMoveCount, checkSolved } from "./cubisz/api.js";
+import { 
+  mountCube, 
+  setSize, 
+  setView, 
+  applyScramble, 
+  applySolution, 
+  getLastMoveCount, 
+  checkSolved 
+} from "./cubisz/api.js";
 import { displayScramble, currentScramble } from "./scramble.js";
 import { averageOfN } from "./average.js";
 import { timerObj } from "./timer/timerState.js";
@@ -6,9 +14,10 @@ import { timerSettObj } from "./settings/timerSett.js";
 import { renderHistory } from "./render.js";
 import { eventObj, vis } from "./topbar/event.js";
 import { addAverageBlock } from "./solve.js";
+import { updateDisplay } from "./timer/countdownTimer.js";
 
 let solutionFlag = false;
-async function handleFMC() {
+function handleFMC() {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -18,8 +27,13 @@ async function handleFMC() {
     document.getElementById("fmc-solution").style.display = "block";
     document.getElementById("fmc-solution-test").style.display = "block";
     document.getElementById("fmc-move-count").style.display = "block";
-    document.getElementById("fmc-form").style.display = "block"
+    document.getElementById("fmc-form").style.display = "flex";
+    document.getElementById("countdown").style.display = "block";
+    document.getElementById("typing-container").style.display = "none";
 
+    document.getElementById("timer").style.fontSize = "50px";
+    document.getElementById("touchOverlay").style.display = "none"
+    updateDisplay();
     mountCube(document.getElementById("fmc-cube"));
     setSize(28);
     setView("3d");
@@ -49,11 +63,21 @@ document.getElementById("fmc-form").addEventListener("submit", (e) => {
 });
 
 document.getElementById("submit-moves").addEventListener("click", async () => {
-  moveCount = getLastMoveCount();
+  if (document.getElementById("fmc-solution").value !== "") {
+    moveCount = getLastMoveCount();
+  } else {
+    alert("Submit needs a solution");
+    return;
+  }
+
   const fmcObj = {
     moveCount,
     solution: document.getElementById("fmc-solution").value
   };
+
+
+  if (!checkSolved()) timerObj.inspection = 17;
+
   const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);
   if (block) addAverageBlock(block);
   renderHistory();

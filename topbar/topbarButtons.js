@@ -10,13 +10,109 @@ import { renderStatsPage } from "../stats";
 import { timerDOMObj } from "../timer/timerDOM.js";
 import { applyPenaltyToLast } from "../solve.js";
 import { handleFMC } from "../FMC.js";
+import { timeInsertion } from "../settings/timerSett";
+import { timerObj } from "../timer/timerState.js";
+import { scrdata } from "./scrData.js";
+
+const categorySelect = document.getElementById("categorySelect");
+const eventSelect = document.getElementById("eventSelect");
 
 
+// ===== Populate eventSelect from csTimer scrdata =====
+
+
+// ===== Populate category select =====
+
+// Remove divider categories like ===WCA===
+const validCategories = scrdata.filter(
+  ([name]) => !name.startsWith("===")
+);
+
+// Clear selects
+categorySelect.innerHTML = "";
+eventSelect.innerHTML = "";
+
+// Fill category select
+validCategories.forEach(([categoryName]) => {
+  const option = document.createElement("option");
+  option.value = categoryName;
+  option.textContent = categoryName;
+  categorySelect.appendChild(option);
+});
+
+function restoreSelectorsFromSession() {
+    const session = getCurrentSession();
+
+    // ---------- Restore Category ----------
+    if (session.category) {
+        categorySelect.value = session.category;
+    } else {
+        categorySelect.selectedIndex = 0;
+    }
+
+    // Trigger category change to rebuild event list
+    categorySelect.dispatchEvent(new Event("change"));
+
+    // ---------- Restore Event ----------
+    if (session.scrambleType) {
+        eventSelect.value = session.scrambleType;
+    }
+
+    // Trigger event logic
+    eventSelect.dispatchEvent(new Event("change"));
+}
+
+categorySelect.addEventListener("change", () => {
+  const session = getCurrentSession();
+  session.category = categorySelect.value;
+  saveSessions();
+
+  eventSelect.innerHTML = "";
+
+  const category = validCategories.find(
+    ([name]) => name === categorySelect.value
+  );
+
+  if (!category) return;
+
+  const [, scrambles] = category;
+
+  scrambles.forEach(([label, code]) => {
+    if (code === "blank") return;
+
+    const option = document.createElement("option");
+    option.value = code;
+    option.textContent = label;
+    eventSelect.appendChild(option);
+  });
+});
+
+
+
+// 👇 FORCE INITIAL LOAD
+restoreSelectorsFromSession();
 
 eventSelect.addEventListener("change", async () => {
     const session = getCurrentSession();
-
+    session.event = eventSelect.value;
     eventObj.event = eventSelect.value;
+
+    if (eventObj.event === "333fm") {
+        timerSettObj.timerFlag = true;
+        document.getElementById("typing-container").style.display = "none";
+        document.querySelector(".timerOpt").style.display = "none";
+    } else {
+        document.querySelector(".timerOpt").style.display = "block";
+        if (timeInsertion === "Typing") {
+            document.getElementById("typing-container").style.display = "block";
+            timerObj.timerFlag = true;
+        } else {
+            timerSettObj.timerFlag = false;
+        }
+    }
+
+
+
 
     session.scrambleType = eventObj.event;
     saveSessions();
@@ -25,40 +121,59 @@ eventSelect.addEventListener("change", async () => {
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (eventObj.event.includes("bf")) {
-    document.getElementById("penaltyOkBtn").style.display = "block";
-    document.getElementById("penaltyPlus2Btn").style.display = "block";
-    document.getElementById("penaltyDnfBtn").style.display = "block";
-    document.getElementById("removeLastBtn").style.display = "block";
-    document.getElementById("submit-moves").style.display = "none";
-    document.getElementById("fmc-cube").style.display = "none";
-    document.getElementById("fmc-solution").style.display = "none";
-    document.getElementById("fmc-solution-test").style.display = "none";
-    document.getElementById("fmc-move-count").style.display = "none";
-    document.getElementById("fmc-form").style.display = "none"
+        document.getElementById("penaltyOkBtn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
+        document.getElementById("penaltyDnfBtn").style.display = "block";
+        document.getElementById("removeLastBtn").style.display = "block";
+        document.getElementById("submit-moves").style.display = "none";
+        document.getElementById("fmc-cube").style.display = "none";
+        document.getElementById("fmc-solution").style.display = "none";
+        document.getElementById("fmc-solution-test").style.display = "none";
+        document.getElementById("fmc-move-count").style.display = "none";
+        document.getElementById("fmc-form").style.display = "none";
+        document.getElementById("countdown").style.display = "none";
+
+        if (vis === document.querySelector("#scrambleVis")) {
+            document.getElementById("timer").style.fontSize = "140px";
+        } else {
+            document.getElementById("timer").style.fontSize = "72px";
+        }
+
+        document.getElementById("timer").textContent = "0.00";
 
         previousInspectionType = timerSettObj.inspectionType;
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
         localStorage.setItem("inspectionType", "None");
     } else if(eventObj.event === "333fm") {
-        handleFMC();
+        
     } else {
-    document.getElementById("penaltyOkBtn").style.display = "block";
-    document.getElementById("penaltyPlus2Btn").style.display = "block";
-    document.getElementById("penaltyDnfBtn").style.display = "block";
-    document.getElementById("removeLastBtn").style.display = "block";
-    document.getElementById("submit-moves").style.display = "none";
-    document.getElementById("fmc-cube").style.display = "none";
-    document.getElementById("fmc-solution").style.display = "none";
-    document.getElementById("fmc-solution-test").style.display = "none";
-    document.getElementById("fmc-move-count").style.display = "none";
-    document.getElementById("fmc-form").style.display = "none"
+        document.getElementById("penaltyOkBtn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
+        document.getElementById("penaltyDnfBtn").style.display = "block";
+        document.getElementById("removeLastBtn").style.display = "block";
+        document.getElementById("submit-moves").style.display = "none";
+        document.getElementById("fmc-cube").style.display = "none";
+        document.getElementById("fmc-solution").style.display = "none";
+        document.getElementById("fmc-solution-test").style.display = "none";
+        document.getElementById("fmc-move-count").style.display = "none";
+        document.getElementById("fmc-form").style.display = "none";
+        document.getElementById("countdown").style.display = "none";
+
+        if (vis === document.querySelector("#scrambleVis")) {
+            document.getElementById("timer").style.fontSize = "140px";
+        } else {
+            document.getElementById("timer").style.fontSize = "72px";
+        }
+        
+        document.getElementById("timer").textContent = "0.00";
         timerSettObj.inspectionType = previousInspectionType;
         document.getElementById("inspection-type").value = previousInspectionType;
         localStorage.setItem("inspectionType", previousInspectionType);
     }
 
     await displayScramble(eventObj.event, vis);
+    if (eventObj.event === "333fm") handleFMC();
 });
 
 const modeSelectEl = document.getElementById("modeSelect");
@@ -132,15 +247,42 @@ closeStatsBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("sessionChanged", async () => {
-    const session = getCurrentSession();
+const session = getCurrentSession();
 
+    if (session.category) {
+        categorySelect.value = session.category;
+        categorySelect.dispatchEvent(new Event("change"));
+    }
+    
     eventObj.event = session.scrambleType || "333";
-    eventSelect.value = eventObj.event;
+    eventSelect.value = session.event || "333";
+    eventSelect.dispatchEvent(new Event("change"));
+
 
     if (eventObj.event === "333fm") {
         await displayScramble(eventObj.event, vis);
         handleFMC();
         return;
+    } else {
+        document.getElementById("penaltyOkBtn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
+        document.getElementById("penaltyDnfBtn").style.display = "block";
+        document.getElementById("removeLastBtn").style.display = "block";
+        document.getElementById("submit-moves").style.display = "none";
+        document.getElementById("fmc-cube").style.display = "none";
+        document.getElementById("fmc-solution").style.display = "none";
+        document.getElementById("fmc-solution-test").style.display = "none";
+        document.getElementById("fmc-move-count").style.display = "none";
+        document.getElementById("fmc-form").style.display = "none";
+        document.getElementById("countdown").style.display = "none";
+
+        if (vis === document.querySelector("#scrambleVis")) {
+            document.getElementById("timer").style.fontSize = "140px";
+        } else {
+            document.getElementById("timer").style.fontSize = "72px";
+        }
+        
+        document.getElementById("timer").textContent = "0.00";
     }
 
     await displayScramble(eventObj.event, vis);

@@ -1,4 +1,4 @@
-const timerSettObj = { inspectionType: localStorage.getItem("inspectionType") || "WCA" };
+const timerSettObj = { inspectionType: localStorage.getItem("inspectionType") || "WCA", timerFlag: false };
 
 let previousInspectionType = timerSettObj.inspectionType;
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
@@ -17,20 +17,19 @@ document.getElementById("delay-flag").addEventListener("change", () => {
 
 // Time insertion setting (Timer or Typing)
 let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
-let timerFlag = false;
     if (timeInsertion === "Typing") {
-        timerFlag = true;
+        timerSettObj.timerFlag = true;
     } else {
-        timerFlag = false;
+        timerSettObj.timerFlag = false;
     }
     
 document.getElementById("time-insertion").value = timeInsertion;
 document.getElementById("time-insertion").addEventListener("change", () => {
     timeInsertion = document.getElementById("time-insertion").value;
     if (timeInsertion === "Typing") {
-        timerFlag = true;
+        timerSettObj.timerFlag = true;
     } else {
-        timerFlag = false;
+        timerSettObj.timerFlag = false;
     }
     localStorage.setItem("timeInsertion", timeInsertion);
     updateTypingUI();
@@ -50,7 +49,6 @@ function updateTypingUI() {
 
 export { 
     delayFlagType, 
-    timerFlag, 
     timeInsertion, 
     previousInspectionType, 
     updateTypingUI,

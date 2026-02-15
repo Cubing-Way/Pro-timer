@@ -3,7 +3,7 @@ import { formatSecondsToTime, computeAverage, formatDisplayTime } from "./averag
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
 import { lastTime } from "./timer/timeTyping.js";
-import { timerFlag } from "./settings/timerSett.js";
+import { timerSettObj } from "./settings/timerSett.js";
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";
@@ -54,7 +54,7 @@ function renderCurrentAverage(currentType, currentBlock) {
 }
 
 function renderHistoryList(averages, currentType) {
-    if (lastTime && timerFlag) document.getElementById("timer").textContent = lastTime;
+    if (lastTime && timerSettObj.timerFlag) document.getElementById("timer").textContent = lastTime;
     let html = "";
 
     for (let i = 0; i < averages.length; i++) {
@@ -63,7 +63,7 @@ function renderHistoryList(averages, currentType) {
         // Skip the one currently shown as current
         if (currentType === "saved" && i === 0) continue;
 
-        let titleText = `${block.mode}: ${block.average}`;
+        let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${block.average}`;
 
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
@@ -178,7 +178,7 @@ function renderAvgStats({ type, solves, mode, block }) {
             <br>
             &sigma;: ${block.sigma}
             <hr>
-            ${block.mode}: ${block.average}
+            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${block.average}
         `;
     }
 

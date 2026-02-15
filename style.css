@@ -13,6 +13,7 @@ body {
     overflow: hidden; /* 🔒 prevent page scroll */
 }
 
+
 .focus-hidden {
   opacity: 0;          /* invisible */
   pointer-events: none;    /* not clickable */
@@ -41,6 +42,7 @@ gap: 12px;
 
 #timerins {
   display: flex;
+  flex-wrap: wrap;
   flex-direction: row;
   align-items: center;
   gap: 20px;
@@ -85,11 +87,20 @@ gap: 12px;
     max-width: 120px;
 }
 
+#fmc-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+
 .top-bar button,
 .penalty-bar button,
 .top-bar select, 
 #typing-container button, 
-#typing-container input {
+#typing-container input,
+.main-center button,
+.main-center input {
     background: #1a1a1a;
     color: #f0f0f0;
     border: 1px solid #2a2a2a;
@@ -229,7 +240,8 @@ button:hover, select:hover {
 #fmc-solution-test,
 #fmc-move-count,
 #fmc-solution,
-#fmc-form {
+#fmc-form,
+#countdown {
   display: none;
   z-index: 1000;
 }
@@ -724,6 +736,8 @@ bottom: 20px;
       overflow: auto;
 }
 
+
+
   .main-center {
     gap: 12px;
   }
@@ -739,7 +753,7 @@ bottom: 20px;
   #scrambleContainer {
     max-width: 100%;
     padding: 0 12px;
-    height: 20vh;
+    height: 16vh;
   }
 
   #scrambleDisplay {
