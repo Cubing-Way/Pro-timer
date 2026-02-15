@@ -1,7 +1,4 @@
-const timerSettObj = { inspectionType: localStorage.getItem("inspectionType") || "WCA",
-    timerFlag: false, 
-    previousInspectionType: timerSettObj.inspectionType
- };
+import { timerSettObj } from "./timerSetObj.js"
 
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
