@@ -84,6 +84,9 @@ categorySelect.addEventListener("change", () => {
     option.textContent = label;
     eventSelect.appendChild(option);
   });
+
+      // Trigger event logic
+    eventSelect.dispatchEvent(new Event("change"));
 });
 
 
