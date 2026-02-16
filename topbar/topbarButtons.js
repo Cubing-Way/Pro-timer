@@ -7,7 +7,7 @@ import { openDetailsModal } from "./modal.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
 import { renderStatsPage } from "../stats";
 import { timerDOMObj } from "../timer/timerDOM.js";
-import { applyPenaltyToLast } from "../solve.js";
+import { applyPenaltyToLast, removeLastSolve } from "../solve.js";
 import { handleFMC } from "../FMC.js";
 import { timeInsertion } from "../settings/timerSett";
 import { timerObj } from "../timer/timerState.js";

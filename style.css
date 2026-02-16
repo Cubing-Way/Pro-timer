@@ -783,7 +783,7 @@ bottom: 20px;
     border : 1px #0b0b0b;
     z-index: 1001;
     position: fixed;
-    bottom: 10vh;
+    bottom: 5vh;
     justify-self: center;
     align-self: center;
   }

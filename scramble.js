@@ -78,7 +78,7 @@ function autoFitText(vis) {
 
   let fontSize = 40;
 
-  if (vis.id === "scrambleVis2") fontSize = 25;
+  if (vis.id === "scrambleVis2") fontSize = 30;
   text.style.fontSize = fontSize + "px";
   text.style.whiteSpace = "pre-wrap";
   text.style.wordBreak = "break-word";
@@ -97,7 +97,6 @@ function autoFitText(vis) {
 // Visualizer size per event
 // =========================
 function adjustVisualizerSize(event, vis) {
-console.log(event)
         if (
             ["333", "333ni", "r3ni", "333oh", "333fm"].includes(event)
         ) {
