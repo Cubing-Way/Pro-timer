@@ -1,8 +1,8 @@
 import { eventObj, vis } from "./event.js";
 import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session.js";
-import { averageObj } from "../average";
-import { renderHistory } from "../render";
-import { displayScramble } from "../scramble.js";
+import { averageObj } from "../average.js";
+import { renderHistory } from "../render.js";
+import { displayScramble, currentScramble } from "../scramble.js";
 import { openDetailsModal } from "./modal.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
 import { renderStatsPage } from "../stats";
@@ -12,6 +12,9 @@ import { handleFMC } from "../FMC.js";
 import { timeInsertion } from "../settings/timerSett";
 import { timerObj } from "../timer/timerState.js";
 import { scrdata } from "./scrData.js";
+import { averageOfN } from "../average.js";
+import { addAverageBlock } from "../solve.js";
+import { handleMBLD } from "../MBLD.js";
 
 const categorySelect = document.getElementById("categorySelect");
 const eventSelect = document.getElementById("eventSelect");
@@ -99,7 +102,7 @@ eventSelect.addEventListener("change", async () => {
     session.event = eventSelect.value;
     eventObj.event = eventSelect.value;
 
-    if (eventObj.event === "333fm") {
+    if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
         timerSettObj.timerFlag = true;
         document.getElementById("typing-container").style.display = "none";
         document.querySelector(".timerOpt").style.display = "none";
@@ -122,7 +125,7 @@ eventSelect.addEventListener("change", async () => {
     syncModeWithEvent(eventObj.event);   // ✅ AUTO FORCE MODE
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
-    if (eventObj.event.includes("bf")) {
+    if (eventObj.event.includes("bf")) { //no longer includes bf, check scrData.js
         document.getElementById("penaltyOkBtn").style.display = "block";
         document.getElementById("penaltyPlus2Btn").style.display = "block";
         document.getElementById("penaltyDnfBtn").style.display = "block";
@@ -134,7 +137,7 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("fmc-move-count").style.display = "none";
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
-
+        document.getElementById("touchOverlay").style.display = "block";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {
@@ -161,7 +164,7 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("fmc-move-count").style.display = "none";
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
-
+        document.getElementById("touchOverlay").style.display = "block";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {
@@ -176,9 +179,11 @@ eventSelect.addEventListener("change", async () => {
 
     await displayScramble(eventObj.event, vis);
     if (eventObj.event === "333fm") handleFMC();
+    if (eventObj.event === "r3ni") handleMBLD();
 });
 
 const modeSelectEl = document.getElementById("modeSelect");
+let modeFlag = false;
 if (modeSelectEl) {
     modeSelectEl.addEventListener("change", (ev) => {
         const val = ev.target.value;
@@ -186,9 +191,22 @@ if (modeSelectEl) {
         averageObj.mode = val;
         session.mode = val;
         saveSessions();
-
+        modeFlag = true;
+        const block = averageOfN(
+            document.getElementById("timer").innerHTML, 
+            currentScramble, 
+            timerObj.inspection, 
+            timerSettObj.inspectionType, 
+            false, 
+            true
+        );
+        
+        if (block) {
+            addAverageBlock(block);
+        }
         renderHistory();
     });
+    modeFlag = false;
 }
 
 function getDefaultModeForEvent(event) {
@@ -265,6 +283,8 @@ const session = getCurrentSession();
         await displayScramble(eventObj.event, vis);
         handleFMC();
         return;
+    } else if (eventObj.event === "r3ni"){
+        handleMBLD();
     } else {
         document.getElementById("penaltyOkBtn").style.display = "block";
         document.getElementById("penaltyPlus2Btn").style.display = "block";
@@ -277,7 +297,7 @@ const session = getCurrentSession();
         document.getElementById("fmc-move-count").style.display = "none";
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
-
+        document.getElementById("touchOverlay").style.display = "block";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {

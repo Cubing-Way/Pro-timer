@@ -2,7 +2,7 @@ import { timerSettObj } from "./timerSetObj.js"
 
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
-    previousInspectionType = timerSettObj.inspectionType;
+    timerSettObj.previousInspectionType = timerSettObj.inspectionType;
     timerSettObj.inspectionType = document.getElementById("inspection-type").value;
     localStorage.setItem("inspectionType", timerSettObj.inspectionType);
 });

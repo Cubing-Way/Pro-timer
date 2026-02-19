@@ -2,14 +2,13 @@ import { getCurrentSession } from "../session.js";
 import { syncModeWithEvent } from "./topbarButtons.js"
 import { displayScramble } from "../scramble.js";
 import { handleFMC } from "../FMC.js";
-import { timerSettObj, timeInsertion } from "../settings/timerSett.js";
+import { timerSettObj } from "../settings/timerSetObj.js";
+import { timeInsertion } from "../settings/timerSett.js";
 import { timerObj } from "../timer/timerState.js";
+import { handleMBLD } from "../MBLD.js";
+import { eventObj } from "./eventState.js";
 
-const eventObj = {
-    event: getCurrentSession().scrambleType || "333"
-};
-
-    if (eventObj.event === "333fm") {
+    if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
         timerSettObj.timerFlag = true;
         document.getElementById("typing-container").style.display = "none";
         document.querySelector(".timerOpt").style.display = "none";
@@ -42,6 +41,7 @@ syncModeWithEvent(eventObj.event);   // ✅
 await displayScramble(eventObj.event, vis);
 
 if (eventObj.event === "333fm") handleFMC();
+if (eventObj.event === "r3ni") handleMBLD();
 
 
 export { eventObj, vis };

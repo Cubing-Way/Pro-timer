@@ -19,7 +19,6 @@ function parseTimeToSeconds(str) {
 function manageTime(time) {
     const t = Number(time);
     if (!Number.isFinite(t)) return "-";
-    if (averageObj.mode === "fmc3") return `${Number.isInteger(time) ? time : time.toFixed(2)} moves`;
     return t.toFixed(2);
 }
 
@@ -35,12 +34,6 @@ function formatIntoMinutes(num) {
 function formatDisplayTime(solveObj) {
     if (solveObj.time == null) return "-";   // ✅ safety
 
-    if (averageObj.mode === "fmc3") {
-        if (solveObj.penalty === "DNF") return "DNF";
-        if (solveObj.penalty === "+2") return `${solveObj.time + 2} moves (+2)`;
-        return `${solveObj.time} moves`;
-    }
-
     if (solveObj.penalty === "DNF") return "DNF";
     if (solveObj.penalty === "+2") return formatIntoMinutes(solveObj.time + 2) + " (+2)";
     return formatIntoMinutes(solveObj.time);
@@ -49,7 +42,6 @@ function formatDisplayTime(solveObj) {
 
 function formatSecondsToTime(sec) {
     if (sec === "DNF") return "DNF";
-
     sec = Number(sec);               // 🔥 normalize here
 
     if (!Number.isFinite(sec)) return "DNF";
@@ -268,7 +260,7 @@ if (mode === "fmc3") {
     };
 }
 
-function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
+function averageOfN(time, scramble, inspection, inspectionType, isFMC = false, modeFlag = false, isMBLD = false) {
 
     let inspecPenalty = null;
 
@@ -280,23 +272,33 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
     let seconds = null; 
     if (isFMC) {
         seconds = time.moveCount;
+    } else if (isMBLD) {
+        seconds = time.points;
+     if (seconds <= 0) {
+        inspecPenalty = "DNF";
+    }
     } else {
         seconds = parseTimeToSeconds(time);
     }
+
     const solution = time.solution ? time.solution : null;
 
-    averageObj.solvesArray.push({
-        time: seconds,
-        penalty: inspecPenalty ? inspecPenalty : null,
-        scramble: scramble,
-        inspection,
-        createdAt: Date.now(),
-        solution
-    });
+    if (!modeFlag) {
+        averageObj.solvesArray.push({
+            time: seconds,
+            result: time.result, 
+            penalty: inspecPenalty ? inspecPenalty : null,
+            scramble: scramble,
+            inspection,
+            createdAt: Date.now(),
+            solution
+        });
+        console.log(averageObj.solvesArray[0])
 
-    console.log(averageObj.solvesArray[0])
+        averageObj.solveCounter++;
+    }
 
-    averageObj.solveCounter++;
+
 
     // Determine how many solves needed for this mode
     let neededSolves = 3; // default for mo3 and bo3
@@ -304,8 +306,11 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
         neededSolves = 5;
     }
 
-    if (averageObj.solveCounter === neededSolves) {
-        const avgObj = computeAverage(averageObj.solvesArray, averageObj.mode);
+    if (averageObj.solveCounter >= neededSolves) {
+
+        const relevantSolves = averageObj.solvesArray.slice(0, neededSolves);
+
+        const avgObj = computeAverage(relevantSolves, averageObj.mode);
 
         const block = {
             mode: averageObj.mode,
@@ -313,12 +318,12 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false) {
             worst: formatSecondsToTime(avgObj.worst),
             best: formatSecondsToTime(avgObj.best),
             sigma: formatSecondsToTime(avgObj.sigma),
-            solves: structuredClone(averageObj.solvesArray)
+            solves: structuredClone(relevantSolves)
         };
 
-        // reset buffer
-        averageObj.solvesArray = [];
-        averageObj.solveCounter = 0;
+        // remove only used solves
+        averageObj.solvesArray = averageObj.solvesArray.slice(neededSolves);
+        averageObj.solveCounter = averageObj.solvesArray.length;
 
         localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
         return block;

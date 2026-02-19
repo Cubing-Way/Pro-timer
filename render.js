@@ -4,6 +4,28 @@ import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
 import { lastTime } from "./timer/timeTyping.js";
 import { timerSettObj } from "./settings/timerSett.js";
+import { eventObj } from "./topbar/eventState.js";
+
+function formatStatValue(value) {
+    if (value === undefined || value === null) return "-";
+    if (value === Infinity || value === -Infinity || value === "DNF") return "DNF";
+
+    if (value.time && eventObj.event === "r3ni") return `${value.result} (${value.time} pts)`;
+
+    if (value.time && eventObj.event === "333fm") return `${value.time} moves`;
+
+    if (eventObj.event === "r3ni") {
+        return `${Number.isInteger(Number(value)) ? Number(value) : Number(value).toFixed(2)} pts`;
+    }
+
+    if (eventObj.event === "333fm") {
+        return `${Number(value)} moves`;
+    }
+
+    if (value.time) return formatDisplayTime(value);
+    return formatSecondsToTime(value);
+}
+
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";
@@ -17,7 +39,7 @@ function renderCurrentAverage(currentType, currentBlock) {
         averageObj.solvesArray.forEach((s, i) => {
             html += `
                 <div class="history-solve">
-                    ${i + 1} - ${formatDisplayTime(s)}
+                    ${i + 1} - ${formatStatValue(s)}
                 </div>
             `;
         });
@@ -39,7 +61,7 @@ function renderCurrentAverage(currentType, currentBlock) {
         currentBlock.solves.forEach((s, i) => {
             html += `
                 <div class="history-solve">
-                    ${i + 1} - ${formatDisplayTime(s)}
+                    ${i + 1} - ${formatStatValue(s)}
                 </div>
             `;
         });
@@ -68,13 +90,13 @@ function renderHistoryList(averages, currentType) {
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
-            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(mo3Avg.avg);
+            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatStatValue(mo3Avg.avg);
             titleText = `${block.mode}: ${block.average} (mo3: ${mo3Value})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
-            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
+            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatStatValue(ao5Avg.avg);
             titleText = `${block.mode}: ${block.average} (ao5: ${ao5Value})`;
         }
 
@@ -105,13 +127,13 @@ function renderHistoryList(averages, currentType) {
 
 function renderStats(stats) {
     return `
-        Best single: ${stats.bestTime !== Infinity ? formatSecondsToTime(stats.bestTime) : "-"}
+        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : "-"}
         <br>
-        Best ao5: ${stats.bestAvg !== Infinity ? formatSecondsToTime(stats.bestAvg) : "-"}
+        Best ao5: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : "-"}
         <br>
-        Session Mean: ${stats.mean ? formatSecondsToTime(stats.mean) : "-"}
+        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : "-"}
         <br>
-        Session &sigma;: ${stats.sigma ? formatSecondsToTime(stats.sigma) : "-"}
+        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : "-"}
         <br>
         Solves: ${stats.solveCounter ? stats.solveCounter : "-"}
     `;
@@ -119,13 +141,13 @@ function renderStats(stats) {
 
 function renderStats2(stats) {
     return `
-        Best single: ${stats.bestTime !== Infinity ? formatSecondsToTime(stats.bestTime) : "-"}
+        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : "-"}
         <br>
-        Best ao5: ${stats.bestAvg !== Infinity ? formatSecondsToTime(stats.bestAvg) : "-"}
+        Best ao5: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : "-"}
         <br>
-        Session Mean: ${stats.mean ? formatSecondsToTime(stats.mean) : "-"}
+        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : "-"}
         <br>
-        Session &sigma;: ${stats.sigma ? formatSecondsToTime(stats.sigma) : "-"}
+        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : "-"}
         <br>
         Solves: ${stats.solveCounter ? stats.solveCounter : "-"}
     `;
@@ -147,24 +169,24 @@ function renderAvgStats({ type, solves, mode, block }) {
 
         if (solves.length === 4 && mode === "ao5") {
             return `                
-                Best: ${formatSecondsToTime(best)}
+                Best: ${formatStatValue(best)}
                 <br>
-                Worst: ${formatSecondsToTime(worst)}
+                Worst: ${formatStatValue(worst)}
                 <br>
-                &sigma;: ${formatSecondsToTime(sigma)}
+                &sigma;: ${formatStatValue(sigma)}
                 <hr>
-                bpAo5: ${formatSecondsToTime(bpAo5)}
+                bpAo5: ${formatStatValue(bpAo5)}
                 <br>
-                wpAo5: ${formatSecondsToTime(wpA05)}
+                wpAo5: ${formatStatValue(wpA05)}
             `;
         }
 
         return `                
-            Best: ${formatSecondsToTime(best)}
+            Best: ${formatStatValue(best)}
             <br>
-            Worst: ${formatSecondsToTime(worst)}
+            Worst: ${formatStatValue(worst)}
             <br>
-            &sigma;: ${formatSecondsToTime(sigma)}
+            &sigma;: ${formatStatValue(sigma)}
         `;
     }
 
@@ -172,13 +194,14 @@ function renderAvgStats({ type, solves, mode, block }) {
         if (!block) return "";
 
         return `                
-            Best: ${block.best}
+            Best: ${formatStatValue(block.best, block.solves)}
             <br>
-            Worst: ${block.worst}
+            Worst: ${formatStatValue(block.worst, block.solves)}
             <br>
-            &sigma;: ${block.sigma}
+            &sigma;: ${formatStatValue(block.sigma, block.solves)}
             <hr>
-            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${block.average}
+            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(block.average)}
+
         `;
     }
 

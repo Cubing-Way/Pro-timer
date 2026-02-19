@@ -32,7 +32,7 @@ function handleFMC() {
     document.getElementById("typing-container").style.display = "none";
 
     document.getElementById("timer").style.fontSize = "50px";
-    document.getElementById("touchOverlay").style.display = "none"
+    document.getElementById("touchOverlay").style.display = "none";
     updateDisplay();
     mountCube(document.getElementById("fmc-cube"));
     setSize(28);
@@ -42,6 +42,7 @@ function handleFMC() {
 }
 
 document.getElementById("fmc-solution").addEventListener("input", (e) => {
+  if (eventObj.event !== "333fm") return;
     e.preventDefault();
     applySolution(e.target.value.trim());
     solutionFlag = true;
@@ -50,6 +51,7 @@ document.getElementById("fmc-solution").addEventListener("input", (e) => {
 let moveCount = null;
 
 document.getElementById("fmc-form").addEventListener("submit", (e) => {
+  if (eventObj.event !== "333fm") return;
   e.preventDefault();
   if (solutionFlag) {
     moveCount = getLastMoveCount();
@@ -62,7 +64,9 @@ document.getElementById("fmc-form").addEventListener("submit", (e) => {
 
 });
 
+
 document.getElementById("submit-moves").addEventListener("click", async () => {
+  if (eventObj.event !== "333fm") return;
   if (document.getElementById("fmc-solution").value !== "") {
     moveCount = getLastMoveCount();
   } else {
@@ -75,7 +79,7 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
     solution: document.getElementById("fmc-solution").value
   };
 
-
+  timerObj.inspection = 0;
   if (!checkSolved()) timerObj.inspection = 17;
 
   const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);

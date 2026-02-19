@@ -118,13 +118,13 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
 
 document.getElementById("touchOverlay").addEventListener("touchstart", () => {
     if (!timerSettObj.timerFlag) return;
-    if (eventObj.event === "333fm") return;
+    if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
     inspection2();
 });
 
 document.getElementById("inspection-btn").addEventListener("click", () => {
     if (!timerSettObj.timerFlag) return;
-    if (eventObj.event === "333fm") return;
+    if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
     inspection2();
 });
 
@@ -132,7 +132,7 @@ document.getElementById("inspection-btn").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
     if (!timerSettObj.timerFlag) return;
     if (e.code !== "Space" || e.repeat) return;
-    if (eventObj.event === "333fm") return;
+    if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
     inspection2();
 });
 
