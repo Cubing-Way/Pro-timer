@@ -19,6 +19,7 @@ function timerPhases(delayFlagType) {
     }
 }
 
+
 function wcaDelayFlag() {
     if (timerObj.wcaDelayCount >= 1) {
         timerObj.timerPhase++;

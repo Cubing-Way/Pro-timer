@@ -1,11 +1,8 @@
 const averageObj = {
-  mode: "ao5",
+  mode: "mo3",
   solveCounter: 0,
   solvesArray: [] // array of solve objects
 };
-
-const saved = JSON.parse(localStorage.getItem("cube_average_buffer"));
-if (saved) Object.assign(averageObj, saved);
 
 function parseTimeToSeconds(str) {
     if (typeof str === "number") return str;
@@ -325,10 +322,8 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false, m
         averageObj.solvesArray = averageObj.solvesArray.slice(neededSolves);
         averageObj.solveCounter = averageObj.solvesArray.length;
 
-        localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
         return block;
     }
-    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
     return null;
 }
 

@@ -30,7 +30,9 @@ function handleFMC() {
     document.getElementById("fmc-form").style.display = "flex";
     document.getElementById("countdown").style.display = "block";
     document.getElementById("typing-container").style.display = "none";
+    document.getElementById("fmc-label-form").textContent = "Solution: ";
 
+    
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("touchOverlay").style.display = "none";
     updateDisplay();

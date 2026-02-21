@@ -67,7 +67,6 @@ window.removeSolve = function(blockIndex, solveIndex) {
     remove2(blockIndex, solveIndex)
     saveSessions();
     renderHistory();
-    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
     if (!modal.classList.contains("hidden")) {
         openDetailsModal();
     }

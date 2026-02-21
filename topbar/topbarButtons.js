@@ -16,6 +16,8 @@ import { averageOfN } from "../average.js";
 import { addAverageBlock } from "../solve.js";
 import { handleMBLD } from "../MBLD.js";
 
+let restoringSession = false;
+
 const categorySelect = document.getElementById("categorySelect");
 const eventSelect = document.getElementById("eventSelect");
 
@@ -67,7 +69,9 @@ function restoreSelectorsFromSession() {
 categorySelect.addEventListener("change", () => {
   const session = getCurrentSession();
   session.category = categorySelect.value;
-  saveSessions();
+  if (!restoringSession) {
+      saveSessions();
+  }
 
   eventSelect.innerHTML = "";
 
@@ -95,7 +99,9 @@ categorySelect.addEventListener("change", () => {
 
 
 // 👇 FORCE INITIAL LOAD
+restoringSession = true;
 restoreSelectorsFromSession();
+restoringSession = false;
 
 eventSelect.addEventListener("change", async () => {
     const session = getCurrentSession();
@@ -116,16 +122,16 @@ eventSelect.addEventListener("change", async () => {
         }
     }
 
-
-
-
     session.scrambleType = eventObj.event;
-    saveSessions();
+
+    if (!restoringSession) {
+        saveSessions();
+    }
 
     syncModeWithEvent(eventObj.event);   // ✅ AUTO FORCE MODE
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
-    if (eventObj.event.includes("bf")) { //no longer includes bf, check scrData.js
+    if (["333ni", "444bld", "555bld"].includes(eventObj.event)) { //no longer includes bf, check scrData.js
         document.getElementById("penaltyOkBtn").style.display = "block";
         document.getElementById("penaltyPlus2Btn").style.display = "block";
         document.getElementById("penaltyDnfBtn").style.display = "block";
@@ -138,6 +144,10 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
         document.getElementById("touchOverlay").style.display = "block";
+        document.getElementById("typing-container").style.display = "none";
+        document.getElementById("timerins").style.marginTop = "0px";
+        document.getElementById("touchOverlay").style.display = "none";
+        
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {
@@ -150,8 +160,6 @@ eventSelect.addEventListener("change", async () => {
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
         localStorage.setItem("inspectionType", "None");
-    } else if(eventObj.event === "333fm") {
-        
     } else {
         document.getElementById("penaltyOkBtn").style.display = "block";
         document.getElementById("penaltyPlus2Btn").style.display = "block";
@@ -165,6 +173,9 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
         document.getElementById("touchOverlay").style.display = "block";
+        document.getElementById("typing-container").style.display = "none";
+        document.getElementById("timerins").style.marginTop = "0px";
+        document.getElementById("touchOverlay").style.display = "none";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {
@@ -226,24 +237,25 @@ function getDefaultModeForEvent(event) {
 
 function syncModeWithEvent(event) {
     const session = getCurrentSession();
-
     const desiredMode = getDefaultModeForEvent(event);
 
     if (averageObj.mode !== desiredMode) {
+
         averageObj.mode = desiredMode;
         session.mode = desiredMode;
 
         const sel = document.getElementById("modeSelect");
         if (sel) sel.value = desiredMode;
 
-        // Reset current average buffer
-        averageObj.solvesArray = [];
-        averageObj.solveCounter = 0;
+        // 🔥 ONLY reset if user changed event manually
+        if (!restoringSession) {
+            averageObj.solvesArray = [];
+            averageObj.solveCounter = 0;
+        }
 
         saveSessions();
     }
 }
-
 const modal = document.getElementById("detailsModal");
 const modalBody = document.getElementById("modalBody");
 const closeModalBtn = document.getElementById("closeModalBtn");
@@ -267,17 +279,21 @@ closeStatsBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("sessionChanged", async () => {
+        // 🔥 FIRST restore buffer
+    changedSession();
 const session = getCurrentSession();
 
     if (session.category) {
         categorySelect.value = session.category;
         categorySelect.dispatchEvent(new Event("change"));
     }
+
     
     eventObj.event = session.scrambleType || "333";
     eventSelect.value = session.event || "333";
     eventSelect.dispatchEvent(new Event("change"));
 
+    renderHistory();
 
     if (eventObj.event === "333fm") {
         await displayScramble(eventObj.event, vis);
@@ -330,11 +346,6 @@ document.querySelectorAll("select").forEach(select => {
     select.addEventListener("change", () => {
         select.blur();
     });
-});
-
-document.addEventListener("sessionChanged", () => {
-    changedSession();
-    renderHistory();
 });
 
 avgObj.clearBtn.onclick = () => {

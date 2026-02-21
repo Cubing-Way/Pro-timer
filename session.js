@@ -1,4 +1,5 @@
-import { averageObj } from "./average.js";
+import { averageObj } from "./average.js"
+
 
 // ===============================
 // Session state
@@ -16,18 +17,31 @@ const sessionsObj = {
     selectEl: document.getElementById("sessionSelect")
 };
 
+
+
 // Now it's safe:
 const session = getCurrentSession();
 averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
 if (modeSel) modeSel.value = averageObj.mode;
 
+console.log(session.buffer)
 
 // ===============================
 // Helpers
 // ===============================
 
 function saveSessions() {
+
+    const session = sessionsObj.sessions[sessionsObj.currentSession];
+
+    // 🔥 Push global averageObj INTO session
+    session.buffer = {
+        mode: averageObj.mode,
+        solveCounter: averageObj.solveCounter,
+        solvesArray: averageObj.solvesArray
+    };    
+
     localStorage.setItem("sessions", JSON.stringify(sessionsObj.sessions));
     localStorage.setItem("currentSession", sessionsObj.currentSession);
 }
@@ -72,12 +86,15 @@ function renderSessionSelect() {
 // Actions
 // ===============================
 
-function switchSession(name) {
-    sessionsObj.currentSession = name;
-    saveSessions();
-    renderSessionSelect();
+function switchSession(name, skipSave = false) {
+    if (!skipSave) {
+        saveSessions();
+    }
 
-    // Tell averages module to refresh
+    sessionsObj.currentSession = name;
+    renderSessionSelect();
+    sessionsObj.selectEl.value = name;
+
     document.dispatchEvent(new CustomEvent("sessionChanged"));
 }
 
@@ -124,9 +141,17 @@ sessionsObj.selectEl.onchange = () => {
             return;
         }
 
-        delete sessionsObj.sessions[sessionsObj.currentSession];
+        // 🔥 SAVE BEFORE deleting
+        saveSessions();
+
+        const old = sessionsObj.currentSession;
+        delete sessionsObj.sessions[old];
+
         const first = Object.keys(sessionsObj.sessions)[0];
-        switchSession(first);
+
+        // 🔥 Skip saving because we already deleted old session
+        switchSession(first, true);
+
         return;
     }
 
@@ -139,6 +164,7 @@ sessionsObj.selectEl.onchange = () => {
 // ===============================
 
 renderSessionSelect();
+changedSession();
 
 function toggleMode() {
     const session = getCurrentSession();
@@ -183,24 +209,26 @@ function clearAverages() {
     averageObj.solvesArray = [];
     averageObj.scramblesArray = [];
     averageObj.solveCounter = 0;
-    localStorage.setItem("cube_average_buffer", JSON.stringify(averageObj));
 }
-
 
 function changedSession() {
     const session = getCurrentSession();
 
-    // Load mode from session
-    averageObj.mode = session.mode || "ao5";
+    if (!session.buffer) {
+        session.buffer = {
+            mode: session.mode || "ao5",
+            solveCounter: 0,
+            solvesArray: []
+        };
+    }
+
+    averageObj.mode = session.buffer.mode;
+    averageObj.solveCounter = session.buffer.solveCounter;
+    averageObj.solvesArray = [...session.buffer.solvesArray];
+
     const sel = document.getElementById("modeSelect");
     if (sel) sel.value = averageObj.mode;
-
-    // Reset current average buffer
-    averageObj.solvesArray = [];
-    averageObj.scramblesArray = [];
-    averageObj.solveCounter = 0;
 }
-
 // ===============================
 // Exports
 // ===============================
