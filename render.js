@@ -1,4 +1,4 @@
-import { averageObj } from "./average.js";
+import { averageObj, parseTimeToSeconds } from "./average.js";
 import { formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
@@ -194,11 +194,11 @@ function renderAvgStats({ type, solves, mode, block }) {
         if (!block) return "";
 console.log(block);
         return `                
-            Best: ${formatStatValue(block.best)}
+            Best: ${formatStatValue(parseTimeToSeconds(block.best))}
             <br>
-            Worst: ${formatStatValue(block.worst)}
+            Worst: ${formatStatValue(parseTimeToSeconds(block.worst))}
             <br>
-            &sigma;: ${formatStatValue(block.sigma)}
+            &sigma;: ${formatStatValue(parseTimeToSeconds(block.sigma))}
             <hr>
             ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(block.average)}
 

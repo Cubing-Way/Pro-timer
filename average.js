@@ -36,7 +36,6 @@ function formatDisplayTime(solveObj) {
     return formatIntoMinutes(solveObj.time);
 }
 
-
 function formatSecondsToTime(sec) {
     if (sec === "DNF") return "DNF";
     sec = Number(sec);               // 🔥 normalize here
