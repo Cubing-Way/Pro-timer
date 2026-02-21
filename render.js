@@ -192,7 +192,7 @@ function renderAvgStats({ type, solves, mode, block }) {
 
     if (type === "saved") {
         if (!block) return "";
-
+console.log(block);
         return `                
             Best: ${formatStatValue(block.best)}
             <br>
