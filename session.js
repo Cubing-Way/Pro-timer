@@ -17,6 +17,8 @@ const sessionsObj = {
     selectEl: document.getElementById("sessionSelect")
 };
 
+console.log(sessionsObj)
+
 
 
 // Now it's safe:

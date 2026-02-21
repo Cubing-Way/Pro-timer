@@ -194,11 +194,11 @@ function renderAvgStats({ type, solves, mode, block }) {
         if (!block) return "";
 
         return `                
-            Best: ${formatStatValue(block.best, block.solves)}
+            Best: ${formatStatValue(block.best)}
             <br>
-            Worst: ${formatStatValue(block.worst, block.solves)}
+            Worst: ${formatStatValue(block.worst)}
             <br>
-            &sigma;: ${formatStatValue(block.sigma, block.solves)}
+            &sigma;: ${formatStatValue(block.sigma)}
             <hr>
             ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(block.average)}
 
