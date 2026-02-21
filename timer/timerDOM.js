@@ -9,6 +9,7 @@ import { startTimer, stopTimer } from "./timer.js";
 import { averageOfN } from "../average.js";
 import { renderHistory } from "../render.js";
 import { addAverageBlock } from "../solve.js";
+import { saveSessions } from "../session.js";
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -91,6 +92,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
             addAverageBlock(block);
         }
 
+        saveSessions();
         renderHistory();
         displayScramble(eventObj.event, vis);
         restoreUI();
@@ -174,6 +176,7 @@ document.addEventListener("keydown", (e) => {
             console.log(block)
         }
 
+        saveSessions();
         renderHistory();
         displayScramble(eventObj.event, vis);
         restoreUI();
