@@ -200,7 +200,7 @@ console.log(block);
             <br>
             &sigma;: ${formatStatValue(parseTimeToSeconds(block.sigma))}
             <hr>
-            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(block.average)}
+            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(parseTimeToSeconds(block.average))}
 
         `;
     }
