@@ -15,16 +15,16 @@ function getScrambleConfig(code) {
 
 let currentScramble = "";
 
-export async function displayScramble(event = "333", vis) {
+export async function displayScramble(event = "333", vis, length) {
 
     const config = getScrambleConfig(event);
     if (!config) return;
 
     const [type, rawLength] = config;
 
-    let scramble;
+    const finalLength = length ?? rawLength; // 🔥 override if provided
 
-    scramble = await csTimer.getScramble(type, rawLength);
+    let scramble = await csTimer.getScramble(type, finalLength);
 
 
     const svg = await csTimer.getImage(scramble, type);

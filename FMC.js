@@ -21,7 +21,7 @@ function handleFMC() {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
-    document.getElementById("removeLastBtn").style.display = "none";
+    document.getElementById("removeLastBtn").style.display = "block";
     document.getElementById("submit-moves").style.display = "block";
     document.getElementById("fmc-cube").style.display = "block";
     document.getElementById("fmc-solution").style.display = "block";
@@ -31,7 +31,10 @@ function handleFMC() {
     document.getElementById("countdown").style.display = "block";
     document.getElementById("typing-container").style.display = "none";
     document.getElementById("fmc-label-form").textContent = "Solution: ";
+    document.getElementById("open-mbld-modal").style.display = "none";
 
+    document.getElementById("openConfig").style.display = "block";
+    
     
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("touchOverlay").style.display = "none";

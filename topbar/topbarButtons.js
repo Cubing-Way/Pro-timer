@@ -93,7 +93,9 @@ categorySelect.addEventListener("change", () => {
   });
 
       // Trigger event logic
+if (!restoringSession) {
     eventSelect.dispatchEvent(new Event("change"));
+}
 });
 
 
@@ -105,7 +107,7 @@ restoringSession = false;
 
 eventSelect.addEventListener("change", async () => {
     const session = getCurrentSession();
-    session.event = eventSelect.value;
+    session.scrambleType = eventSelect.value;
     eventObj.event = eventSelect.value;
 
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
@@ -147,6 +149,7 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("typing-container").style.display = "none";
         document.getElementById("timerins").style.marginTop = "0px";
         document.getElementById("touchOverlay").style.display = "none";
+        document.getElementById("open-mbld-modal").style.display = "none";
         
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
@@ -176,6 +179,8 @@ eventSelect.addEventListener("change", async () => {
         document.getElementById("typing-container").style.display = "none";
         document.getElementById("timerins").style.marginTop = "0px";
         document.getElementById("touchOverlay").style.display = "none";
+        document.getElementById("open-mbld-modal").style.display = "none";
+        document.getElementById("openConfig").style.display = "none";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";
         } else {
@@ -280,6 +285,8 @@ closeStatsBtn.addEventListener("click", () => {
 
 document.addEventListener("sessionChanged", async () => {
         // 🔥 FIRST restore buffer
+        restoringSession = true;
+
     changedSession();
 const session = getCurrentSession();
 
@@ -288,10 +295,12 @@ const session = getCurrentSession();
         categorySelect.dispatchEvent(new Event("change"));
     }
 
-    
-    eventObj.event = session.scrambleType || "333";
-    eventSelect.value = session.event || "333";
+    const ev = session.scrambleType || "333";
+    eventObj.event = ev;
+    eventSelect.value = ev;
     eventSelect.dispatchEvent(new Event("change"));
+
+    restoringSession = false;
 
     renderHistory();
 
@@ -313,6 +322,11 @@ const session = getCurrentSession();
         document.getElementById("fmc-move-count").style.display = "none";
         document.getElementById("fmc-form").style.display = "none";
         document.getElementById("countdown").style.display = "none";
+        document.getElementById("touchOverlay").style.display = "block";
+        document.getElementById("typing-container").style.display = "none";
+        document.getElementById("timerins").style.marginTop = "0px";
+        document.getElementById("open-mbld-modal").style.display = "none";
+        document.getElementById("openConfig").style.display = "none";
         document.getElementById("touchOverlay").style.display = "block";
         if (vis === document.querySelector("#scrambleVis")) {
             document.getElementById("timer").style.fontSize = "140px";

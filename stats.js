@@ -96,6 +96,35 @@ function getStatisticsFromSolves(solves, session) {
 // ===============================
 // FILTER BY DATE
 // ===============================
+
+function filterAveragesByRange(session, range) {
+  const now = Date.now();
+  let start, end;
+
+  if (range === "today") {
+    start = startOfDayBrazil(now);
+    end = endOfDayBrazil(now);
+  }
+
+  if (range === "yesterday") {
+    const y = daysAgoBrazil(1);
+    start = startOfDayBrazil(y);
+    end = endOfDayBrazil(y);
+  }
+
+  if (range === "last7days") {
+    start = daysAgoBrazil(6);
+    end = now;
+  }
+
+  return session.averages.filter(avg => {
+    const lastSolve = avg.solves[avg.solves.length - 1];
+    if (!lastSolve || !lastSolve.createdAt) return false;
+
+    return lastSolve.createdAt >= start && lastSolve.createdAt <= end;
+  });
+}
+
 function filterSolvesByRange(solves, range) {
   const now = Date.now();
   let start, end;
@@ -131,8 +160,18 @@ function getStatistcs() {
 function getStatisticsByDate(range) {
   const session = getCurrentSession();
   const allSolves = getAllSolvesFromSession(session);
-  const filtered = filterSolvesByRange(allSolves, range);
-  return getStatisticsFromSolves(filtered, session);
+  const filteredSolves = filterSolvesByRange(allSolves, range);
+
+  const stats = getStatisticsFromSolves(filteredSolves, session);
+
+  const filteredAvgs = filterAveragesByRange(session, range);
+  const ao5Arr = filteredAvgs
+    .filter(a => a.average !== "DNF")
+    .map(a => parseTimeToSeconds(a.average));
+
+  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : 0;
+
+  return stats;
 }
 
 // ===============================

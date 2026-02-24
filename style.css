@@ -242,7 +242,9 @@ button:hover, select:hover {
 #fmc-move-count,
 #fmc-solution,
 #fmc-form,
-#countdown {
+#countdown,
+#open-mbld-modal,
+#openConfig {
   display: none;
   z-index: 1000;
 }
@@ -849,3 +851,93 @@ bottom: 20px;
   }
 }
 
+.mbld-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  overflow: auto;
+}
+
+.mbld-modal-content {
+  background: #111;
+  margin: 20px auto;
+  padding: 15px;
+  width: 95%;
+  font-size: 40px;
+  max-width: 1100px;
+  border-radius: 10px;
+  max-height: 85vh;      /* 🔥 limit height */
+  overflow-y: auto;      /* 🔥 vertical scroll */
+}
+.mbld-grid {
+  display: grid;
+  grid-template-columns: 40px 700px 160px; /* 🔥 narrower scramble */
+  gap: 10px 20px;                            /* 🔥 less spacing */
+  align-items: start;
+}
+
+.mbld-row {
+  padding: 4px 0;         /* 🔥 smaller */
+  border-bottom: none;    /* 🔥 cleaner */
+}
+
+.mbld-index {
+  font-weight: bold;
+}
+
+.mbld-scramble {
+  font-family: monospace;
+}
+
+.mbld-visual {
+  text-align: center;
+}
+
+.mbld-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+#mbld-count {
+  width: 60px;
+  padding: 4px;
+  font-size: 14px;
+}
+
+    #modal2 {
+      display: none;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: #111;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.3);
+      max-height: 70vh;
+      overflow-y: auto;
+      z-index: 1001;
+    }
+
+    #overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: rgba(0,0,0,0.5);
+    }
+
+    .minute-option {
+      margin: 5px 0;
+    }
+
+    button {
+      padding: 8px 12px;
+      cursor: pointer;
+    }
