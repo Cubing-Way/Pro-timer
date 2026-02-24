@@ -12,8 +12,8 @@
 }
 
 </script>
-  <script type="module" crossorigin src="/Pro-timer/assets/index-B2gIzAgs.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-dnkFevnR.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-B2CRvX7r.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BY4UDocc.css">
 </head>
 <body>
 
@@ -116,6 +116,8 @@
             <button id="penaltyPlus2Btn">+2</button>
             <button id="penaltyDnfBtn">DNF</button>
             <button id="removeLastBtn">X</button>
+            <button id="open-mbld-modal">View Scrambles</button>
+            <button id="openConfig">Timer Warnings</button>
             <button id="countdown">Start attempt</button>
             <button id="submit-moves">Submit solution</button>
   </div>
@@ -331,6 +333,33 @@
 
   </div> <!-- settings-panel -->
 </div> <!-- overlay -->
+
+<div id="mbld-modal" class="mbld-modal">
+  <div class="mbld-modal-content">
+    <button id="mbld-close">✕</button>
+
+    <h2>MBLD Scrambles</h2>
+
+    <div class="mbld-controls">
+      <label for="mbld-count">Cubes:</label>
+      <input type="number" id="mbld-count" min="1" value="5">
+    </div>
+
+    <div id="mbld-grid" class="mbld-grid"></div>
+  </div>
+</div>
+
+
+
+<div id="overlay"></div>
+
+<div id="modal2">
+  <h2>Timer Warning Settings (1 Hour)</h2>
+  <div id="warningOptions"></div>
+  <br>
+  <button id="saveConfig">Save</button>
+  <button id="closeModal">Cancel</button>
+</div>
 
 
 
