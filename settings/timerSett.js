@@ -1,4 +1,44 @@
-import { timerSettObj } from "./timerSetObj.js"
+import { timerSettObj } from "./timerSetObj.js";
+import { timerObj } from "../timer/timerState.js";
+
+let inspectionStart = localStorage.getItem("inspectionStart") || "press-start";
+document.getElementById("inspection-start").value = inspectionStart;
+document.getElementById("inspection-start").addEventListener("change", () => {
+    inspectionStart = document.getElementById("inspection-start").value;
+    localStorage.setItem("inspectionStart", inspectionStart);
+});
+
+let timerDisplay = localStorage.getItem("timerDisplay") || "Show";
+document.getElementById("timer-display").value = timerDisplay;
+document.getElementById("timer-display").addEventListener("change", () => {
+    timerDisplay = document.getElementById("timer-display").value;
+    localStorage.setItem("timerDisplay", timerDisplay);
+});
+
+const phaseInput = document.getElementById("phase-count");
+
+// Set default value from state
+phaseInput.value = timerObj.totalSolvePhases;
+
+phaseInput.addEventListener("input", (e) => {
+    const value = Number(e.target.value);
+
+    if (!Number.isInteger(value) || value < 1) return;
+
+    timerObj.totalSolvePhases = value;
+
+    console.log("Total solve phases set to:", value);
+
+    // Optional: persist
+    localStorage.setItem("totalSolvePhases", value);
+});
+
+const savedPhases = Number(localStorage.getItem("totalSolvePhases"));
+
+if (Number.isInteger(savedPhases) && savedPhases > 0) {
+    timerObj.totalSolvePhases = savedPhases;
+    document.getElementById("phase-count").value = savedPhases;
+}
 
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
@@ -37,7 +77,7 @@ document.getElementById("time-insertion").addEventListener("change", () => {
 function updateTypingUI() {
     const container = document.getElementById("typing-container");
     if (!container) return;
-    if (timeInsertion === "Typing") {
+    if (localStorage.getItem("timeInsertion") === "Typing") {
         container.style.display = "block";
         const input = document.getElementById("typed-time");
         if (input) input.focus();

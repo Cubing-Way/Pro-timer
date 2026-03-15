@@ -7,6 +7,7 @@ import { timeInsertion } from "../settings/timerSett.js";
 import { timerObj } from "../timer/timerState.js";
 import { handleMBLD } from "../MBLD.js";
 import { eventObj } from "./eventState.js";
+import { vis } from "./eventState.js";
 
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
         timerSettObj.timerFlag = true;
@@ -23,20 +24,13 @@ import { eventObj } from "./eventState.js";
     }
 
 const eventSelect = document.getElementById("eventSelect");
-let vis = null;
-    if (window.innerWidth > 768) {
-        vis = document.querySelector("#scrambleVis");
-    } else {
-        vis = document.querySelector("#scrambleVis2");
-    }
-    
+
 // Default scramble
 // Init scramble from session
 const session = getCurrentSession();
 eventObj.event = session.scrambleType || "333";
 eventSelect.value = eventObj.event;
 
-syncModeWithEvent(eventObj.event);   // ✅
 
 await displayScramble(eventObj.event, vis);
 

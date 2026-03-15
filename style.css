@@ -101,7 +101,9 @@ gap: 12px;
 #typing-container button, 
 #typing-container input,
 .main-center button,
-.main-center input {
+.main-center input,
+.settings-header button,
+.modal button{
     background: #1a1a1a;
     color: #f0f0f0;
     border: 1px solid #2a2a2a;
@@ -580,24 +582,43 @@ bottom: 20px;
     width: 320px;
     background: #1e1e1e;
     color: white;
-    padding: 24px;
     border-radius: 12px;
     box-shadow: 0 20px 40px rgba(0,0,0,0.5);
     position: relative;
     font-family: system-ui, sans-serif;
 
-    max-height: 90vh;   /* never taller than screen */
-    overflow-y: auto;   /* scroll inside */
+    max-height: 90vh;
+    overflow-y: auto;
 }
 
+/* Sticky header */
+.settings-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
 
-/* Close button */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 20px 24px 16px 24px;
+    background: #1e1e1e;
+
+    border-bottom: 1px solid #333; /* clean divider */
+}
+
+.settings-body {
+    padding: 0 24px 24px 24px;
+}
+
 #closeSettings {
-    position: absolute;
-    top: 12px;
-    right: 12px;
+    position: static;
 }
 
+/* Remove old absolute positioning */
+#closeSettings {
+    position: static;
+}
 .setting-item {
     margin-top: 16px;
     padding: 12px;

@@ -2,7 +2,7 @@
 import { renderHistory } from "./render.js";
 import { openDetailsModal } from "./topbar/modal.js";
 import { getCurrentSession, saveSessions } from "./session.js";
-import { averageObj, computeAverage, formatSecondsToTime } from "./average.js";
+import { averageObj, computeAverage, formatSecondsToTime, updateClassicStats, classicStats } from "./average.js";
 import { modal } from "./topbar/modal.js";
 
 function ensureSessionShape() {
@@ -21,6 +21,7 @@ function clearSessionAverages() {
     const session = getCurrentSession();
     session.averages = [];
     saveSessions();
+    renderHistory();
 }
 
 function getSessionAverages() {
@@ -57,7 +58,9 @@ window.setPenalty = function(blockIndex, solveIndex, penalty) {
     penalty2(blockIndex, solveIndex, penalty);
     saveSessions();
     renderHistory();
-
+    if (averageObj.mode === "classic") updateClassicStats(true);
+    const session = getCurrentSession();
+    session.classicStats = structuredClone(classicStats);
     if (!modal.classList.contains("hidden")) {
         openDetailsModal();
     }
@@ -65,6 +68,9 @@ window.setPenalty = function(blockIndex, solveIndex, penalty) {
 
 window.removeSolve = function(blockIndex, solveIndex) {
     remove2(blockIndex, solveIndex)
+    if(averageObj.mode === "classic") updateClassicStats(true);
+    const session = getCurrentSession();
+    session.classicStats = structuredClone(classicStats);
     saveSessions();
     renderHistory();
     if (!modal.classList.contains("hidden")) {
@@ -157,6 +163,7 @@ function applyPenaltyToLast(penalty) {
 
     if (target.type === "current") {
         averageObj.solvesArray[target.solveIndex].penalty = penalty;
+        updateClassicStats(true);
     } else {
         window.setPenalty(target.blockIndex, target.solveIndex, penalty);
     }

@@ -1,5 +1,4 @@
-import { averageObj } from "./average.js"
-
+import { averageObj, classicStats, updateClassicStats } from "./average.js";
 
 // ===============================
 // Session state
@@ -25,7 +24,7 @@ averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
 if (modeSel) modeSel.value = averageObj.mode;
 
-console.log(session.buffer)
+console.log(session);
 
 // ===============================
 // Helpers
@@ -96,6 +95,7 @@ function switchSession(name, skipSave = false) {
     sessionsObj.selectEl.value = name;
 
     document.dispatchEvent(new CustomEvent("sessionChanged"));
+    localStorage.setItem("currentSession", sessionsObj.currentSession);
 }
 
 sessionsObj.selectEl.onchange = () => {
@@ -203,12 +203,17 @@ function clearAverages() {
     if (!confirm("Delete all averages in this session?")) return;
 
     const session = getCurrentSession();
-    session.averages = [];
-    saveSessions();
 
+    // Clear everything first
+    session.averages = [];
     averageObj.solvesArray = [];
     averageObj.scramblesArray = [];
     averageObj.solveCounter = 0;
+
+    if(averageObj.mode === "classic") updateClassicStats(true);
+    session.classicStats = structuredClone(classicStats);
+
+    saveSessions(); // 🔥 now buffer is empty too
 }
 
 function changedSession() {
@@ -220,6 +225,11 @@ function changedSession() {
             solveCounter: 0,
             solvesArray: []
         };
+    }
+
+    if (session.classicStats) {
+        classicStats.current = structuredClone(session.classicStats.current);
+        classicStats.best = structuredClone(session.classicStats.best);
     }
 
     averageObj.mode = session.buffer.mode;

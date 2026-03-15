@@ -1,5 +1,5 @@
 import { getCurrentSession } from "./session.js";
-import { averageObj, parseTimeToSeconds } from "./average.js";
+import { averageObj, parseTimeToSeconds, classicStats } from "./average.js";
 import { formatSecondsToTime, formatDisplayTime } from "./average.js";
 
 const BRAZIL_OFFSET_MINUTES = -180; // UTC-3
@@ -35,9 +35,11 @@ function getAllSolvesFromSession(session) {
 
   // From finished averages
   session.averages.forEach(avg => {
-    avg.solves.forEach(solve => {
-      all.push(solve);
+    if (avg.mode !== "classic") {
+      avg.solves.forEach(solve => {
+        all.push(solve);
     });
+    }
   });
 
   // From current rolling buffer
@@ -54,9 +56,15 @@ function getStatisticsFromSolves(solves, session) {
   let ao5Arr = [];
   let solveCounter = 0;
 
+  if (averageObj.mode === "classic") {
+    ao5Arr.push(classicStats.best.ao5)
+  }
   // ao5 array
+
   session.averages.forEach(avg => {
-    if (avg.average !== "DNF") ao5Arr.push(parseTimeToSeconds(avg.average));
+    if (avg.mode !== "classic") {
+      if (avg.average !== "DNF") ao5Arr.push(parseTimeToSeconds(avg.average));
+    }
   });
 
   // process solves
@@ -118,7 +126,8 @@ function filterAveragesByRange(session, range) {
   }
 
   return session.averages.filter(avg => {
-    const lastSolve = avg.solves[avg.solves.length - 1];
+    let lastSolve;
+    lastSolve = avg.solves[avg.solves.length - 1];
     if (!lastSolve || !lastSolve.createdAt) return false;
 
     return lastSolve.createdAt >= start && lastSolve.createdAt <= end;

@@ -4,7 +4,29 @@ const averageObj = {
   solvesArray: [] // array of solve objects
 };
 
+const classicStats = {
+    current: {
+        mo3: null,
+        ao5: null,
+        ao12: null,
+        ao100: null
+    },
+    best: {
+        mo3: null,
+        ao5: null,
+        ao12: null,
+        ao100: null
+    }
+};
+
+
+
+
 function parseTimeToSeconds(str) {
+    if (str == null) {
+        console.log(str)
+        return null;
+    };   // 🔥 prevents crash
     if (typeof str === "number") return str;
     if (str.includes(":")) {
         const [m, s] = str.split(":");
@@ -55,6 +77,94 @@ function formatSolveTime(solve) {
     if (solve.penalty === "DNF") return "DNF";
     if (solve.penalty === "+2") return (solve.time + 2).toFixed(2) + " (+2)";
     return solve.time.toFixed(2);
+}
+
+function updateClassicStats(recomputeBest = false) {
+
+    const solves = averageObj.solvesArray;
+
+    const updateRolling = (n, modeName) => {
+        if (solves.length < n) return null;
+
+        const result = computeAverage(
+            solves.slice(-n),
+            modeName
+        );
+
+        if (result.dnf) return "DNF";
+
+        return result.avg;
+    };
+
+    // Current rolling values
+    const mo3 = updateRolling(3, "mo3");
+    const ao5 = updateRolling(5, "ao5");
+    const ao12 = updateRolling(12, "ao12");
+    const ao100 = updateRolling(100, "ao100");
+
+    classicStats.current.mo3 = mo3;
+    classicStats.current.ao5 = ao5;
+    classicStats.current.ao12 = ao12;
+    classicStats.current.ao100 = ao100;
+
+    const updateBest = (key, value) => {
+        if (value == null) return;
+
+        if (
+            classicStats.best[key] == null ||
+            value < classicStats.best[key]
+        ) {
+            classicStats.best[key] = value;
+        }
+    };
+
+    // Normal incremental update
+    if (!recomputeBest) {
+
+        updateBest("mo3", mo3);
+        updateBest("ao5", ao5);
+        updateBest("ao12", ao12);
+        updateBest("ao100", ao100);
+
+    } 
+    else {
+
+        // Reset best stats
+        classicStats.best.mo3 = null;
+        classicStats.best.ao5 = null;
+        classicStats.best.ao12 = null;
+        classicStats.best.ao100 = null;
+
+        const recomputeBestAvg = (n, modeName) => {
+
+            if (solves.length < n) return null;
+
+            let best = null;
+
+            for (let i = n; i <= solves.length; i++) {
+
+                const result = computeAverage(
+                    solves.slice(i - n, i),
+                    modeName
+                );
+
+                if (result.dnf) return "DNF";
+
+                if (best === null || result.avg < best) {
+                    best = result.avg;
+                }
+            }
+
+            return best;
+        };
+
+        classicStats.best.mo3 = recomputeBestAvg(3, "mo3");
+        classicStats.best.ao5 = recomputeBestAvg(5, "ao5");
+        classicStats.best.ao12 = recomputeBestAvg(12, "ao12");
+        classicStats.best.ao100 = recomputeBestAvg(100, "ao100");
+    }
+
+    console.log("solves length:", solves.length);
 }
 
 function computeAverage(solves, mode) {
@@ -230,6 +340,43 @@ if (mode === "fmc3") {
     };
 }
 
+// =========================
+// GENERIC AON (ao5, ao12, ao100, etc)
+// =========================
+if (mode.startsWith("ao")) {
+
+    const N = times.length;
+
+    const dnfs = times.filter(t => t === Infinity).length;
+    if (dnfs >= 2) return { dnf: true };
+
+    const sorted = [...times].sort((a, b) => a - b);
+
+    let trimCount = Math.floor(N * 0.05);
+    if (N === 5) trimCount = 1;
+
+    const trimmed = sorted.slice(trimCount, N - trimCount);
+
+    let avg = null;
+    if (trimmed.includes(Infinity)) {
+        avg = "DNF";
+    } else {
+        avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
+    }
+
+    const validTimes = times.filter(t => t !== Infinity);
+    const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
+    const variance = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
+    const sigma = Math.sqrt(variance);
+
+    return {
+        dnf: false,
+        avg,
+        best: sorted[0],
+        worst: sorted[sorted.length - 1],
+        sigma
+    };
+}
     // =========================
     // MO3 (Mean of 3)
     // =========================
@@ -256,7 +403,16 @@ if (mode === "fmc3") {
     };
 }
 
-function averageOfN(time, scramble, inspection, inspectionType, isFMC = false, modeFlag = false, isMBLD = false) {
+function averageOfN(
+    time, 
+    scramble, 
+    inspection, 
+    inspectionType, 
+    isFMC = false, 
+    modeFlag = false, 
+    isMBLD = false,
+    solvePhases
+) {
 
     let inspecPenalty = null;
 
@@ -287,15 +443,31 @@ function averageOfN(time, scramble, inspection, inspectionType, isFMC = false, m
             scramble: scramble,
             inspection,
             createdAt: Date.now(),
-            solution
+            solution,
+            solvePhases
         });
-        console.log(averageObj.solvesArray[0])
 
         averageObj.solveCounter++;
     }
 
+    // =========================
+    // CLASSIC MODE (rolling ao5)
+    // =========================
 
-
+    if (averageObj.mode === "classic") {
+        if (!modeFlag) updateClassicStats();
+        
+        const relevantSolves = averageObj.solvesArray.slice(-5);
+        if (classicStats.current.ao5 !== null) {
+            return {
+                    mode: "classic",
+                    average: classicStats.current.ao5,
+                    solves: structuredClone(relevantSolves)
+                };
+        } else {
+            return null;
+        }
+    }
     // Determine how many solves needed for this mode
     let neededSolves = 3; // default for mo3 and bo3
     if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
@@ -332,6 +504,8 @@ export {
     formatSolveTime,
     computeAverage,
     formatDisplayTime,
+    updateClassicStats,
     averageObj,
-    averageOfN   // 👈 add this
+    averageOfN,
+    classicStats   // 👈 add this
 };

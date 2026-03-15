@@ -11,14 +11,22 @@ function startTimer(param) {
         return;
     }
     const startTime = performance.now();
+    timerObj.startTime = startTime;
+
     timerObj.interval = setInterval(() =>{
-        setTimerDisplay('time', formatTime(performance.now() - startTime));
+        const displayMode = document.getElementById("timer-display")?.value;
+        
+        if (displayMode === "Hide") {
+            setTimerDisplay("time", "Solving");
+        } else {
+            setTimerDisplay('time', formatTime(performance.now() - startTime));
+        }
     }, 10);
 }
 
 function stopTimer() {
     clearInterval(timerObj.interval);
-    const endTime = document.getElementById('timer').innerHTML;
+    setTimerDisplay('time', formatTime(performance.now() - timerObj.startTime));
     timerObj.timerPhase = 0;
 }
 

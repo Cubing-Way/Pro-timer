@@ -1,6 +1,6 @@
 import { eventObj, vis } from "./event.js";
 import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session.js";
-import { averageObj } from "../average.js";
+import { averageObj, classicStats } from "../average.js";
 import { renderHistory } from "../render.js";
 import { displayScramble, currentScramble } from "../scramble.js";
 import { openDetailsModal } from "./modal.js";
@@ -20,6 +20,7 @@ let restoringSession = false;
 
 const categorySelect = document.getElementById("categorySelect");
 const eventSelect = document.getElementById("eventSelect");
+const modeSelect = document.getElementById("modeSelect");
 
 
 // ===== Populate eventSelect from csTimer scrdata =====
@@ -64,6 +65,12 @@ function restoreSelectorsFromSession() {
 
     // Trigger event logic
     eventSelect.dispatchEvent(new Event("change"));
+
+    if (session.mode) {
+        modeSelect.value = session.mode;
+    }
+
+
 }
 
 categorySelect.addEventListener("change", () => {
@@ -105,7 +112,7 @@ restoringSession = true;
 restoreSelectorsFromSession();
 restoringSession = false;
 
-eventSelect.addEventListener("change", async () => {
+eventSelect.addEventListener("change", async (e) => {
     const session = getCurrentSession();
     session.scrambleType = eventSelect.value;
     eventObj.event = eventSelect.value;
@@ -130,7 +137,9 @@ eventSelect.addEventListener("change", async () => {
         saveSessions();
     }
 
-    syncModeWithEvent(eventObj.event);   // ✅ AUTO FORCE MODE
+    if (!restoringSession) {
+        syncModeWithEvent(eventObj.event);
+    }
 
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (["333ni", "444bld", "555bld"].includes(eventObj.event)) { //no longer includes bf, check scrData.js
@@ -227,12 +236,13 @@ if (modeSelectEl) {
 
 function getDefaultModeForEvent(event) {
     // BLD events: specific modes
-    if (event === "333bf") return "bo5"; // 3x3 blindfolded: best of 5
-    if (event === "444bf") return "bo3"; // 4x4 blindfolded: best of 3
-    if (event === "555bf") return "bo3"; // 5x5 blindfolded: best of 3
+    if (event === "333ni") return "bo5"; // 3x3 blindfolded: best of 5
+    if (event === "444bld") return "bo3"; // 4x4 blindfolded: best of 3
+    if (event === "555bld") return "bo3"; // 5x5 blindfolded: best of 3
+    if (event === "r3ni") return "bo3";
     
     // Other events that force mo3
-    if (["666", "777"].includes(event)) return "mo3";
+    if (["666wca", "777wca"].includes(event)) return "mo3";
 
     if (event === "333fm") return "fmc3"; // FMC: average of 3 attempts
     
@@ -243,7 +253,7 @@ function getDefaultModeForEvent(event) {
 function syncModeWithEvent(event) {
     const session = getCurrentSession();
     const desiredMode = getDefaultModeForEvent(event);
-
+    
     if (averageObj.mode !== desiredMode) {
 
         averageObj.mode = desiredMode;
@@ -252,14 +262,9 @@ function syncModeWithEvent(event) {
         const sel = document.getElementById("modeSelect");
         if (sel) sel.value = desiredMode;
 
-        // 🔥 ONLY reset if user changed event manually
-        if (!restoringSession) {
-            averageObj.solvesArray = [];
-            averageObj.solveCounter = 0;
-        }
-
         saveSessions();
     }
+   
 }
 const modal = document.getElementById("detailsModal");
 const modalBody = document.getElementById("modalBody");
@@ -284,11 +289,11 @@ closeStatsBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("sessionChanged", async () => {
-        // 🔥 FIRST restore buffer
-        restoringSession = true;
+    // 🔥 FIRST restore buffer
+    restoringSession = true;
 
     changedSession();
-const session = getCurrentSession();
+    const session = getCurrentSession();
 
     if (session.category) {
         categorySelect.value = session.category;

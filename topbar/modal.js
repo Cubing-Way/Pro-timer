@@ -1,6 +1,7 @@
 import { getSessionAverages } from "../solve.js";
 import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../average.js";
 import { modal } from "./topbarButtons.js";
+import { formatStatValue } from "../render.js";
 
 function openDetailsModal() {
     const averages = getSessionAverages();
@@ -36,7 +37,7 @@ function openDetailsModal() {
             html += `
                 <div class="modal-solve-row">
                     <div class="modal-solve-main">
-                        <span>#${i + 1}: ${formatDisplayTime(s)}</span>
+                        <span>#${i + 1}: ${formatStatValue(s)}</span>
 
                         <div class="modal-solve-actions">
                             <button onclick="setPenalty(${blockIndex}, ${i}, null)">OK</button>
@@ -47,8 +48,17 @@ function openDetailsModal() {
                     </div>
 
                     <div class="modal-scramble">
-                        ${block.solves[i].scramble}
+                        Scramble: ${block.solves[i].scramble}
                     </div>
+                    
+                    <div class="modal-scramble">
+                        Inspection: ${block.solves[i].inspection}
+                    </div>
+
+
+                    <div class="modal-scramble">
+                        Date: ${new Date(block.solves[i].createdAt)}
+                    </div>                    
                 </div>
             `;
         });

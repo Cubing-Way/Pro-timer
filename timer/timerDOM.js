@@ -6,10 +6,13 @@ import { timerPhases } from "./timerPhases.js";
 import { inspection, inspection2 } from "./inspection.js";
 import { wcaDelayFlag } from "./timerPhases.js";
 import { startTimer, stopTimer } from "./timer.js";
-import { averageOfN } from "../average.js";
+import { averageOfN, averageObj, classicStats } from "../average.js";
 import { renderHistory } from "../render.js";
 import { addAverageBlock } from "../solve.js";
-import { saveSessions } from "../session.js";
+import { saveSessions, getCurrentSession} from "../session.js";
+import { formatTime } from "./timeFormatting.js";
+import { updateTypingUI } from "../settings/timerSett.js";
+
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -44,11 +47,12 @@ function showOnlyTimerSafe() {
     // If element contains timer somewhere, recurse
     if (element.contains(timer)) {
       [...element.children].forEach(hideRecursively);
+
     } else {
       element.classList.add("focus-hidden");
     }
   }
-
+     
   hideRecursively(document.body);
 }
 
@@ -67,6 +71,12 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     e.preventDefault();
     if (e.repeat || timerSettObj.timerFlag) return;
 
+        // 🔥 If running → handle split here
+    if (timerObj.timerPhase === 2) {
+
+        handleSplitOrStop();
+        return;
+    }
     if (timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
         document.getElementById("scramble-button").style.justifySelf = "center";
@@ -80,23 +90,14 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
 
     timerPhases(delayFlagType);
 
-    if (timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None") {
+    if (
+        timerObj.timerPhase === 1 && !timerObj.inspecting 
+        && timerSettObj.inspectionType !== "None" 
+        && localStorage.getItem("inspectionStart") === "press-start"
+    ) {
         inspection(timerSettObj.inspectionType);
     }
 
-    if (timerObj.timerPhase === 3) {
-        stopTimer();
-        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
-        
-        if (block) {
-            addAverageBlock(block);
-        }
-
-        saveSessions();
-        renderHistory();
-        displayScramble(eventObj.event, vis);
-        restoreUI();
-    }
 });
 
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
@@ -110,6 +111,14 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
 
     if (timerObj.timerPhase === 1) {
         wcaDelayFlag();
+    }
+
+    if (
+        timerObj.timerPhase === 1 && !timerObj.inspecting 
+        && timerSettObj.inspectionType !== "None" 
+        && localStorage.getItem("inspectionStart") === "press-end"
+    ) {
+        inspection(timerSettObj.inspectionType);
     }
 
     if (timerObj.timerPhase === 2) {
@@ -147,41 +156,111 @@ function isTyping() {
   );
 }
 
-
 document.addEventListener("keydown", (e) => {
-    if (e.key === " ") {
     if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
-    e.preventDefault();
+   
 
+    // 🔥 If running → handle split here
+    if (timerObj.timerPhase === 2) {
 
-
-    if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None") {
-        timerObj.timerPhase = 1; // skip inspection
-    }
-    
-    timerPhases(delayFlagType);
-
+        handleSplitOrStop();
+        return;
     }
 
-    if (e.key === " " && timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None") {
+    // Normal phase logic
+    if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None" && e.key === " ") {
+        e.preventDefault();
+        timerObj.timerPhase = 1;
+    }
+
+    if (e.key === " ") {
+        e.preventDefault();
+        timerPhases(delayFlagType);
+    }
+
+    if (
+        timerObj.timerPhase === 1 && !timerObj.inspecting 
+        && timerSettObj.inspectionType !== "None" 
+        && localStorage.getItem("inspectionStart") === "press-start"
+        && e.key === " "
+    ) {
+        e.preventDefault();
         inspection(timerSettObj.inspectionType);
     }
-
-    if (e.key === " " && timerObj.timerPhase === 3) {
-        stopTimer();
-        const block = averageOfN(document.getElementById("timer").innerHTML, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
-        
-        if (block) {
-            addAverageBlock(block);
-            console.log(block)
-        }
-
-        saveSessions();
-        renderHistory();
-        displayScramble(eventObj.event, vis);
-        restoreUI();
-    }
 });
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Tab") {
+        e.preventDefault(); // optional
+    // Time insertion setting (Timer or Typing)
+    let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
+    if (timeInsertion === "Typing") {
+        timeInsertion = "Timer";
+        timerSettObj.timerFlag = false;
+    } else if (timeInsertion === "Timer") {
+        timeInsertion = "Typing";
+        timerSettObj.timerFlag = true;
+    }
+    localStorage.setItem("timeInsertion", timeInsertion);
+    updateTypingUI();
+  }
+});
+
+function handleSplitOrStop() {
+    console.log("Before:", timerObj.currentSolvePhase);
+
+    const now = performance.now();
+    const totalElapsed = (now - timerObj.startTime);
+
+    // 🔥 Calculate phase duration (difference from last split)
+    const phaseTime = formatTime(totalElapsed - timerObj.lastSplitTime);
+
+    // Save for next split
+    timerObj.lastSplitTime = totalElapsed;
+
+    timerObj.solvePhases.push(phaseTime);
+    timerObj.currentSolvePhase++;
+
+    console.log("Phase:", timerObj.currentSolvePhase, phaseTime);
+
+    // If NOT last phase → keep running
+    if (timerObj.currentSolvePhase < timerObj.totalSolvePhases) {
+        return;
+    }
+
+    // 🔥 Last phase → stop
+    stopTimer();
+
+    const finalTime = document.getElementById("timer").innerHTML;
+
+    const block = averageOfN(
+        finalTime,
+        currentScramble,
+        timerObj.inspection,
+        timerSettObj.inspectionType,
+        false,
+        false,
+        false,
+        timerObj.solvePhases
+    );
+
+    const session = getCurrentSession();
+    session.classicStats = structuredClone(classicStats);
+
+    if (block) {
+        addAverageBlock(block);
+    }
+
+    // Reset for next solve
+    timerObj.solvePhases = [];
+    timerObj.currentSolvePhase = 0;
+    timerObj.lastSplitTime = 0;
+
+    saveSessions();
+    renderHistory();
+    displayScramble(eventObj.event, vis);
+    restoreUI();
+}
 
 document.addEventListener("keyup", (e) => {
     // Only intercept Space key so typing in inputs isn't blocked
@@ -193,7 +272,15 @@ document.addEventListener("keyup", (e) => {
         wcaDelayFlag();
     }
 
-    if (timerObj.timerPhase === 2) {
+    if (
+        timerObj.timerPhase === 1 && !timerObj.inspecting 
+        && timerSettObj.inspectionType !== "None" 
+        && localStorage.getItem("inspectionStart") === "press-end"
+    ) {
+        inspection(timerSettObj.inspectionType);
+    }
+
+    if (timerObj.timerPhase === 2 && timerObj.currentSolvePhase === 0) {
         startTimer();
         showOnlyTimerSafe();
     }

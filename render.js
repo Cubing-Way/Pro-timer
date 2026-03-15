@@ -1,4 +1,4 @@
-import { averageObj, parseTimeToSeconds } from "./average.js";
+import { averageObj, parseTimeToSeconds, classicStats } from "./average.js";
 import { formatSecondsToTime, computeAverage, formatDisplayTime } from "./average.js";
 import { getSessionAverages } from "./solve.js";
 import { getStatistcs, getStatisticsByDate } from "./stats.js";
@@ -8,27 +8,66 @@ import { eventObj } from "./topbar/eventState.js";
 
 function formatStatValue(value) {
     if (value === undefined || value === null) return "-";
-    if (value === Infinity || value === -Infinity || value === "DNF") return "DNF";
+    if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return "DNF";
 
     if (value.time && eventObj.event === "r3ni") return `${value.result} (${value.time} pts)`;
 
     if (value.time && eventObj.event === "333fm") return `${value.time} moves`;
 
     if (eventObj.event === "r3ni") {
-        return `${Number.isInteger(Number(value)) ? Number(value) : Number(value).toFixed(2)} pts`;
+        const num = Number(value);
+
+        if (!Number.isFinite(num)) return "DNF";
+
+        return `${Number.isInteger(num) ? num : num.toFixed(2)} pts`;
     }
 
     if (eventObj.event === "333fm") {
-        return `${Number(value)} moves`;
+        const num = Number(value);
+
+        if (!Number.isFinite(num)) return "DNF";
+
+        return `${num} moves`;
     }
 
-    if (value.time) return formatDisplayTime(value);
+    if (value.time && value.solvePhases) {
+        return formatDisplayTime(value)+ 
+            (value.solvePhases.length > 1
+                ?  " | "  + value.solvePhases
+                    .map((phase, index) => (index + 1) + ": " + phase)
+                    .join(" | ")
+                : ""
+            );
+    } else if (value.time) {
+        return formatDisplayTime(value);
+    }
     return formatSecondsToTime(value);
 }
 
 
 function renderCurrentAverage(currentType, currentBlock) {
     let html = "";
+
+    // =========================
+    // CLASSIC MODE
+    // =========================
+    if (averageObj.mode === "classic") {
+
+        const renderRow = (label, value) => `
+            <div class="history-solve">
+                ${label}: ${value != null ? formatStatValue(value) : "-"}
+            </div>
+        `;
+        
+        return `
+            <div class="history-average current-average">
+                ${renderRow("mo3", classicStats.current.mo3)}
+                ${renderRow("ao5", classicStats.current.ao5)}
+                ${renderRow("ao12", classicStats.current.ao12)}
+                ${renderRow("ao100", classicStats.current.ao100)}
+            </div>
+        `;
+    }
 
     if (currentType === "live") {
         html += `
@@ -76,8 +115,30 @@ function renderCurrentAverage(currentType, currentBlock) {
 }
 
 function renderHistoryList(averages, currentType) {
-    if (lastTime && timerSettObj.timerFlag) document.getElementById("timer").textContent = lastTime;
+    if (lastTime && timerSettObj.timerFlag)
+        document.getElementById("timer").textContent = lastTime;
+
     let html = "";
+
+    // =========================
+    // CLASSIC MODE → render solves
+    // =========================
+    if (averageObj.mode === "classic") {
+
+        averageObj.solvesArray
+            .slice()            // clone
+            .reverse()          // newest first
+            .forEach((solve, index) => {
+                html += `
+                    <div class="history-block history-solve">
+                        ${averageObj.solvesArray.length - index}
+                        - ${formatStatValue(solve)}
+                    </div>
+                `;
+            });
+
+        return html;
+    }
 
     for (let i = 0; i < averages.length; i++) {
         const block = averages[i];
@@ -91,13 +152,13 @@ function renderHistoryList(averages, currentType) {
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
             const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatStatValue(mo3Avg.avg);
-            titleText = `${block.mode}: ${block.average} (mo3: ${mo3Value})`;
+            titleText = `${block.mode}: ${block.best} (mo3: ${mo3Value})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
             const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatStatValue(ao5Avg.avg);
-            titleText = `${block.mode}: ${block.average} (ao5: ${ao5Value})`;
+            titleText = `${block.mode}: ${block.best} (ao5: ${ao5Value})`;
         }
 
         html += `
@@ -108,7 +169,7 @@ function renderHistoryList(averages, currentType) {
         block.solves.forEach((s, idx) => {
             html += `
                 <div class="history-solve">
-                    ${idx + 1} - ${formatDisplayTime(s)}
+                    ${idx + 1} - ${formatStatValue(s)}
                 </div>
             `;
         });
@@ -139,22 +200,21 @@ function renderStats(stats) {
     `;
 }
 
-function renderStats2(stats) {
-    return `
-        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : "-"}
-        <br>
-        Best ao5: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : "-"}
-        <br>
-        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : "-"}
-        <br>
-        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : "-"}
-        <br>
-        Solves: ${stats.solveCounter ? stats.solveCounter : "-"}
-    `;
-}
-
 function renderAvgStats({ type, solves, mode, block }) {
     // type: "live" | "saved" | null
+
+if (averageObj.mode === "classic") {
+
+return `
+    Best mo3: ${formatStatValue(classicStats.best.mo3) ?? "-"}
+    <br>
+    Best ao5: ${formatStatValue(classicStats.best.ao5) ?? "-"}
+    <br>
+    Best ao12: ${formatStatValue(classicStats.best.ao12) ?? "-"}
+    <br>
+    Best ao100: ${formatStatValue(classicStats.best.ao100) ?? "-"}
+`;
+}
 
     if (type === "live") {
         if (!solves || solves.length === 0) return "";
@@ -200,7 +260,7 @@ console.log(block);
             <br>
             &sigma;: ${formatStatValue(parseTimeToSeconds(block.sigma))}
             <hr>
-            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(parseTimeToSeconds(block.average))}
+            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(parseTimeToSeconds(block.mode === "bo3" || block.mode === "bo5" ? block.best : block.average))}
 
         `;
     }
@@ -269,6 +329,7 @@ export {
     renderHistoryList,
     renderStats, 
     renderAvgStats,
-    renderHistory
+    renderHistory,
+    formatStatValue
 };
 
