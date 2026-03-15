@@ -3,9 +3,9 @@ import { timerObj } from "../timer/timerState.js";
 
 
 localStorage.setItem("inspectionStart", null);
-document.getElementById("timer").style.color = "red";
+document.getElementById("timer").style.color = "green";
 let inspectionStart = localStorage.getItem("inspectionStart") || "press-start";
-inspectionStart ? null : localStorage.setItem("inspectionStart", inspectionStart);
+localStorage.getItem("inspectionStart") ? null : localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").value = inspectionStart;
 document.getElementById("inspection-start").addEventListener("change", () => {
     inspectionStart = document.getElementById("inspection-start").value;
