@@ -2,11 +2,11 @@ import { timerSettObj } from "./timerSetObj.js";
 import { timerObj } from "../timer/timerState.js";
 
 
-localStorage.setItem("inspectionStart", null);
-document.getElementById("timer").style.color = "green";
+
+document.getElementById("timer").style.color = "blue";
 let inspectionStart = localStorage.getItem("inspectionStart") || "press-start";
-localStorage.getItem("inspectionStart") ? null : localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").value = inspectionStart;
+localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").addEventListener("change", () => {
     inspectionStart = document.getElementById("inspection-start").value;
     localStorage.setItem("inspectionStart", inspectionStart);
