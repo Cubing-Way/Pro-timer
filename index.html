@@ -12,15 +12,15 @@
 }
 
 </script>
-  <script type="module" crossorigin src="/Pro-timer/assets/index-B2CRvX7r.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BY4UDocc.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-Dy9EEzaa.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-Dt_eDcE4.css">
 </head>
 <body>
 
     <!-- Top Bar -->
     <header class="top-bar">
         <div class="left-controls">
-          <button id="settingsBtn">⚙️</button>
+          <button id="settingsBtn">&#9881;</button>
             <button id="clearBtn">Clear</button>
             <select id="modeSelect">
               <option value="ao5">ao5</option>
@@ -28,6 +28,7 @@
               <option value="bo3">bo3</option>
               <option value="bo5">bo5</option>
               <option value="fmc3">ao3</option>
+              <option value="classic">classic</option>
             </select>
 
             <select id="categorySelect"></select>
@@ -140,9 +141,9 @@
     </div>
 
     </div>
-            <div class="panel-cube2">
+      <div class="panel-cube2">
         <scramble-display id="scrambleVis2"></scramble-display>
-        </div>
+      </div>
     <button id="scramble-button">Scramble visualizer</button>
 
 </div>
@@ -226,9 +227,13 @@
 
 <div id="settingsOverlay" class="overlay">
   <div id="settingsPanel" class="settings-panel">
-    <button id="closeSettings">✖</button>
-    <h2>Settings</h2>
 
+  <div class="settings-header">
+    <h2>Settings</h2>
+    <button id="closeSettings">✖</button>
+  </div>
+
+    <div class="settings-body">
     <!-- LAYOUT -->
     <div class="settings-section">
       <div class="section-title">Layout</div>
@@ -331,6 +336,41 @@
       </div>
     </div>
 
+      <div class="setting-row">
+        <label>Timer Phases</label>
+        <div class="setting-control">
+        <input 
+            type="number" 
+            id="phase-count" 
+            min="1" 
+            max="10" 
+            step="1"
+        />
+        </div>
+      </div>
+
+        <div class="setting-row">
+        <label>Timer display</label>
+        <div class="setting-control">
+          <select id="timer-display">
+            <option value="Show" selected>Always show</option>
+            <option value="Hide">Hide while solving</option>
+          </select>
+        </div>
+      </div>
+
+        <div class="setting-row">
+        <label>Inspection start</label>
+        <div class="setting-control">
+          <select id="inspection-start">
+            <option value="press-start" selected>Press start</option>
+            <option value="press-end">Press end</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    </div>
+</div>
   </div> <!-- settings-panel -->
 </div> <!-- overlay -->
 
