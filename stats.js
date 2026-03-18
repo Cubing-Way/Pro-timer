@@ -2,30 +2,38 @@ import { getCurrentSession } from "./session.js";
 import { averageObj, parseTimeToSeconds, classicStats } from "./average.js";
 import { formatSecondsToTime, formatDisplayTime } from "./average.js";
 
-const BRAZIL_OFFSET_MINUTES = -180; // UTC-3
-const BRAZIL_OFFSET_MS = BRAZIL_OFFSET_MINUTES * 60 * 1000;
+function getUserOffsetMs(ts = Date.now()) {
+  const offsetMinutes = new Date(ts).getTimezoneOffset();
+  return offsetMinutes * 60 * 1000;
+}
 
-function startOfDayBrazil(ts = Date.now()) {
-  // shift to Brazil time
-  const d = new Date(ts + BRAZIL_OFFSET_MS);
+function startOfDayLocal(ts = Date.now()) {
+  const offset = getUserOffsetMs(ts);
+
+  const d = new Date(ts - offset); // shift to "local-like UTC"
   d.setUTCHours(0, 0, 0, 0);
-  // shift back to UTC
-  return d.getTime() - BRAZIL_OFFSET_MS;
+
+  return d.getTime() + offset; // shift back
 }
 
-function endOfDayBrazil(ts = Date.now()) {
-  const d = new Date(ts + BRAZIL_OFFSET_MS);
+function endOfDayLocal(ts = Date.now()) {
+  const offset = getUserOffsetMs(ts);
+
+  const d = new Date(ts - offset);
   d.setUTCHours(23, 59, 59, 999);
-  return d.getTime() - BRAZIL_OFFSET_MS;
+
+  return d.getTime() + offset;
 }
 
-function daysAgoBrazil(n) {
-  const d = new Date(Date.now() + BRAZIL_OFFSET_MS);
+function daysAgoLocal(n) {
+  const now = Date.now();
+  const offset = getUserOffsetMs(now);
+
+  const d = new Date(now - offset);
   d.setUTCDate(d.getUTCDate() - n);
-  return d.getTime() - BRAZIL_OFFSET_MS;
+
+  return d.getTime() + offset;
 }
-
-
 
 // ===============================
 // COLLECT SOLVES
@@ -110,18 +118,18 @@ function filterAveragesByRange(session, range) {
   let start, end;
 
   if (range === "today") {
-    start = startOfDayBrazil(now);
-    end = endOfDayBrazil(now);
+    start = startOfDayLocal(now);
+    end = endOfDayLocal(now);
   }
 
   if (range === "yesterday") {
-    const y = daysAgoBrazil(1);
-    start = startOfDayBrazil(y);
-    end = endOfDayBrazil(y);
+    const y = daysAgoLocal(1);
+    start = startOfDayLocal(y);
+    end = endOfDayLocal(y);
   }
 
   if (range === "last7days") {
-    start = daysAgoBrazil(6);
+    start = daysAgoLocal(6);
     end = now;
   }
 
@@ -139,18 +147,18 @@ function filterSolvesByRange(solves, range) {
   let start, end;
 
   if (range === "today") {
-    start = startOfDayBrazil(now);
-    end = endOfDayBrazil(now);
+    start = startOfDayLocal(now);
+    end = endOfDayLocal(now);
   }
 
   if (range === "yesterday") {
-    const y = daysAgoBrazil(1);
-    start = startOfDayBrazil(y);
-    end = endOfDayBrazil(y);
+    const y = daysAgoLocal(1);
+    start = startOfDayLocal(y);
+    end = endOfDayLocal(y);
   }
 
   if (range === "last7days") {
-    start = daysAgoBrazil(6);
+    start = daysAgoLocal(6);
     end = now;
   }
 
