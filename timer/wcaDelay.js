@@ -1,5 +1,6 @@
 import { timerObj } from "./timerState.js";
 import { setTimerDisplay } from "./timerDOM.js";
+import { getThemeVar } from "../settings/timerSett.js";
 
 function startWcaDelay() {
     // Reset counter
@@ -19,10 +20,11 @@ function resolveWcaDelay() {
         // Successful delay
         timerObj.timerPhase++;
     } else {
+        console.log("a")
         // Released too early
-        setTimerDisplay("color", "#eaeaf0");
+       setTimerDisplay('color', `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, '--text-main')}`)
     }
-
+console.log("b")
     clearInterval(timerObj.wcaInterval);
     timerObj.wcaDelayCount = 0;
 }

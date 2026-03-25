@@ -1,5 +1,6 @@
 import { timerObj } from "./timerState.js";
 import { setTimerDisplay } from "./timerDOM.js";
+import { getThemeVar } from "../settings/timerSett.js";
 
 function timerPhases(delayFlagType) {
     if (timerObj.timerPhase !== 1) {
@@ -26,7 +27,7 @@ function wcaDelayFlag() {
         timerObj.wcaDelayCount = 0;
         clearInterval(timerObj.wcaInterval);
     } else {
-        setTimerDisplay('color', '#eaeaf0')
+        setTimerDisplay('color', `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, '--text-main')}`)
         timerObj.wcaDelayCount = 0;
         clearInterval(timerObj.wcaInterval);          
     }

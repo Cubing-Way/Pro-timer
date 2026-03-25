@@ -1,6 +1,102 @@
 import { timerSettObj } from "./timerSetObj.js";
 import { timerObj } from "../timer/timerState.js";
 
+function getThemeVar(themeClass, variable) {
+  const temp = document.createElement('div');
+  temp.className = themeClass;
+  document.body.appendChild(temp);
+
+  const value = getComputedStyle(temp).getPropertyValue(variable).trim();
+
+  document.body.removeChild(temp);
+  return value;
+}
+
+// usage
+// const bgMain = getThemeVar('theme-blue', '--bg-main');
+ 
+// apply only that variable
+// document.documentElement.style.setProperty('--bg-main', bgMain);
+
+
+let timesColor = localStorage.getItem("times-color") || "white";
+
+document.getElementById("times-color").value = timesColor;
+document.getElementById("timer").style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main');
+
+document.getElementById("times-color").addEventListener("change", () => {
+    timesColor = document.getElementById("times-color").value;
+    document.getElementById("timer").style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main');
+    localStorage.setItem("times-color", timesColor);
+});
+
+let textColor = localStorage.getItem("text-color") || "white";
+let backroundColor = localStorage.getItem("backroundColor") || "black";
+
+document.getElementById("text-color").value = textColor;
+document.body.classList.remove(`theme-text-${textColor}`);
+textColor = document.getElementById("text-color").value;
+document.body.classList.add(`theme-text-${textColor}`);
+
+document.getElementById("text-color").addEventListener("change", () => {
+    document.body.classList.remove(`theme-text-${textColor}`);
+    textColor = document.getElementById("text-color").value;
+    document.body.classList.add(`theme-text-${textColor}`);
+    document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+    localStorage.setItem("text-color", textColor);
+
+    if (backroundColor === "white" && textColor === "white") {
+        textColor = "black";
+        document.body.classList.add(`theme-text-${textColor}`);
+        document.getElementById("text-color").value = textColor;
+        document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+        localStorage.setItem("text-color", textColor);
+    } else if (backroundColor === "black" && textColor === "black") {
+        document.body.classList.remove(`theme-text-${textColor}`);
+        textColor = "white";
+        document.getElementById("text-color").value = textColor;
+            document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+            localStorage.setItem("text-color", textColor);
+        }
+});
+
+
+document.getElementById("background-color").value = backroundColor;
+document.body.classList.remove(`theme-${backroundColor}`);
+backroundColor = document.getElementById("background-color").value;
+document.body.classList.add(`theme-${backroundColor}`);
+
+document.getElementById("background-color").addEventListener("change", () => {
+
+    document.body.classList.remove(`theme-${backroundColor}`);
+    backroundColor = document.getElementById("background-color").value;
+    document.body.classList.add(`theme-${backroundColor}`);
+    document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+    localStorage.setItem("backroundColor", backroundColor);
+
+    if (backroundColor === "white" && textColor === "white") {
+        textColor = "black";
+        document.body.classList.add(`theme-text-${textColor}`);
+        document.getElementById("text-color").value = textColor;
+        document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+        localStorage.setItem("text-color", textColor);
+    } else if (backroundColor === "black" && textColor === "black") {
+        document.body.classList.remove(`theme-text-${textColor}`);
+        textColor = "white";
+        document.getElementById("text-color").value = textColor;
+        document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
+        localStorage.setItem("text-color", textColor);
+    }
+});
+
+    if (backroundColor === "white" && textColor === "white") {
+        textColor = "black";
+        document.body.classList.add(`theme-text-${textColor}`);
+        document.getElementById("text-color").value = textColor;
+        localStorage.setItem("text-color", textColor);
+        console.log("a")
+    } 
+
 let inspectionStart = document.getElementById("inspection-start").value;
 localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").value = inspectionStart;
@@ -91,5 +187,6 @@ export {
     delayFlagType, 
     timeInsertion, 
     updateTypingUI,
-    timerSettObj
+    timerSettObj,
+    getThemeVar
 };

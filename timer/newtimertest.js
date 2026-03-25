@@ -33,10 +33,10 @@ function inspection2() { //Actually the whole timer not inspection
              running2 = false;
             timerObj.wcaDelayCount = 0;
             clearInterval(timerObj.wcaInterval);
-            setTimerDisplay('color', '#eaeaf0')
+            setTimerDisplay('color', `${getComputedStyle(document.body).getPropertyValue("--text-main")}`)
              return;
         } else {
-            setTimerDisplay('color', '#eaeaf0')
+            setTimerDisplay('color', `${getComputedStyle(document.body).getPropertyValue("--text-main")}`)
             timerObj.wcaDelayCount = 0;
             clearInterval(timerObj.wcaInterval);          
         }

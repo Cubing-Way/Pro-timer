@@ -1,9 +1,11 @@
 import { setTimerDisplay } from "./timerDOM";
 import { timerObj } from "./timerState";
 import { formatTime } from "./timeFormatting";
+import { getThemeVar } from "../settings/timerSett";
 
 function startTimer(param) {
-    setTimerDisplay('color', '#eaeaf0')
+
+    setTimerDisplay('color', `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, '--text-main')}`)
     clearInterval(timerObj.interval);
     timerObj.inspecting = false;
     if (param) {
