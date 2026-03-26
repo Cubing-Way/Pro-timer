@@ -6,20 +6,24 @@ import { lastTime } from "./timer/timeTyping.js";
 import { timerSettObj } from "./settings/timerSett.js";
 import { eventObj } from "./topbar/eventState.js";
 
+function wrapTimesValue(value) {
+    return `<span class="times-color-number">${value}</span>`;
+}
+
 function formatStatValue(value) {
     if (value === undefined || value === null) return "-";
     if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return "DNF";
 
-    if (value.time && eventObj.event === "r3ni") return `${value.result} (${value.time} pts)`;
+    if (value.time && eventObj.event === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
 
-    if (value.time && eventObj.event === "333fm") return `${value.time} moves`;
+    if (value.time && eventObj.event === "333fm") return wrapTimesValue(`${value.time} moves`);
 
     if (eventObj.event === "r3ni") {
         const num = Number(value);
 
         if (!Number.isFinite(num)) return "DNF";
 
-        return `${Number.isInteger(num) ? num : num.toFixed(2)} pts`;
+        return wrapTimesValue(`${Number.isInteger(num) ? num : num.toFixed(2)} pts`);
     }
 
     if (eventObj.event === "333fm") {
@@ -27,21 +31,21 @@ function formatStatValue(value) {
 
         if (!Number.isFinite(num)) return "DNF";
 
-        return `${num} moves`;
+        return wrapTimesValue(`${num} moves`);
     }
 
     if (value.time && value.solvePhases) {
-        return formatDisplayTime(value)+ 
-            (value.solvePhases.length > 1
-                ?  " | "  + value.solvePhases
-                    .map((phase, index) => (index + 1) + ": " + phase)
-                    .join(" | ")
-                : ""
-            );
+        const base = formatDisplayTime(value);
+        const phases = value.solvePhases.length > 1
+            ? " | " + value.solvePhases
+                .map((phase, index) => wrapTimesValue(index + 1) + ": " + phase)
+                .join(" | ")
+            : "";
+        return wrapTimesValue(base) + phases;
     } else if (value.time) {
-        return formatDisplayTime(value);
+        return wrapTimesValue(formatDisplayTime(value));
     }
-    return formatSecondsToTime(value);
+    return wrapTimesValue(formatSecondsToTime(value));
 }
 
 
@@ -146,19 +150,19 @@ function renderHistoryList(averages, currentType) {
         // Skip the one currently shown as current
         if (currentType === "saved" && i === 0) continue;
 
-        let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${block.average}`;
+        let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${wrapTimesValue(block.average)}`;
 
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
             const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatStatValue(mo3Avg.avg);
-            titleText = `${block.mode}: ${block.best} (mo3: ${mo3Value})`;
+            titleText = `${block.mode}: ${block.best} (mo3: ${wrapTimesValue(mo3Value)})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
             const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatStatValue(ao5Avg.avg);
-            titleText = `${block.mode}: ${block.best} (ao5: ${ao5Value})`;
+            titleText = `${block.mode}: ${block.best} (ao5: ${wrapTimesValue(ao5Value)})`;
         }
 
         html += `
@@ -196,7 +200,7 @@ function renderStats(stats) {
         <br>
         Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : "-"}
         <br>
-        Solves: ${stats.solveCounter ? stats.solveCounter : "-"}
+        Solves: ${stats.solveCounter ? wrapTimesValue(stats.solveCounter) : "-"}
     `;
 }
 

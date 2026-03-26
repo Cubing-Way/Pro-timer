@@ -596,6 +596,10 @@ body {
   user-select: none;       /* optional */
 }
 
+.times-color-number {
+  color: var(--times-color, inherit);
+}
+
 .main-center {
     min-height: 0;
     display: grid;
@@ -650,7 +654,6 @@ gap: 12px;
     justify-content: space-between;
     padding: 10px 14px;
     background: var(--bg-tertiary);
-    border-bottom: 1px solid var(--border-main);
 }
 
 
@@ -726,8 +729,7 @@ button:hover, select:hover {
    Sidebar
 ========================= */
 .left-sidebar {
-    background: var(--bg-secondary);
-    border-right: 1px solid var(--border-main);
+    background: var(--bg-tertiary);
     display: flex;
     flex-direction: column;
     gap: 10px;
@@ -754,8 +756,8 @@ button:hover, select:hover {
 
 
 
-.panel {
-    background: var(--bg-main);
+.left-sidebar .panel {
+    background: var(--bg-tertiary);
     display: flex;
     flex-direction: column;
     min-height: 0;

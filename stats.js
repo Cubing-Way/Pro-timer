@@ -201,11 +201,11 @@ function renderStatsPage() {
 
   const stats = getStatistcs();
 
-  document.getElementById("stat-solves").textContent = stats.solveCounter;
-  document.getElementById("stat-best-time").textContent = formatSecondsToTime(stats.bestTime);
-  document.getElementById("stat-mean").textContent = formatSecondsToTime(stats.mean);
-  document.getElementById("stat-sigma").textContent = formatSecondsToTime(stats.sigma);
-  document.getElementById("stat-best-avg").textContent = formatSecondsToTime(stats.bestAvg);
+  document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
+  document.getElementById("stat-best-time").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestTime)}</span>`;
+  document.getElementById("stat-mean").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.mean)}</span>`;
+  document.getElementById("stat-sigma").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.sigma)}</span>`;
+  document.getElementById("stat-best-avg").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestAvg)}</span>`;
 
   // =========================
   // TABLE
@@ -255,20 +255,20 @@ thead.innerHTML = headHtml;
     const isBOMode = block.mode === "bo3" || block.mode === "bo5";
 
     let rowHtml = `
-      <td>${session.averages.length - i}</td>
+      <td><span class="times-color-number">${session.averages.length - i}</span></td>
       <td>${block.mode.toUpperCase()}</td>
-      <td>${block.average}</td>
-      <td><strong>${block.best}</strong></td>
-      <td>${block.worst}</td>
+      <td><span class="times-color-number">${block.average}</span></td>
+      <td><strong><span class="times-color-number">${block.best}</span></strong></td>
+      <td><span class="times-color-number">${block.worst}</span></td>
 
     `;
 
     // Solves
     block.solves.forEach(solve => {
-      rowHtml += `<td>${formatDisplayTime(solve)}</td>`;
+      rowHtml += `<td><span class="times-color-number">${formatDisplayTime(solve)}</span></td>`;
     });
 
-    rowHtml += `<td>${block.sigma}</td>`
+    rowHtml += `<td><span class="times-color-number">${block.sigma}</span></td>`
 
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);

@@ -12,6 +12,30 @@ function getThemeVar(themeClass, variable) {
   return value;
 }
 
+let secondaryBackground = localStorage.getItem("secondary-background") || "white";
+document.getElementById("secondary-background").value = secondaryBackground;
+const bgMain2 = getThemeVar(`theme-${secondaryBackground}`, '--bg-tertiary');
+document.documentElement.style.setProperty('--bg-tertiary', bgMain2);
+
+document.getElementById("secondary-background").addEventListener("change", () => {
+    secondaryBackground = document.getElementById("secondary-background").value;
+    localStorage.setItem("secondary-background", secondaryBackground);
+    const bgMain = getThemeVar(`theme-${secondaryBackground}`, '--bg-tertiary');
+    document.documentElement.style.setProperty('--bg-tertiary', bgMain);
+});
+
+let buttonsBackground = localStorage.getItem("buttons-background") || "white";
+document.getElementById("buttons-background").value = buttonsBackground;
+const bgMain = getThemeVar(`theme-${buttonsBackground}`, '--border-main');
+document.documentElement.style.setProperty('--border-main', bgMain);
+
+document.getElementById("buttons-background").addEventListener("change", () => {
+    buttonsBackground = document.getElementById("buttons-background").value;
+    localStorage.setItem("buttons-background", buttonsBackground);
+    const bgMain = getThemeVar(`theme-${buttonsBackground}`, '--border-main');
+    document.documentElement.style.setProperty('--border-main', bgMain);
+});
+
 // usage
 // const bgMain = getThemeVar('theme-blue', '--bg-main');
  
@@ -21,17 +45,27 @@ function getThemeVar(themeClass, variable) {
 
 let timesColor = localStorage.getItem("times-color") || "white";
 
-document.getElementById("times-color").value = timesColor;
-document.getElementById("timer").style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main');
+document.documentElement.style.setProperty('--times-color', getThemeVar(`theme-text-${timesColor}`, '--text-main'));
 
-document.getElementById("times-color").addEventListener("change", () => {
-    timesColor = document.getElementById("times-color").value;
-    document.getElementById("timer").style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main');
-    localStorage.setItem("times-color", timesColor);
+function applyTimesColor(colorKey) {
+    const colorValue = getThemeVar(`theme-text-${colorKey}`, '--text-main');
+    document.documentElement.style.setProperty('--times-color', colorValue);
+    document.getElementById('timer').style.color = colorValue;
+    document.querySelectorAll("button").forEach(btn => btn.style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main'));
+        document.querySelectorAll("select").forEach(btn => btn.style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main'));
+    localStorage.setItem('times-color', colorKey);
+}
+
+document.getElementById("times-color").value = timesColor;
+applyTimesColor(timesColor);
+
+document.getElementById("times-color").addEventListener("change", (e) => {
+    timesColor = e.target.value;
+    applyTimesColor(timesColor);
 });
 
 let textColor = localStorage.getItem("text-color") || "white";
-let backroundColor = localStorage.getItem("backroundColor") || "black";
+let backroundColor = localStorage.getItem("backroundColor") || "custom";
 
 document.getElementById("text-color").value = textColor;
 document.body.classList.remove(`theme-text-${textColor}`);

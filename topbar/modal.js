@@ -3,25 +3,29 @@ import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../avera
 import { modal } from "./topbarButtons.js";
 import { formatStatValue } from "../render.js";
 
+function wrapTimesValue(value) {
+    return `<span class="times-color-number">${value}</span>`;
+}
+
 function openDetailsModal() {
     const averages = getSessionAverages();
 
     let html = `<h3 class="modal-title">Session averages</h3>`;
 
     averages.forEach((block, blockIndex) => {
-        let headerText = `${block.mode} #${averages.length - blockIndex}: ${block.average}`;
+        let headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)}`;
 
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
             const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(mo3Avg.avg);
-            headerText = `${block.mode} #${averages.length - blockIndex}: ${block.average} (mo3: ${mo3Value})`;
+            headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (mo3: ${wrapTimesValue(mo3Value)})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
             const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
-            headerText = `${block.mode} #${averages.length - blockIndex}: ${block.average} (ao5: ${ao5Value})`;
+            headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (ao5: ${wrapTimesValue(ao5Value)})`;
         }
 
         html += `
