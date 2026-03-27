@@ -19,7 +19,11 @@ import { updateDisplay } from "./timer/countdownTimer.js";
 let solutionFlag = false;
 function handleFMC() {
     document.getElementById("penaltyOkBtn").style.display = "none";
-    document.getElementById("penaltyPlus2Btn").style.display = "none";
+    document.getElementById("penaltyPlus4Btn").style.display = "none";
+    document.getElementById("penaltyPlus6Btn").style.display = "none";
+    document.getElementById("penaltyPlus8Btn").style.display = "none";
+    document.getElementById("penaltyPlus10Btn").style.display = "none";
+    document.getElementById("penaltyPlus12Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
     document.getElementById("removeLastBtn").style.display = "block";
     document.getElementById("submit-moves").style.display = "block";

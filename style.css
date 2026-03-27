@@ -73,6 +73,22 @@
   --text-muted: rgba(244, 114, 182, 0.65);
 }
 
+.theme-black {
+  --bg-main: #070707;
+  --bg-secondary: #111;
+  --bg-tertiary: #141414;
+  --bg-elevated: #1a1a1a;
+
+  --border-main: #222;
+  --border-soft: #2a2a2a;
+  --border-strong: #333;
+
+  --overlay-dark: rgba(0,0,0,0.6);
+  --overlay-strong: rgba(0,0,0,0.75);
+
+  --accent: #4ade80;
+}
+
 .theme-white {
   /* Backgrounds (soft, not pure white) */
   --bg-main: #f6f7fb;

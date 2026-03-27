@@ -54,7 +54,8 @@ function formatDisplayTime(solveObj) {
     if (solveObj.time == null) return "-";   // ✅ safety
 
     if (solveObj.penalty === "DNF") return "DNF";
-    if (solveObj.penalty === "+2") return formatIntoMinutes(solveObj.time + 2) + " (+2)";
+    if (typeof solveObj.penalty === "number") return formatIntoMinutes(solveObj.time + solveObj.penalty) + " (+" + solveObj.penalty + ")";
+    if (solveObj.penalty === "+2") return formatIntoMinutes(solveObj.time + 2) + " (+2)"; // legacy
     return formatIntoMinutes(solveObj.time);
 }
 
@@ -75,7 +76,8 @@ function formatSecondsToTime(sec) {
 
 function formatSolveTime(solve) {
     if (solve.penalty === "DNF") return "DNF";
-    if (solve.penalty === "+2") return (solve.time + 2).toFixed(2) + " (+2)";
+    if (typeof solve.penalty === "number") return (solve.time + solve.penalty).toFixed(2) + " (+" + solve.penalty + ")";
+    if (solve.penalty === "+2") return (solve.time + 2).toFixed(2) + " (+2)"; // legacy
     return solve.time.toFixed(2);
 }
 
@@ -170,7 +172,8 @@ function updateClassicStats(recomputeBest = false) {
 function computeAverage(solves, mode) {
     const times = solves.map(s => {
         if (s.penalty === "DNF") return Infinity;
-        if (s.penalty === "+2") return s.time + 2;
+        if (typeof s.penalty === "number") return s.time + s.penalty;
+        if (s.penalty === "+2") return s.time + 2; // legacy
         return s.time;
     });
 
@@ -308,7 +311,8 @@ function computeAverage(solves, mode) {
 if (mode === "fmc3") {
     const values = solves.map(s => {
         if (s.penalty === "DNF") return Infinity;
-        if (s.penalty === "+2") return s.time + 2; // +2 moves
+        if (typeof s.penalty === "number") return s.time + s.penalty; // +penalty moves
+        if (s.penalty === "+2") return s.time + 2; // legacy
         return s.time;
     });
 
@@ -417,7 +421,7 @@ function averageOfN(
     let inspecPenalty = null;
 
     if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
-        if (inspection >= 15) inspecPenalty = "+2"; 
+        if (inspection >= 15) inspecPenalty = 2; 
         if (inspection >= 17) inspecPenalty = "DNF";
     }
 
