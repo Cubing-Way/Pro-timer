@@ -144,11 +144,7 @@ eventSelect.addEventListener("change", async (e) => {
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (["333ni", "444bld", "555bld"].includes(eventObj.event)) { //no longer includes bf, check scrData.js
         document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus4Btn").style.display = "block";
-        document.getElementById("penaltyPlus6Btn").style.display = "block";
-        document.getElementById("penaltyPlus8Btn").style.display = "block";
-        document.getElementById("penaltyPlus10Btn").style.display = "block";
-        document.getElementById("penaltyPlus12Btn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
         document.getElementById("penaltyDnfBtn").style.display = "block";
         document.getElementById("removeLastBtn").style.display = "block";
         document.getElementById("submit-moves").style.display = "none";
@@ -178,11 +174,7 @@ eventSelect.addEventListener("change", async (e) => {
         localStorage.setItem("inspectionType", "None");
     } else {
         document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus4Btn").style.display = "block";
-        document.getElementById("penaltyPlus6Btn").style.display = "block";
-        document.getElementById("penaltyPlus8Btn").style.display = "block";
-        document.getElementById("penaltyPlus10Btn").style.display = "block";
-        document.getElementById("penaltyPlus12Btn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
         document.getElementById("penaltyDnfBtn").style.display = "block";
         document.getElementById("removeLastBtn").style.display = "block";
         document.getElementById("submit-moves").style.display = "none";
@@ -325,11 +317,7 @@ document.addEventListener("sessionChanged", async () => {
         handleMBLD();
     } else {
         document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus4Btn").style.display = "block";
-        document.getElementById("penaltyPlus6Btn").style.display = "block";
-        document.getElementById("penaltyPlus8Btn").style.display = "block";
-        document.getElementById("penaltyPlus10Btn").style.display = "block";
-        document.getElementById("penaltyPlus12Btn").style.display = "block";
+        document.getElementById("penaltyPlus2Btn").style.display = "block";
         document.getElementById("penaltyDnfBtn").style.display = "block";
         document.getElementById("removeLastBtn").style.display = "block";
         document.getElementById("submit-moves").style.display = "none";
@@ -362,11 +350,7 @@ const avgObj = {
     clearBtn: document.getElementById("clearBtn"),
     openSessionBtn: document.getElementById("modal-button"),
     penaltyOkBtn: document.getElementById("penaltyOkBtn"),
-    penaltyPlus4Btn: document.getElementById("penaltyPlus4Btn"),
-    penaltyPlus6Btn: document.getElementById("penaltyPlus6Btn"),
-    penaltyPlus8Btn: document.getElementById("penaltyPlus8Btn"),
-    penaltyPlus10Btn: document.getElementById("penaltyPlus10Btn"),
-    penaltyPlus12Btn: document.getElementById("penaltyPlus12Btn"),
+    penaltyPlus2Btn: document.getElementById("penaltyPlus2Btn"),
     penaltyDnfBtn: document.getElementById("penaltyDnfBtn"),
     removeLastBtn: document.getElementById("removeLastBtn")
 };
@@ -391,32 +375,22 @@ avgObj.clearBtn.onclick = () => {
 avgObj.openSessionBtn.onclick = openDetailsModal;
 
 avgObj.penaltyOkBtn.onclick = () => {
-    applyPenaltyToLast(2);
+    applyPenaltyToLast(null);
     renderHistory();
 }
 
-avgObj.penaltyPlus4Btn.onclick = () => {
-    applyPenaltyToLast(4);
-    renderHistory();
-}
-
-avgObj.penaltyPlus6Btn.onclick = () => {
-    applyPenaltyToLast(6);
-    renderHistory();
-}
-
-avgObj.penaltyPlus8Btn.onclick = () => {
-    applyPenaltyToLast(8);
-    renderHistory();
-}
-
-avgObj.penaltyPlus10Btn.onclick = () => {
-    applyPenaltyToLast(10);
-    renderHistory();
-}
-
-avgObj.penaltyPlus12Btn.onclick = () => {
-    applyPenaltyToLast(12);
+let plus2CounterObj = { penalty: 0 };
+avgObj.penaltyPlus2Btn.onclick = () => {
+    if(plus2CounterObj.penalty === 12) {
+        plus2CounterObj.penalty = 0;
+        applyPenaltyToLast(null);
+        document.getElementById("penaltyPlus2Btn").textContent = ("+2");
+        renderHistory();
+        return;
+    }
+    plus2CounterObj.penalty += 2;
+    applyPenaltyToLast(plus2CounterObj.penalty);
+    document.getElementById("penaltyPlus2Btn").textContent = (`+${plus2CounterObj.penalty}`);
     renderHistory();
 }
 
@@ -444,4 +418,4 @@ document.getElementById("scramble-button").addEventListener("click", () => {
     document.getElementById("scramble-button").innerHTML = "close";
 });
 
-export { modal, syncModeWithEvent };
+export { modal, syncModeWithEvent, plus2CounterObj };

@@ -12,7 +12,7 @@ function wrapTimesValue(value) {
 
 function formatStatValue(value) {
     if (value === undefined || value === null) return "-";
-    if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return "DNF";
+    if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return wrapTimesValue("DNF");
 
     if (value.time && eventObj.event === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
 
@@ -21,7 +21,7 @@ function formatStatValue(value) {
     if (eventObj.event === "r3ni") {
         const num = Number(value);
 
-        if (!Number.isFinite(num)) return "DNF";
+        if (!Number.isFinite(num)) return wrapTimesValue("DNF");
 
         return wrapTimesValue(`${Number.isInteger(num) ? num : num.toFixed(2)} pts`);
     }
@@ -29,7 +29,7 @@ function formatStatValue(value) {
     if (eventObj.event === "333fm") {
         const num = Number(value);
 
-        if (!Number.isFinite(num)) return "DNF";
+        if (!Number.isFinite(num)) return wrapTimesValue("DNF");
 
         return wrapTimesValue(`${num} moves`);
     }
@@ -155,13 +155,13 @@ function renderHistoryList(averages, currentType) {
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
-            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatStatValue(mo3Avg.avg);
+            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(mo3Avg.avg));
             titleText = `${block.mode}: ${block.best} (mo3: ${wrapTimesValue(mo3Value)})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
-            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatStatValue(ao5Avg.avg);
+            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(ao5Avg.avg));
             titleText = `${block.mode}: ${block.best} (ao5: ${wrapTimesValue(ao5Value)})`;
         }
 

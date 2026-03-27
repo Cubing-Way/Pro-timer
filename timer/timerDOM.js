@@ -12,7 +12,7 @@ import { addAverageBlock } from "../solve.js";
 import { saveSessions, getCurrentSession} from "../session.js";
 import { formatTime } from "./timeFormatting.js";
 import { updateTypingUI } from "../settings/timerSett.js";
-
+import { plus2CounterObj } from "../topbar/topbarButtons.js";
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -229,6 +229,8 @@ function handleSplitOrStop() {
     }
 
     // 🔥 Last phase → stop
+    plus2CounterObj.penalty = 0;
+    document.getElementById("penaltyPlus2Btn").textContent = "+2";
     stopTimer();
 
     const finalTime = document.getElementById("timer").innerHTML;

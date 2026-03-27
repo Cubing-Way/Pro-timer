@@ -44,12 +44,8 @@ function openDetailsModal() {
                         <span>#${i + 1}: ${formatStatValue(s)}</span>
 
                         <div class="modal-solve-actions">
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 2)">OK</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 4)">+4</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 6)">+6</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 8)">+8</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 10)">+10</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 12)">+12</button>
+                            <button onclick="setPenalty(${blockIndex}, ${i}, null)">OK</button>
+                            <button onclick="setPenalty(${blockIndex}, ${i}, '+2')">+2</button>
                             <button onclick="setPenalty(${blockIndex}, ${i}, 'DNF')">DNF</button>
                             <button onclick="removeSolve(${blockIndex}, ${i})">✖</button>
                         </div>
@@ -66,6 +62,10 @@ function openDetailsModal() {
 
                     <div class="modal-scramble">
                         Date: ${new Date(block.solves[i].createdAt)}
+                    </div>                    
+
+                    <div class="modal-scramble">
+                        Solution: ${block.solves[i].solution ? "none" : block.solves[i].solution})}
                     </div>                    
                 </div>
             `;
