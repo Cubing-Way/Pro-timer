@@ -12,8 +12,8 @@
 }
 
 </script>
-  <script type="module" crossorigin src="/Pro-timer/assets/index-Bz65EK8m.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-B2aDa6sr.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-BDCqIy-Y.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BfNTQKri.css">
 </head>
 <body>
 
@@ -170,6 +170,25 @@
     <button id="close-stats-btn">← Back to Timer</button>
     <div class="stats-title">Session Statistics</div>
   </div>
+
+<select id="date-filter">
+  <option value="all">All Time</option>
+  <option value="year">Year</option>
+  <option value="semester">Semester</option>
+  <option value="month">Month</option>
+  <option value="week">Week</option>
+  <option value="day" selected>Day</option>
+</select>
+
+<div class="charts-grid">
+  <div class="chart-container">
+    <canvas id="timesChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="comparisonChart"></canvas>
+  </div>
+</div>
 
   <!-- OVERVIEW -->
   <section class="stats-overview">
