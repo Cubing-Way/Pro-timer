@@ -295,7 +295,37 @@ function getAveragesInRange(session, start, end) {
     });
 }
 
+function getLastRangeWithData(session, range, maxLookback = 10) {
+  let { start, end } = getRangeTimestamps(range);
+
+  if (!start) return { start: null, end: null };
+
+  const duration = end - start;
+
+  for (let i = 1; i <= maxLookback; i++) {
+    const testStart = start - duration * i;
+    const testEnd = start - duration * (i - 1);
+
+    const hasData = session.averages.some(avg => {
+      if (!avg.solves || avg.solves.length === 0) return false;
+
+      const lastSolve = avg.solves[avg.solves.length - 1];
+      if (!lastSolve.createdAt) return false;
+
+      return lastSolve.createdAt >= testStart &&
+             lastSolve.createdAt <= testEnd;
+    });
+
+    if (hasData) {
+      return { start: testStart, end: testEnd };
+    }
+  }
+
+  return { start: null, end: null }; // nothing found
+}
+
 function renderStatsPage() {
+
   const range = document.getElementById("date-filter").value;
   const session = getCurrentSession();
 
@@ -420,7 +450,7 @@ const sessionData2 = getCurrentSession();
 
 // rename destructured variables
 const { start, end } = getRangeTimestamps(range);
-const prevRange = getPreviousRange(range);
+const prevRange = getLastRangeWithData(sessionData2, range);
 
 const currentAvgs = getAveragesInRange(sessionData2, start, end);
 const previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
@@ -429,7 +459,11 @@ const maxLen = Math.max(currentAvgs.length, previousAvgs.length);
 const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `Block ${i + 1}`);
 
 const comparisonCtx = document.getElementById("comparisonChart");
+console.log("Current range:", start, end);
+console.log("Previous range:", prevRange);
 
+console.log("Current avgs:", currentAvgs);
+console.log("Previous avgs:", previousAvgs);
 new Chart(comparisonCtx, {
   type: "bar",
   data: {
