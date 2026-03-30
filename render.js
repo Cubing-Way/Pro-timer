@@ -11,7 +11,7 @@ function wrapTimesValue(value) {
 }
 
 function formatStatValue(value) {
-    if (value === undefined || value === null) return "-";
+    if (value === undefined || value === null) return wrapTimesValue("-");
     if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return wrapTimesValue("DNF");
 
     if (value.time && eventObj.event === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
@@ -192,15 +192,15 @@ function renderHistoryList(averages, currentType) {
 
 function renderStats(stats) {
     return `
-        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : "-"}
+        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : wrapTimesValue("-")}
         <br>
-        Best ao5: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : "-"}
+        Best avg: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : wrapTimesValue("-")}
         <br>
-        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : "-"}
+        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : wrapTimesValue("-")}
         <br>
-        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : "-"}
+        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : wrapTimesValue("-")}
         <br>
-        Solves: ${stats.solveCounter ? wrapTimesValue(stats.solveCounter) : "-"}
+        Solves: ${stats.solveCounter ? wrapTimesValue(stats.solveCounter) : wrapTimesValue("-")}
     `;
 }
 
@@ -210,13 +210,13 @@ function renderAvgStats({ type, solves, mode, block }) {
 if (averageObj.mode === "classic") {
 
 return `
-    Best mo3: ${formatStatValue(classicStats.best.mo3) ?? "-"}
+    Best mo3: ${formatStatValue(classicStats.best.mo3) ?? wrapTimesValue("-")}
     <br>
-    Best ao5: ${formatStatValue(classicStats.best.ao5) ?? "-"}
+    Best ao5: ${formatStatValue(classicStats.best.ao5) ?? wrapTimesValue("-")}
     <br>
-    Best ao12: ${formatStatValue(classicStats.best.ao12) ?? "-"}
+    Best ao12: ${formatStatValue(classicStats.best.ao12) ?? wrapTimesValue("-")}
     <br>
-    Best ao100: ${formatStatValue(classicStats.best.ao100) ?? "-"}
+    Best ao100: ${formatStatValue(classicStats.best.ao100) ?? wrapTimesValue("-")}
 `;
 }
 

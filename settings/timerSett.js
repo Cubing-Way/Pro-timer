@@ -94,7 +94,6 @@ document.getElementById("times-color").addEventListener("change", (e) => {
 });
 
 let textColor = localStorage.getItem("text-color") || "white";
-let backroundColor = localStorage.getItem("backroundColor") || "custom";
 
 document.getElementById("text-color").value = textColor;
 document.body.classList.remove(`theme-text-${textColor}`);
@@ -106,20 +105,6 @@ document.getElementById("text-color").addEventListener("change", () => {
     textColor = document.getElementById("text-color").value;
     document.body.classList.add(`theme-text-${textColor}`);
     localStorage.setItem("text-color", textColor);
-
-    if (backroundColor === "white" && textColor === "white") {
-        textColor = "black";
-        document.body.classList.add(`theme-text-${textColor}`);
-        document.getElementById("text-color").value = textColor;
-        document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
-        localStorage.setItem("text-color", textColor);
-    } else if (backroundColor === "black" && textColor === "black") {
-        document.body.classList.remove(`theme-text-${textColor}`);
-        textColor = "white";
-        document.getElementById("text-color").value = textColor;
-            document.getElementById("timer").style.color = getComputedStyle(document.body).getPropertyValue("--text-main");
-            localStorage.setItem("text-color", textColor);
-        }
 });
 
 

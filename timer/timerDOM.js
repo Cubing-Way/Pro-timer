@@ -13,6 +13,7 @@ import { saveSessions, getCurrentSession} from "../session.js";
 import { formatTime } from "./timeFormatting.js";
 import { updateTypingUI } from "../settings/timerSett.js";
 import { plus2CounterObj } from "../topbar/topbarButtons.js";
+import { lastTime } from "./timeTyping.js";
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -98,6 +99,18 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         inspection(timerSettObj.inspectionType);
     }
 
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+        clearInterval(timerObj.interval);
+        clearInterval(timerObj.wcaInterval);
+        timerObj.inspecting = false;
+        timerObj.inspection = 0;
+        timerObj.timerPhase = 0;
+        document.getElementById("timer").textContent = "0.00";
+        restoreUI();
+    }
 });
 
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
@@ -229,7 +242,7 @@ function handleSplitOrStop() {
     }
 
     // 🔥 Last phase → stop
-    plus2CounterObj.penalty = 0;
+    plus2CounterObj.penalty = 0; // ✅ correct reset
     document.getElementById("penaltyPlus2Btn").textContent = "+2";
     stopTimer();
 

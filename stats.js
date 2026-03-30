@@ -92,15 +92,15 @@ function getStatisticsFromSolves(solves, session) {
 
   if (allSolvesArr.length === 0) {
     return {
-      bestTime: 0,
-      mean: 0,
+      bestTime: null,
+      mean: null,
       sigma: 0,
-      bestAvg: 0,
+      bestAvg: null,
       solveCounter
     };
   }
 
-  const bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : 0;
+  const bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
   const bestTime = Math.min(...allSolvesArr);
   const mean = allSolvesArr.reduce((a, b) => a + b, 0) / allSolvesArr.length;
   const variance = allSolvesArr.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / allSolvesArr.length;
@@ -113,58 +113,84 @@ function getStatisticsFromSolves(solves, session) {
 // FILTER BY DATE
 // ===============================
 
-function filterAveragesByRange(session, range) {
+function getRangeTimestamps(range) {
   const now = Date.now();
-  let start, end;
+  const offset = getUserOffsetMs(now);
+  const localNow = new Date(now - offset);
 
-  if (range === "today") {
-    start = startOfDayLocal(now);
-    end = endOfDayLocal(now);
+  let start = null;
+  let end = now;
+
+  switch (range) {
+    case "day": {
+      localNow.setUTCHours(0, 0, 0, 0);
+      start = localNow.getTime() + offset;
+      break;
+    }
+
+    case "week": {
+      const day = localNow.getUTCDay(); // 0 = Sunday
+      localNow.setUTCDate(localNow.getUTCDate() - day);
+      localNow.setUTCHours(0, 0, 0, 0);
+      start = localNow.getTime() + offset;
+      break;
+    }
+
+    case "month": {
+      localNow.setUTCDate(1);
+      localNow.setUTCHours(0, 0, 0, 0);
+      start = localNow.getTime() + offset;
+      break;
+    }
+
+    case "semester": {
+      const month = localNow.getUTCMonth();
+      const semesterStartMonth = month < 6 ? 0 : 6;
+      localNow.setUTCMonth(semesterStartMonth, 1);
+      localNow.setUTCHours(0, 0, 0, 0);
+      start = localNow.getTime() + offset;
+      break;
+    }
+
+    case "year": {
+      localNow.setUTCMonth(0, 1);
+      localNow.setUTCHours(0, 0, 0, 0);
+      start = localNow.getTime() + offset;
+      break;
+    }
+
+    case "all":
+    default:
+      start = null;
   }
 
-  if (range === "yesterday") {
-    const y = daysAgoLocal(1);
-    start = startOfDayLocal(y);
-    end = endOfDayLocal(y);
-  }
+  return { start, end };
+}
 
-  if (range === "last7days") {
-    start = daysAgoLocal(6);
-    end = now;
-  }
+function filterSolvesByRange(solves, range) {
+  const { start, end } = getRangeTimestamps(range);
+
+  if (!start) return solves;
+
+  return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
+}
+
+function filterAveragesByRange(session, range) {
+  const { start, end } = getRangeTimestamps(range);
+
+  if (!start) return session.averages;
 
   return session.averages.filter(avg => {
-    let lastSolve;
-    lastSolve = avg.solves[avg.solves.length - 1];
+    const lastSolve = avg.solves[avg.solves.length - 1];
     if (!lastSolve || !lastSolve.createdAt) return false;
 
     return lastSolve.createdAt >= start && lastSolve.createdAt <= end;
   });
 }
 
-function filterSolvesByRange(solves, range) {
-  const now = Date.now();
-  let start, end;
-
-  if (range === "today") {
-    start = startOfDayLocal(now);
-    end = endOfDayLocal(now);
-  }
-
-  if (range === "yesterday") {
-    const y = daysAgoLocal(1);
-    start = startOfDayLocal(y);
-    end = endOfDayLocal(y);
-  }
-
-  if (range === "last7days") {
-    start = daysAgoLocal(6);
-    end = now;
-  }
-
-  return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
-}
-
+document.getElementById("date-filter").addEventListener("change", () => {
+  renderStatsPage();
+});
 // ===============================
 // PUBLIC API
 // ===============================
@@ -186,20 +212,94 @@ function getStatisticsByDate(range) {
     .filter(a => a.average !== "DNF")
     .map(a => parseTimeToSeconds(a.average));
 
-  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : 0;
+  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
 
   return stats;
 }
 
+import Chart from "chart.js/auto";
+
+function getGraphData(session) {
+  const solves = getAllSolvesFromSession(session);
+
+  const labels = [];
+  const times = [];
+
+  solves.forEach((solve, i) => {
+    labels.push(i + 1);
+
+    if (solve.penalty === "DNF") {
+      times.push(null);
+    } else if (solve.penalty === "+2") {
+      times.push(solve.time + 2);
+    } else {
+      times.push(solve.time);
+    }
+  });
+
+  return { labels, times };
+}
+
+
+function getAverageGraphData(session) {
+  const labels = [];
+  const averages = [];
+
+  session.averages.forEach((avg, i) => {
+    labels.push(i + 1);
+
+    if (avg.average === "DNF") {
+      averages.push(null);
+    } else {
+      averages.push(parseTimeToSeconds(avg.average));
+    }
+  });
+
+  return { labels, averages };
+}
+
+function getPreviousRange(range) {
+  const now = Date.now();
+  const { start, end } = getRangeTimestamps(range);
+
+  if (!start) return { start: null, end: null };
+
+  const duration = end - start;
+
+  return {
+    start: start - duration,
+    end: start
+  };
+}
+
+function filterSolvesCustomRange(solves, start, end) {
+  if (!start) return solves;
+  return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
+}
 // ===============================
 // RENDER PAGE (UNCHANGED)
 // ===============================
 function renderStatsPage() {
-  // =========================
-  // GLOBAL STATS
-  // =========================
+  const range = document.getElementById("date-filter").value;
+  const session = getCurrentSession();
 
-  const stats = getStatistcs();
+  // 🔥 filtered data
+  const allSolves = getAllSolvesFromSession(session);
+  const filteredSolves = filterSolvesByRange(allSolves, range);
+    // =========================
+    // GLOBAL STATS
+    // =========================
+
+  const filteredAverages = filterAveragesByRange(session, range);
+
+  const stats = getStatisticsFromSolves(filteredSolves, session);
+
+  // fix best avg based on filtered
+  const ao5Arr = filteredAverages
+    .filter(a => a.average !== "DNF")
+    .map(a => parseTimeToSeconds(a.average));
+
+  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
 
   document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
   document.getElementById("stat-best-time").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestTime)}</span>`;
@@ -211,7 +311,7 @@ function renderStatsPage() {
   // TABLE
   // =========================
 
-  const session = getCurrentSession();
+
   const thead = document.getElementById("avg-table-head");
   const tbody = document.getElementById("avg-history-body");
 
@@ -222,8 +322,161 @@ function renderStatsPage() {
   let maxSolves = 0;
   session.averages.forEach(b => {
     if (b.solves.length > maxSolves) maxSolves = b.solves.length;
+
+ 
   });
 
+
+       // =========================
+  // CHART
+  // =========================
+
+  const existingChart = Chart.getChart("timesChart");
+  if (existingChart) {
+    existingChart.destroy(); // prevents duplicate charts
+  }
+
+  const sessionData = getCurrentSession();
+const labels = [];
+const times = [];
+
+filteredSolves.forEach((solve, i) => {
+  labels.push(i + 1);
+
+  if (solve.penalty === "DNF") {
+    times.push(null);
+  } else if (solve.penalty === "+2") {
+    times.push(solve.time + 2);
+  } else {
+    times.push(solve.time);
+  }
+});
+
+  const ctx = document.getElementById("timesChart");
+
+  new Chart(ctx, {
+    type: "line",
+    data: {
+      labels,
+      datasets: [
+        {
+          label: "Solve Times",
+          data: times,
+          tension: 0.25,
+          spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
+      scales: {
+        y: {
+          title: {
+            display: true,
+            text: "Time (seconds)"
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Solve #"
+          }
+        }
+      }
+    }
+  });
+ // =========================
+// COMPARISON CHART (AVERAGES AS UNITS)
+// =========================
+
+const existingComparison = Chart.getChart("comparisonChart");
+if (existingComparison) {
+  existingComparison.destroy();
+}
+
+// reuse sessionData OR rename
+const sessionData2 = getCurrentSession();
+
+// rename destructured variables
+const { start, end } = getRangeTimestamps(range);
+const prevRange = getPreviousRange(range);
+
+// current vs previous
+const currentSolves = filterSolvesCustomRange(allSolves, start, end);
+const previousSolves = filterSolvesCustomRange(allSolves, prevRange.start, prevRange.end);
+
+function toTimes(arr) {
+  return arr.map(s => {
+    if (s.penalty === "DNF") return null;
+    if (s.penalty === "+2") return s.time + 2;
+    return s.time;
+  });
+}
+
+
+
+// current blocks
+const currentBlocks = session.averages.filter(avg => {
+  const last = avg.solves[avg.solves.length - 1];
+  return last && last.createdAt >= start && last.createdAt <= end;
+});
+
+// previous blocks
+const previousBlocks = session.averages.filter(avg => {
+  const last = avg.solves[avg.solves.length - 1];
+  return last && last.createdAt >= prevRange.start && last.createdAt <= prevRange.end;
+});
+
+// convert to seconds
+function blockToValue(block) {
+  if (block.average === "DNF") return null;
+  return parseTimeToSeconds(block.average);
+}
+
+const currentValues = currentBlocks.map(blockToValue);
+const previousValues = previousBlocks.map(blockToValue);
+
+// labels
+const maxLen = Math.max(currentValues.length, previousValues.length);
+const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `#${i + 1}`);
+
+const comparisonCtx = document.getElementById("comparisonChart");
+
+new Chart(comparisonCtx, {
+  type: "bar",
+  data: {
+labels: comparisonLabels,
+datasets: [
+  {
+    label: "Current",
+    data: currentValues
+  },
+  {
+    label: "Previous",
+    data: previousValues
+  }
+],
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: true }
+    },
+    scales: {
+      y: {
+        title: {
+          display: true,
+          text: "Time (seconds)"
+        }
+      }
+    }
+  }
+});
   // =========================
   // BUILD HEADER
   // =========================

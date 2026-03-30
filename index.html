@@ -162,6 +162,25 @@
     <div class="stats-title">Session Statistics</div>
   </div>
 
+<select id="date-filter">
+  <option value="all">All Time</option>
+  <option value="year">Year</option>
+  <option value="semester">Semester</option>
+  <option value="month">Month</option>
+  <option value="week">Week</option>
+  <option value="day" selected>Day</option>
+</select>
+
+<div class="charts-grid">
+  <div class="chart-container">
+    <canvas id="timesChart"></canvas>
+  </div>
+
+  <div class="chart-container">
+    <canvas id="comparisonChart"></canvas>
+  </div>
+</div>
+
   <!-- OVERVIEW -->
   <section class="stats-overview">
     <div class="stat-card"><div class="stat-label">Solves</div><div class="stat-value" id="stat-solves">-</div></div>

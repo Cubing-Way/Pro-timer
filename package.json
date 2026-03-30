@@ -14,6 +14,7 @@
   "license": "GPL-3.0-or-later",
   "type": "module",
   "dependencies": {
+    "chart.js": "^4.5.1",
     "cstimer_module": "^0.1.4",
     "cube-solver": "^2.4.1",
     "scrambler-util": "^0.3.0",

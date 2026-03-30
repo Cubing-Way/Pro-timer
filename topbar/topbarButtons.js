@@ -373,26 +373,30 @@ avgObj.clearBtn.onclick = () => {
 }
 
 avgObj.openSessionBtn.onclick = openDetailsModal;
+let plus2CounterObj = { penalty: 0 };
 
 avgObj.penaltyOkBtn.onclick = () => {
     applyPenaltyToLast(null);
+    plus2CounterObj.penalty = 0;
+    document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`
     renderHistory();
 }
 
-let plus2CounterObj = { penalty: 0 };
+
+
 avgObj.penaltyPlus2Btn.onclick = () => {
-    if(plus2CounterObj.penalty === 12) {
+    if (plus2CounterObj.penalty === 12) {
         plus2CounterObj.penalty = 0;
         applyPenaltyToLast(null);
-        document.getElementById("penaltyPlus2Btn").textContent = ("+2");
-        renderHistory();
-        return;
+    } else {
+        plus2CounterObj.penalty += 2;
+        applyPenaltyToLast(plus2CounterObj.penalty);
     }
-    plus2CounterObj.penalty += 2;
-    applyPenaltyToLast(plus2CounterObj.penalty);
-    document.getElementById("penaltyPlus2Btn").textContent = (`+${plus2CounterObj.penalty}`);
+
+    document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`
+
     renderHistory();
-}
+};
 
 avgObj.penaltyDnfBtn.onclick = () => {
     applyPenaltyToLast("DNF");
