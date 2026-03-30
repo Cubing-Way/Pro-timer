@@ -279,6 +279,22 @@ function filterSolvesCustomRange(solves, start, end) {
 // ===============================
 // RENDER PAGE (UNCHANGED)
 // ===============================
+
+function getAveragesInRange(session, start, end) {
+  return session.averages
+    .filter(avg => {
+      const lastSolve = avg.solves[avg.solves.length - 1];
+      if (!lastSolve || !lastSolve.createdAt) return false;
+
+      return (!start || lastSolve.createdAt >= start) &&
+             (!end || lastSolve.createdAt <= end);
+    })
+    .map(avg => {
+      if (avg.average === "DNF") return null;
+      return parseTimeToSeconds(avg.average);
+    });
+}
+
 function renderStatsPage() {
   const range = document.getElementById("date-filter").value;
   const session = getCurrentSession();
@@ -406,61 +422,28 @@ const sessionData2 = getCurrentSession();
 const { start, end } = getRangeTimestamps(range);
 const prevRange = getPreviousRange(range);
 
-// current vs previous
-const currentSolves = filterSolvesCustomRange(allSolves, start, end);
-const previousSolves = filterSolvesCustomRange(allSolves, prevRange.start, prevRange.end);
+const currentAvgs = getAveragesInRange(sessionData2, start, end);
+const previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
 
-function toTimes(arr) {
-  return arr.map(s => {
-    if (s.penalty === "DNF") return null;
-    if (s.penalty === "+2") return s.time + 2;
-    return s.time;
-  });
-}
-
-
-
-// current blocks
-const currentBlocks = session.averages.filter(avg => {
-  const last = avg.solves[avg.solves.length - 1];
-  return last && last.createdAt >= start && last.createdAt <= end;
-});
-
-// previous blocks
-const previousBlocks = session.averages.filter(avg => {
-  const last = avg.solves[avg.solves.length - 1];
-  return last && last.createdAt >= prevRange.start && last.createdAt <= prevRange.end;
-});
-
-// convert to seconds
-function blockToValue(block) {
-  if (block.average === "DNF") return null;
-  return parseTimeToSeconds(block.average);
-}
-
-const currentValues = currentBlocks.map(blockToValue);
-const previousValues = previousBlocks.map(blockToValue);
-
-// labels
-const maxLen = Math.max(currentValues.length, previousValues.length);
-const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `#${i + 1}`);
+const maxLen = Math.max(currentAvgs.length, previousAvgs.length);
+const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `Block ${i + 1}`);
 
 const comparisonCtx = document.getElementById("comparisonChart");
 
 new Chart(comparisonCtx, {
   type: "bar",
   data: {
-labels: comparisonLabels,
-datasets: [
-  {
-    label: "Current",
-    data: currentValues
-  },
-  {
-    label: "Previous",
-    data: previousValues
-  }
-],
+    labels: comparisonLabels, // ✅ use new name
+    datasets: [
+      {
+        label: "Current Range (Avg Blocks)",
+        data: currentAvgs
+      },
+      {
+        label: "Previous Range (Avg Blocks)",
+        data: previousAvgs
+      }
+    ]
   },
   options: {
     responsive: true,
@@ -468,12 +451,12 @@ datasets: [
       legend: { display: true }
     },
     scales: {
-      y: {
-        title: {
-          display: true,
-          text: "Time (seconds)"
-        }
+    y: {
+      title: {
+        display: true,
+        text: "Average (seconds)"
       }
+    }
     }
   }
 });
