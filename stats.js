@@ -180,12 +180,18 @@ function filterAveragesByRange(session, range) {
 
   if (!start) return session.averages;
 
-  return session.averages.filter(avg => {
-    const lastSolve = avg.solves[avg.solves.length - 1];
-    if (!lastSolve || !lastSolve.createdAt) return false;
+  return session.averages
+    .filter(avg => {
+      const lastSolve = avg.solves[avg.solves.length - 1];
+      if (!lastSolve || !lastSolve.createdAt) return false;
 
-    return lastSolve.createdAt >= start && lastSolve.createdAt <= end;
-  });
+      return lastSolve.createdAt >= start && lastSolve.createdAt <= end;
+    })
+    .sort((a, b) => {
+      const aTime = a.solves[a.solves.length - 1].createdAt;
+      const bTime = b.solves[b.solves.length - 1].createdAt;
+      return aTime - bTime;
+    });
 }
 
 document.getElementById("date-filter").addEventListener("change", () => {
@@ -324,6 +330,146 @@ function getLastRangeWithData(session, range, maxLookback = 10) {
   return { start: null, end: null }; // nothing found
 }
 
+function getSigmaGraphData(averagesArr) {
+  const labels = [];
+  const sigmas = [];
+
+  averagesArr.forEach((block, i) => {
+    labels.push(i + 1);
+
+    if (!block || block.average === "DNF") {
+      sigmas.push(null);
+    } else {
+      sigmas.push(block.sigma ?? null);
+    }
+  });
+
+  return { labels, sigmas };
+}
+
+function getSubXDistribution(solves, threshold) {
+  let subX = 0;
+  let aboveX = 0;
+
+  solves.forEach(solve => {
+    let time = null;
+
+    if (solve.penalty === "DNF") return; // ignore DNFs
+    if (solve.penalty === "+2") time = solve.time + 2;
+    else time = solve.time;
+
+    if (time <= threshold) subX++;
+    else aboveX++;
+  });
+
+  return { subX, aboveX };
+}
+
+
+function getTimeDistribution(solves, thresholds) {
+  // Example thresholds: [10, 12, 14]
+
+  const buckets = new Array(thresholds.length + 1).fill(0);
+
+  solves.forEach(solve => {
+    let time = null;
+
+    if (solve.penalty === "DNF") return;
+    if (solve.penalty === "+2") time = solve.time + 2;
+    else time = solve.time;
+
+    // find correct bucket
+    let placed = false;
+
+    for (let i = 0; i < thresholds.length; i++) {
+      if (time <= thresholds[i]) {
+        buckets[i]++;
+        placed = true;
+        break;
+      }
+    }
+
+    if (!placed) {
+      buckets[buckets.length - 1]++; // last bucket (above all)
+    }
+  });
+
+  return buckets;
+}
+
+function getDistributionLabels(thresholds) {
+  const labels = [];
+
+  for (let i = 0; i < thresholds.length; i++) {
+    const current = formatSecondsToTime(thresholds[i]);
+
+    if (i === 0) {
+      labels.push(`Sub ${current}`);
+    } else {
+      const prev = formatSecondsToTime(thresholds[i - 1]);
+      labels.push(`Sub ${current}`);
+    }
+  }
+
+  labels.push(`> ${formatSecondsToTime(thresholds[thresholds.length - 1])}`);
+
+  return labels;
+}
+
+function filterEmptyBuckets(labels, data) {
+  const filteredLabels = [];
+  const filteredData = [];
+
+  labels.forEach((label, i) => {
+    if (data[i] > 0) {
+      filteredLabels.push(label);
+      filteredData.push(data[i]);
+    }
+  });
+
+  return { labels: filteredLabels, data: filteredData };
+}
+
+function normalizeThresholds(thresholds) {
+  return thresholds
+    .map(t => {
+      if (typeof t === "string") {
+        return parseTimeToSeconds(t); // "1:30" → 90
+      }
+      return t; // already number
+    })
+    .filter(t => !isNaN(t))
+    .sort((a, b) => a - b); // VERY IMPORTANT for buckets
+}
+
+function generateSmartThresholds() {
+  const thresholds = [];
+
+  function addRange(start, end, step) {
+    for (let t = start + step; t <= end; t += step) {
+      thresholds.push(t);
+    }
+  }
+
+  // seconds
+  addRange(0, 10, 0.5);        // 0–10s → 0.5s steps
+  addRange(10, 20, 1);         // 10–20s → 1s steps
+  addRange(20, 60, 5);         // 20–60s → 5s steps
+
+  // minutes (in seconds)
+  addRange(60, 120, 10);       // 1–2min → 10s steps
+  addRange(120, 300, 30);      // 2–5min → 30s steps
+  addRange(300, 600, 60);      // 5–10min → 1min steps
+  addRange(600, 1800, 300);    // 10–30min → 5min steps
+  addRange(1800, 3600, 600);   // 30–60min → 10min steps
+
+  // hours (in seconds)
+  addRange(3600, 18000, 1800); // 1–5h → 30min steps
+  addRange(18000, 36000, 3600);// 5–10h → 1h steps
+
+  return thresholds;
+}
+
 function renderStatsPage() {
 
   const range = document.getElementById("date-filter").value;
@@ -332,6 +478,14 @@ function renderStatsPage() {
   // 🔥 filtered data
   const allSolves = getAllSolvesFromSession(session);
   const filteredSolves = filterSolvesByRange(allSolves, range);
+
+const thresholds = generateSmartThresholds();
+
+
+const distribution = getTimeDistribution(filteredSolves, thresholds);
+const distributionLabels = getDistributionLabels(thresholds);
+
+
     // =========================
     // GLOBAL STATS
     // =========================
@@ -386,7 +540,11 @@ function renderStatsPage() {
 const labels = [];
 const times = [];
 
-filteredSolves.forEach((solve, i) => {
+const sortedSolves = [...filteredSolves].sort(
+  (a, b) => a.createdAt - b.createdAt
+);
+
+sortedSolves.forEach((solve, i) => {
   labels.push(i + 1);
 
   if (solve.penalty === "DNF") {
@@ -455,8 +613,15 @@ const prevRange = getLastRangeWithData(sessionData2, range);
 const currentAvgs = getAveragesInRange(sessionData2, start, end);
 const previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
 
-const maxLen = Math.max(currentAvgs.length, previousAvgs.length);
-const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `Block ${i + 1}`);
+const minLen = Math.min(currentAvgs.length, previousAvgs.length);
+
+const currentData = currentAvgs.slice(-minLen);
+const previousData = previousAvgs.slice(-minLen);
+
+const comparisonLabels = Array.from(
+  { length: minLen },
+  (_, i) => `Block ${i + 1}`
+);
 
 const comparisonCtx = document.getElementById("comparisonChart");
 console.log("Current range:", start, end);
@@ -491,6 +656,103 @@ new Chart(comparisonCtx, {
         text: "Average (seconds)"
       }
     }
+    }
+  }
+});
+
+const {
+  labels: sigmaLabels,
+  sigmas
+} = getSigmaGraphData(filteredAverages);
+
+const existingSigma = Chart.getChart("sigmaChart");
+if (existingSigma) {
+  existingSigma.destroy();
+}
+
+const sigmaCtx = document.getElementById("sigmaChart");
+
+new Chart(sigmaCtx, {
+  type: "line",
+  data: {
+    labels: sigmaLabels,
+    datasets: [
+      {
+        label: "Consistency (σ)",
+        data: sigmas,
+        tension: 0.25,
+        spanGaps: true
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: {
+        display: true
+      }
+    },
+    scales: {
+      y: {
+        title: {
+          display: true,
+          text: "Standard Deviation (seconds)"
+        }
+      },
+      x: {
+        title: {
+          display: true,
+          text: "Average Block #"
+        }
+      }
+    }
+  }
+});
+
+const existingSubX = Chart.getChart("subXChart");
+if (existingSubX) {
+  existingSubX.destroy();
+}
+
+const subXCtx = document.getElementById("subXChart");
+
+const existingDist = Chart.getChart("distributionChart");
+if (existingDist) {
+  existingDist.destroy();
+}
+
+const distCtx = document.getElementById("distributionChart");
+
+const { labels: finalLabels, data: finalData } =
+  filterEmptyBuckets(distributionLabels, distribution);
+
+new Chart(distCtx, {
+  type: "pie",
+  data: {
+    labels: finalLabels,
+    datasets: [
+      {
+        data: finalData
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: true },
+      tooltip: {
+        callbacks: {
+          label: function(context) {
+            const total = distribution.reduce((a, b) => a + b, 0);
+            const value = context.raw;
+            const percent = total
+              ? ((value / total) * 100).toFixed(1)
+              : 0;
+
+            return `${context.label}: ${value} (${percent}%)`;
+          }
+        }
+      }
     }
   }
 });
@@ -547,4 +809,3 @@ thead.innerHTML = headHtml;
 
 
 export { getStatistcs, getStatisticsByDate, renderStatsPage };
-

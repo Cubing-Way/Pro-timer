@@ -734,6 +734,9 @@ gap: 12px;
   height: 300px;
 }
 
+#distributionChart {
+  justify-self: center;
+}
 button:hover, select:hover {
     background: var(--border-main);
 }
@@ -1074,9 +1077,43 @@ bottom: 20px;
     border: 1px solid var(--border-main);
     color: var(--text-main);
   z-index: 9999;
+  overflow: scroll;
 
   display: none;           /* 🔴 HIDDEN BY DEFAULT */
   flex-direction: column;
+}
+
+:root {
+  --scrollbar-track: #0f0f0f;
+  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-thumb-hover: #3a3a3a;
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* WebKit */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--scrollbar-track);
+  background-clip: content-box;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
 }
 
 /* When open */
