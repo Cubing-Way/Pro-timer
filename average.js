@@ -16,8 +16,19 @@ const classicStats = {
         ao5: null,
         ao12: null,
         ao100: null
+    },
+    history: {
+        mo3: [],
+        ao5: [],
+        ao12: [],
+        ao100: []
     }
+
 };
+
+
+
+
 
 
 
@@ -84,21 +95,94 @@ function formatSolveTime(solve) {
 }
 
 function updateClassicStats(recomputeBest = false) {
+if (recomputeBest) {
+  const solves = averageObj.solvesArray;
 
+  // 🔥 reset history
+  classicStats.history.mo3 = [];
+  classicStats.history.ao5 = [];
+  classicStats.history.ao12 = [];
+  classicStats.history.ao100 = [];
+
+  // 🔥 reset best
+  classicStats.best.mo3 = null;
+  classicStats.best.ao5 = null;
+  classicStats.best.ao12 = null;
+  classicStats.best.ao100 = null;
+
+  const rebuild = (n, key, modeName) => {
+    for (let i = n; i <= solves.length; i++) {
+
+      const window = solves.slice(i - n, i);
+      const result = computeAverage(window, modeName);
+
+      const entry = {
+        avg: result.dnf ? "DNF" : result.avg,
+        solves: window,
+        lastSolve: window[window.length - 1],
+        createdAt: window[window.length - 1].createdAt,
+        sigma: result.sigma ?? null
+      };
+
+      classicStats.history[key].push(entry);
+
+      // update best
+      if (entry.avg !== "DNF") {
+        if (
+          classicStats.best[key] == null ||
+          entry.avg < classicStats.best[key].avg
+        ) {
+          classicStats.best[key] = entry;
+        }
+      }
+    }
+  };
+
+  rebuild(3, "mo3", "mo3");
+  rebuild(5, "ao5", "ao5");
+  rebuild(12, "ao12", "ao12");
+  rebuild(100, "ao100", "ao100");
+
+  // 🔥 set current from rebuilt history
+  classicStats.current.mo3 = classicStats.history.mo3.at(-1) ?? null;
+  classicStats.current.ao5 = classicStats.history.ao5.at(-1) ?? null;
+  classicStats.current.ao12 = classicStats.history.ao12.at(-1) ?? null;
+  classicStats.current.ao100 = classicStats.history.ao100.at(-1) ?? null;
+
+  return; // 🚨 important: skip normal logic
+}
     const solves = averageObj.solvesArray;
 
-    const updateRolling = (n, modeName) => {
-        if (solves.length < n) return null;
+const updateRolling = (n, modeName) => {
+    if (solves.length < n) return null;
 
-        const result = computeAverage(
-            solves.slice(-n),
-            modeName
-        );
+    const window = solves.slice(-n);
+    const result = computeAverage(window, modeName);
 
-        if (result.dnf) return "DNF";
-
-        return result.avg;
+    const rollingAvg = {
+        avg: result.dnf ? "DNF" : result.avg,
+        best: result.best,
+        worst: result.worst,
+        sigma: result.sigma, // 🔥 ADD THIS
+        solves: window,
+        lastSolve: window[window.length - 1],
+        createdAt: window[window.length - 1].createdAt
     };
+
+    // 🔥 PUSH INTO HISTORY (avoid duplicates)
+    const historyArr = classicStats.history[modeName];
+
+    const lastEntry = historyArr[historyArr.length - 1];
+
+    if (
+        !lastEntry ||
+        lastEntry.createdAt !== rollingAvg.createdAt
+    ) {
+        historyArr.push(rollingAvg);
+    }
+
+    return rollingAvg;
+};
 
     // Current rolling values
     const mo3 = updateRolling(3, "mo3");
@@ -112,11 +196,11 @@ function updateClassicStats(recomputeBest = false) {
     classicStats.current.ao100 = ao100;
 
     const updateBest = (key, value) => {
-        if (value == null) return;
+        if (!value || value.avg == null || value.avg === "DNF") return;
 
         if (
             classicStats.best[key] == null ||
-            value < classicStats.best[key]
+            value.avg < classicStats.best[key].avg
         ) {
             classicStats.best[key] = value;
         }
@@ -130,8 +214,7 @@ function updateClassicStats(recomputeBest = false) {
         updateBest("ao12", ao12);
         updateBest("ao100", ao100);
 
-    } 
-    else {
+    } else {
 
         // Reset best stats
         classicStats.best.mo3 = null;
@@ -139,28 +222,33 @@ function updateClassicStats(recomputeBest = false) {
         classicStats.best.ao12 = null;
         classicStats.best.ao100 = null;
 
-        const recomputeBestAvg = (n, modeName) => {
+    const recomputeBestAvg = (n, modeName) => {
+        if (solves.length < n) return null;
 
-            if (solves.length < n) return null;
+        let best = null;
+        let bestBlock = null;
 
-            let best = null;
+        for (let i = n; i <= solves.length; i++) {
 
-            for (let i = n; i <= solves.length; i++) {
+            const window = solves.slice(i - n, i);
 
-                const result = computeAverage(
-                    solves.slice(i - n, i),
-                    modeName
-                );
+            const result = computeAverage(window, modeName);
 
-                if (result.dnf) return "DNF";
+            if (result.dnf) continue;
 
-                if (best === null || result.avg < best) {
-                    best = result.avg;
-                }
+            if (best === null || result.avg < best) {
+                best = result.avg;
+
+                bestBlock = {
+                    avg: result.avg,
+                    solves: window,
+                    lastSolve: window[window.length - 1] // 🔥 THIS is the key
+                };
             }
+        }
 
-            return best;
-        };
+        return bestBlock;
+    };
 
         classicStats.best.mo3 = recomputeBestAvg(3, "mo3");
         classicStats.best.ao5 = recomputeBestAvg(5, "ao5");
@@ -421,7 +509,7 @@ function averageOfN(
     let inspecPenalty = null;
 
     if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
-        if (inspection >= 15) inspecPenalty = "+2"; 
+        if (inspection >= 15) inspecPenalty = 2; 
         if (inspection >= 17) inspecPenalty = "DNF";
     }
 
@@ -430,11 +518,11 @@ function averageOfN(
         seconds = time.moveCount;
     } else if (isMBLD) {
         seconds = time.points;
-     if (seconds <= 0) {
-        inspecPenalty = "DNF";
-    }
-    } else {
-        seconds = parseTimeToSeconds(time);
+        if (seconds <= 0) {
+            inspecPenalty = "DNF";
+        }
+        } else {
+            seconds = parseTimeToSeconds(time);
     }
 
     const solution = time.solution ? time.solution : null;
@@ -460,22 +548,14 @@ function averageOfN(
 
     if (averageObj.mode === "classic") {
         if (!modeFlag) updateClassicStats();
-        
-        const relevantSolves = averageObj.solvesArray.slice(-5);
-        if (classicStats.current.ao5 !== null) {
-            return {
-                    mode: "classic",
-                    average: classicStats.current.ao5,
-                    solves: structuredClone(relevantSolves)
-                };
-        } else {
             return null;
-        }
     }
     // Determine how many solves needed for this mode
     let neededSolves = 3; // default for mo3 and bo3
     if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
         neededSolves = 5;
+    } else if (averageObj.mode === "ao12") {
+        neededSolves = 12;
     }
 
     if (averageObj.solveCounter >= neededSolves) {

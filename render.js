@@ -59,16 +59,16 @@ function renderCurrentAverage(currentType, currentBlock) {
 
         const renderRow = (label, value) => `
             <div class="history-solve">
-                ${label}: ${value != null ? formatStatValue(value) : "-"}
+                ${label}: ${value != null ? wrapTimesValue(formatStatValue(value)) : wrapTimesValue("-")}
             </div>
         `;
         
         return `
             <div class="history-average current-average">
-                ${renderRow("mo3", classicStats.current.mo3)}
-                ${renderRow("ao5", classicStats.current.ao5)}
-                ${renderRow("ao12", classicStats.current.ao12)}
-                ${renderRow("ao100", classicStats.current.ao100)}
+                ${renderRow("mo3", classicStats.current.mo3?.avg)}
+                ${renderRow("ao5", classicStats.current.ao5?.avg)}
+                ${renderRow("ao12", classicStats.current.ao12?.avg)}
+                ${renderRow("ao100", classicStats.current.ao100?.avg)}
             </div>
         `;
     }
@@ -210,13 +210,13 @@ function renderAvgStats({ type, solves, mode, block }) {
 if (averageObj.mode === "classic") {
 
 return `
-    Best mo3: ${formatStatValue(classicStats.best.mo3) ?? wrapTimesValue("-")}
+    Best mo3: ${formatStatValue(classicStats.best.mo3?.avg) ?? wrapTimesValue("-")}
     <br>
-    Best ao5: ${formatStatValue(classicStats.best.ao5) ?? wrapTimesValue("-")}
+    Best ao5: ${formatStatValue(classicStats.best.ao5?.avg) ?? wrapTimesValue("-")}
     <br>
-    Best ao12: ${formatStatValue(classicStats.best.ao12) ?? wrapTimesValue("-")}
+    Best ao12: ${formatStatValue(classicStats.best.ao12?.avg) ?? wrapTimesValue("-")}
     <br>
-    Best ao100: ${formatStatValue(classicStats.best.ao100) ?? wrapTimesValue("-")}
+    Best ao100: ${formatStatValue(classicStats.best.ao100?.avg) ?? wrapTimesValue("-")}
 `;
 }
 
@@ -279,7 +279,7 @@ console.log(block);
 function renderHistory() {
     const averages = getSessionAverages();
     const stats = getStatistcs();
-    const todayStats = getStatisticsByDate("today")
+    const todayStats = getStatisticsByDate("day")
 
     const currentContainer = document.getElementById("currentAverageValue");
     const historyContainer = document.getElementById("historyPanel");

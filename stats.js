@@ -1,6 +1,19 @@
 import { getCurrentSession } from "./session.js";
 import { averageObj, parseTimeToSeconds, classicStats } from "./average.js";
-import { formatSecondsToTime, formatDisplayTime } from "./average.js";
+import { formatSecondsToTime, formatDisplayTime, computeAverage } from "./average.js";
+
+function getAveragesSource(session) {
+  if (averageObj.mode === "classic") {
+    return {
+      ao5: classicStats.history.ao5,
+      mo3: classicStats.history.mo3,
+      ao12: classicStats.history.ao12,
+      ao100: classicStats.history.ao100
+    };
+  }
+
+  return null; // normal mode uses session.averages
+}
 
 function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
@@ -65,7 +78,21 @@ function getStatisticsFromSolves(solves, session) {
   let solveCounter = 0;
 
   if (averageObj.mode === "classic") {
-    ao5Arr.push(classicStats.best.ao5)
+    const { start, end } = getRangeTimestamps("day");
+
+    const todayHistory = classicStats.history.ao5.filter(avg =>
+      avg.createdAt >= start && avg.createdAt <= end &&
+      avg.avg !== "DNF"
+    );
+
+    const bestToday = todayHistory.reduce((best, curr) => {
+      if (!best || curr.avg < best.avg) return curr;
+      return best;
+    }, null);
+
+    if (bestToday?.avg != null) {
+      ao5Arr.push(bestToday.avg);
+    }
   }
   // ao5 array
 
@@ -100,7 +127,8 @@ function getStatisticsFromSolves(solves, session) {
     };
   }
 
-  const bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  const validAvgs = ao5Arr.filter(v => v != null && !isNaN(v));
+  const bestAvg = validAvgs.length ? Math.min(...validAvgs) : null;
   const bestTime = Math.min(...allSolvesArr);
   const mean = allSolvesArr.reduce((a, b) => a + b, 0) / allSolvesArr.length;
   const variance = allSolvesArr.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / allSolvesArr.length;
@@ -213,12 +241,29 @@ function getStatisticsByDate(range) {
 
   const stats = getStatisticsFromSolves(filteredSolves, session);
 
+if (averageObj.mode === "classic") {
+  const { start, end } = getRangeTimestamps(range);
+
+  const best = classicStats.history.ao5
+    .filter(a =>
+      a.avg !== "DNF" &&
+      (!start || (a.createdAt >= start && a.createdAt <= end))
+    )
+    .reduce((best, curr) =>
+      !best || curr.avg < best.avg ? curr : best,
+    null);
+
+  stats.bestAvg = best?.avg ?? null;
+
+} else {
   const filteredAvgs = filterAveragesByRange(session, range);
+
   const ao5Arr = filteredAvgs
     .filter(a => a.average !== "DNF")
     .map(a => parseTimeToSeconds(a.average));
 
   stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+}
 
   return stats;
 }
@@ -246,23 +291,38 @@ function getGraphData(session) {
   return { labels, times };
 }
 
-
 function getAverageGraphData(session) {
   const labels = [];
   const averages = [];
 
-  session.averages.forEach((avg, i) => {
-    labels.push(i + 1);
+  if (averageObj.mode === "classic") {
+    const history = classicStats.history.ao5;
 
-    if (avg.average === "DNF") {
-      averages.push(null);
-    } else {
-      averages.push(parseTimeToSeconds(avg.average));
-    }
-  });
+    history.forEach((avg, i) => {
+      labels.push(i + 1);
+
+      if (avg.avg === "DNF") {
+        averages.push(null);
+      } else {
+        averages.push(avg.avg);
+      }
+    });
+
+  } else {
+    session.averages.forEach((avg, i) => {
+      labels.push(i + 1);
+
+      if (avg.average === "DNF") {
+        averages.push(null);
+      } else {
+        averages.push(parseTimeToSeconds(avg.average));
+      }
+    });
+  }
 
   return { labels, averages };
 }
+
 
 function getPreviousRange(range) {
   const now = Date.now();
@@ -470,6 +530,23 @@ function generateSmartThresholds() {
   return thresholds;
 }
 
+function buildAvgMaps() {
+  const maps = {
+    mo3: new Map(),
+    ao5: new Map(),
+    ao12: new Map(),
+    ao100: new Map()
+  };
+
+  Object.keys(maps).forEach(key => {
+    classicStats.history[key].forEach(avg => {
+      maps[key].set(avg.createdAt, avg);
+    });
+  });
+
+  return maps;
+}
+
 function renderStatsPage() {
 
   const range = document.getElementById("date-filter").value;
@@ -610,8 +687,27 @@ const sessionData2 = getCurrentSession();
 const { start, end } = getRangeTimestamps(range);
 const prevRange = getLastRangeWithData(sessionData2, range);
 
-const currentAvgs = getAveragesInRange(sessionData2, start, end);
-const previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
+let currentAvgs = [];
+let previousAvgs = [];
+
+if (averageObj.mode === "classic") {
+  const history = classicStats.history.ao5;
+
+  currentAvgs = history
+    .filter(a => !start || (a.createdAt >= start && a.createdAt <= end))
+    .map(a => a.avg === "DNF" ? null : a.avg);
+
+  previousAvgs = history
+    .filter(a => !prevRange.start || (
+      a.createdAt >= prevRange.start &&
+      a.createdAt <= prevRange.end
+    ))
+    .map(a => a.avg === "DNF" ? null : a.avg);
+
+} else {
+  currentAvgs = getAveragesInRange(sessionData2, start, end);
+  previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
+}
 
 const minLen = Math.min(currentAvgs.length, previousAvgs.length);
 
@@ -620,7 +716,7 @@ const previousData = previousAvgs.slice(-minLen);
 
 const comparisonLabels = Array.from(
   { length: minLen },
-  (_, i) => `Block ${i + 1}`
+  (_, i) => `Block ${sortedSolves.length - i}`
 );
 
 const comparisonCtx = document.getElementById("comparisonChart");
@@ -660,10 +756,24 @@ new Chart(comparisonCtx, {
   }
 });
 
-const {
-  labels: sigmaLabels,
-  sigmas
-} = getSigmaGraphData(filteredAverages);
+let sigmaLabels = [];
+let sigmas = [];
+
+if (averageObj.mode === "classic") {
+  const { start, end } = getRangeTimestamps(range);
+
+  const filteredHistory = classicStats.history.ao5.filter(a =>
+    !start || (a.createdAt >= start && a.createdAt <= end)
+  );
+
+  sigmaLabels = filteredHistory.map((_, i) => i + 1);
+  sigmas = filteredHistory.map(a => a.sigma ?? null);
+
+} else {
+  const sigmaData = getSigmaGraphData(filteredAverages);
+  sigmaLabels = sigmaData.labels;
+  sigmas = sigmaData.sigmas;
+}
 
 const existingSigma = Chart.getChart("sigmaChart");
 if (existingSigma) {
@@ -760,31 +870,90 @@ new Chart(distCtx, {
   // BUILD HEADER
   // =========================
 
-let headHtml = `<tr>
-  <th>#</th>
-  <th>Type</th>
-  <th>Avg</th>
-  <th>Best</th>
-  <th>Worst</th>
+// =========================
+// BUILD HEADER
+// =========================
 
-`;
+if (averageObj.mode === "classic") {
 
-for (let i = 0; i < maxSolves; i++) {
-  headHtml += `<th>${i + 1}</th>`;
+  thead.innerHTML = `
+    <tr>
+      <th>#</th>
+      <th>Solve</th>
+      <th>mo3</th>
+      <th>ao5</th>
+      <th>ao12</th>
+      <th>ao100</th>
+    </tr>
+  `;
+
+} else {
+
+  let headHtml = `<tr>
+    <th>#</th>
+    <th>Type</th>
+    <th>Avg</th>
+    <th>Best</th>
+    <th>Worst</th>
+  `;
+
+  for (let i = 0; i < maxSolves; i++) {
+    headHtml += `<th>${i + 1}</th>`;
+  }
+
+  headHtml += `<th>σ</th></tr>`;
+
+  thead.innerHTML = headHtml;
 }
-
-headHtml += `  <th>σ</th></tr>`;
-
-thead.innerHTML = headHtml;
 
   // =========================
   // BUILD ROWS
   // =========================
 
-  session.averages.forEach((block, i) => {
+// =========================
+// BUILD ROWS
+// =========================
+if (averageObj.mode === "classic") {
+
+  const maps = buildAvgMaps();
+
+const sortedSolves = [...filteredSolves].sort(
+  (a, b) => b.createdAt - a.createdAt
+);
+
+  sortedSolves.forEach((solve, i) => {
     const tr = document.createElement("tr");
 
-    const isBOMode = block.mode === "bo3" || block.mode === "bo5";
+    const solveTime = formatDisplayTime(solve);
+
+    function getVal(map) {
+      const avg = map.get(solve.createdAt);
+      if (!avg) return "-";
+      if (avg.avg === "DNF") return "DNF";
+      return formatSecondsToTime(avg.avg);
+    }
+
+    const mo3 = getVal(maps.mo3);
+    const ao5 = getVal(maps.ao5);
+    const ao12 = getVal(maps.ao12);
+    const ao100 = getVal(maps.ao100);
+
+    tr.innerHTML = `
+      <td><span class="times-color-number">${i + 1}</span></td>
+      <td><span class="times-color-number">${solveTime}</span></td>
+      <td><span class="times-color-number">${mo3}</span></td>
+      <td><span class="times-color-number">${ao5}</span></td>
+      <td><span class="times-color-number">${ao12}</span></td>
+      <td><span class="times-color-number">${ao100}</span></td>
+    `;
+
+    tbody.appendChild(tr);
+  });
+
+} else {
+
+  session.averages.forEach((block, i) => {
+    const tr = document.createElement("tr");
 
     let rowHtml = `
       <td><span class="times-color-number">${session.averages.length - i}</span></td>
@@ -792,19 +961,19 @@ thead.innerHTML = headHtml;
       <td><span class="times-color-number">${block.average}</span></td>
       <td><strong><span class="times-color-number">${block.best}</span></strong></td>
       <td><span class="times-color-number">${block.worst}</span></td>
-
     `;
 
-    // Solves
     block.solves.forEach(solve => {
       rowHtml += `<td><span class="times-color-number">${formatDisplayTime(solve)}</span></td>`;
     });
 
-    rowHtml += `<td><span class="times-color-number">${block.sigma}</span></td>`
+    rowHtml += `<td><span class="times-color-number">${block.sigma}</span></td>`;
 
     tr.innerHTML = rowHtml;
     tbody.appendChild(tr);
   });
+
+}
 }
 
 

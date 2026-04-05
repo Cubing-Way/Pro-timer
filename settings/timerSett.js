@@ -1,6 +1,8 @@
 import { timerSettObj } from "./timerSetObj.js";
 import { timerObj } from "../timer/timerState.js";
 
+
+
 function getThemeVar(themeClass, variable) {
   const temp = document.createElement('div');
   temp.className = themeClass;
@@ -40,12 +42,44 @@ let secondaryBackground = localStorage.getItem("secondary-background") || "black
 document.getElementById("secondary-background").value = secondaryBackground;
 const bgMain2 = getThemeVar(`theme-${secondaryBackground}`, '--bg-tertiary');
 document.documentElement.style.setProperty('--bg-tertiary', bgMain2);
+let textColor = localStorage.getItem("text-color") || "white";
 
 document.getElementById("secondary-background").addEventListener("change", () => {
     secondaryBackground = document.getElementById("secondary-background").value;
     localStorage.setItem("secondary-background", secondaryBackground);
     const bgMain = getThemeVar(`theme-${secondaryBackground}`, '--bg-tertiary');
     document.documentElement.style.setProperty('--bg-tertiary', bgMain);
+
+  const timesBase = getBaseColor(textColor);
+  const bgBase = getBaseColor(secondaryBackground);
+
+  if (timesBase === bgBase) {
+    // conflict → force contrast
+    const isLight =
+      secondaryBackground.endsWith("-light") ||
+      secondaryBackground.endsWith("-medium") ||
+      secondaryBackground === "white";
+
+    if (isLight) {
+        document.body.classList.remove(`theme-text-${textColor}`);
+        textColor = "black";
+        document.body.classList.add(`theme-text-${textColor}`);
+        localStorage.setItem("text-color", textColor);
+        document.getElementById("text-color").value = textColor;
+    } else {
+            document.body.classList.remove(`theme-text-${textColor}`);
+      textColor = "white";
+        document.body.classList.add(`theme-text-${textColor}`);
+        localStorage.setItem("text-color", textColor);
+        document.getElementById("text-color").value = textColor;
+    }
+  } else {
+    document.body.classList.add(`theme-text-${textColor}`);
+    localStorage.setItem("text-color", textColor);
+    document.getElementById("text-color").value = textColor;
+  }
+  
+
 });
 
 let buttonsBackground = localStorage.getItem("buttons-background") || "black";
@@ -58,7 +92,21 @@ document.getElementById("buttons-background").addEventListener("change", () => {
     localStorage.setItem("buttons-background", buttonsBackground);
     const bgMain = getThemeVar(`theme-${buttonsBackground}`, '--border-main');
     document.documentElement.style.setProperty('--border-main', bgMain);
-});
+    
+    const isLight =
+      buttonsBackground.endsWith("-light") ||
+      buttonsBackground.endsWith("-medium") ||
+      buttonsBackground === "white";
+
+    if (isLight) {
+        timesColor = "black";
+        applyTimesColor("black");
+    } else {
+        timesColor = "white";
+        applyTimesColor("white");
+    }
+    }
+);
 
 
 
@@ -81,19 +129,45 @@ function applyTimesColor(colorKey) {
     document.querySelectorAll("button").forEach(btn => btn.style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main'));
     document.querySelectorAll("select").forEach(btn => btn.style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main'));
     document.querySelectorAll("input").forEach(btn => btn.style.color = getThemeVar(`theme-text-${timesColor}`, '--text-main'));
+    document.getElementById("times-color").value = timesColor;
     localStorage.setItem('times-color', colorKey);
 }
 
-
+function getBaseColor(value) {
+  return value.split("-")[0]; // "red-light" → "red"
+}
 document.getElementById("times-color").value = timesColor;
 applyTimesColor(timesColor);
 
 document.getElementById("times-color").addEventListener("change", (e) => {
     timesColor = e.target.value;
     applyTimesColor(timesColor);
+
+
+  const timesBase = getBaseColor(timesColor);
+  const bgBase = getBaseColor(buttonsBackground);
+
+  if (timesBase === bgBase) {
+    // conflict → force contrast
+    const isLight =
+      buttonsBackground.endsWith("-light") ||
+      buttonsBackground.endsWith("-medium") ||
+      buttonsBackground === "white";
+
+    if (isLight) {
+      timesColor = "black";
+      applyTimesColor("black");
+    } else {
+      timesColor = "white";
+      applyTimesColor("white");
+    }
+  } else {
+    applyTimesColor(timesColor);
+  }
 });
 
-let textColor = localStorage.getItem("text-color") || "white";
+
+
 
 document.getElementById("text-color").value = textColor;
 document.body.classList.remove(`theme-text-${textColor}`);
@@ -103,8 +177,33 @@ document.body.classList.add(`theme-text-${textColor}`);
 document.getElementById("text-color").addEventListener("change", () => {
     document.body.classList.remove(`theme-text-${textColor}`);
     textColor = document.getElementById("text-color").value;
+
+
+  const timesBase = getBaseColor(textColor);
+  const bgBase = getBaseColor(secondaryBackground);
+
+  if (timesBase === bgBase) {
+    // conflict → force contrast
+    const isLight =
+      secondaryBackground.endsWith("-light") ||
+      secondaryBackground.endsWith("-medium") ||
+      secondaryBackground === "white";
+
+    if (isLight) {
+        textColor = "black";
+        document.body.classList.add(`theme-text-${textColor}`);
+        localStorage.setItem("text-color", textColor);
+    } else {
+      textColor = "white";
+        document.body.classList.add(`theme-text-${textColor}`);
+        localStorage.setItem("text-color", textColor);
+    }
+  } else {
     document.body.classList.add(`theme-text-${textColor}`);
     localStorage.setItem("text-color", textColor);
+    document.getElementById("text-color").value = textColor;
+  }
+
 });
 
 

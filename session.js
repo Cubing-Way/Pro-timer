@@ -230,6 +230,7 @@ function changedSession() {
     if (session.classicStats) {
         classicStats.current = structuredClone(session.classicStats.current);
         classicStats.best = structuredClone(session.classicStats.best);
+        classicStats.history = structuredClone(session.classicStats.history);
     }
 
     averageObj.mode = session.buffer.mode;
