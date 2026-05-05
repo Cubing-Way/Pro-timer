@@ -54,8 +54,34 @@ function getLastSolveTarget() {
     };
 }
 
-window.setPenalty = function(blockIndex, solveIndex, penalty) {
-    penalty2(blockIndex, solveIndex, penalty);
+// Track penalty counters for each solve in modal (key: "blockIndex-solveIndex")
+window.modalPenaltyCounters = {};
+
+window.setPenalty = function(blockIndex, solveIndex, penalty, cycleMode = false) {
+    let finalPenalty = penalty;
+    
+    if (cycleMode) {
+        const counterKey = `${blockIndex}-${solveIndex}`;
+        let counter = window.modalPenaltyCounters[counterKey] || 0;
+        
+        if (counter === 12) {
+            counter = 0;
+            finalPenalty = null;
+        } else {
+            counter += 2;
+            finalPenalty = counter;
+        }
+        
+        window.modalPenaltyCounters[counterKey] = counter;
+        
+        // Update button text - identical to topbar button
+        const buttonEl = document.getElementById(`plus2-${blockIndex}-${solveIndex}`);
+        if (buttonEl) {
+            buttonEl.textContent = `+${counter + 2}`;
+        }
+    }
+    
+    penalty2(blockIndex, solveIndex, finalPenalty);
     saveSessions();
     renderHistory();
     if (averageObj.mode === "classic") updateClassicStats(true);

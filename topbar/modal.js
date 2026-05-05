@@ -49,6 +49,17 @@ function openDetailsModal() {
         `;
 
         block.solves.forEach((s, i) => {
+            // Initialize penalty counter for this solve
+            const counterKey = `${blockIndex}-${i}`;
+            let counter = 0;
+            if (typeof s.penalty === 'number' && s.penalty > 0) {
+                counter = s.penalty;
+            }
+            window.modalPenaltyCounters[counterKey] = counter;
+            
+            // Determine button text - identical to topbar button
+            const buttonText = `+${counter + 2}`;
+            
             html += `
                 <div class="modal-solve-row">
                     <div class="modal-solve-main">
@@ -56,7 +67,7 @@ function openDetailsModal() {
 
                         <div class="modal-solve-actions">
                             <button onclick="setPenalty(${blockIndex}, ${i}, null)">OK</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, '+2')">+2</button>
+                            <button id="plus2-${blockIndex}-${i}" onclick="setPenalty(${blockIndex}, ${i}, 2, true)">${buttonText}</button>
                             <button onclick="setPenalty(${blockIndex}, ${i}, 'DNF')">DNF</button>
                             <button onclick="removeSolve(${blockIndex}, ${i})">✖</button>
                         </div>

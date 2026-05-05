@@ -5,7 +5,8 @@ import {
   applyScramble, 
   applySolution, 
   getLastMoveCount, 
-  checkSolved 
+  checkSolved,
+  setFMC
 } from "./cubisz/api.js";
 import { displayScramble, currentScramble } from "./scramble.js";
 import { averageOfN } from "./average.js";
@@ -43,6 +44,7 @@ function handleFMC() {
     setSize(28);
     setView("3d");
     applyScramble(currentScramble);
+    setFMC(true);
     solutionFlag = false;
 }
 
