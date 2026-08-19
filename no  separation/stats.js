@@ -1,6 +1,6 @@
-import { getCurrentSession } from "./session.js";
-import { averageObj, parseTimeToSeconds, classicStats } from "./average.js";
-import { formatSecondsToTime, formatDisplayTime, computeAverage } from "./average.js";
+import { getCurrentSession } from "../session/session.js";
+import { averageObj, parseTimeToSeconds, classicStats } from "../average/avgController.js";
+import { formatSecondsToTime, formatDisplayTime, computeAverage } from "../average/avgController.js";
 
 function getAveragesSource(session) {
   if (averageObj.mode === "classic") {

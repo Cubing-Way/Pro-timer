@@ -1,9 +1,9 @@
 // solves.js
-import { renderHistory } from "./render.js";
-import { openDetailsModal } from "./topbar/modal.js";
+import { renderHistory } from "../render/renderController.js";
+import { openDetailsModal } from "../modal/modal.js";
 import { getCurrentSession, saveSessions } from "./session.js";
-import { averageObj, computeAverage, formatSecondsToTime, updateClassicStats, classicStats } from "./average.js";
-import { modal } from "./topbar/modal.js";
+import { averageObj, computeAverage, formatSecondsToTime, updateClassicStats, classicStats } from "../average/avgController.js";
+const modal = document.getElementById("detailsModal");
 
 function ensureSessionShape() {
     const session = getCurrentSession();

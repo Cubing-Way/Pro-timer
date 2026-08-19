@@ -1,4 +1,4 @@
-import { averageObj, classicStats, updateClassicStats } from "./average.js";
+import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
 
 // ===============================
 // Session state

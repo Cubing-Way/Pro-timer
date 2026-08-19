@@ -1,20 +1,21 @@
-import { eventObj, vis } from "./event.js";
-import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session.js";
-import { averageObj, classicStats } from "../average.js";
-import { renderHistory } from "../render.js";
-import { displayScramble, currentScramble } from "../scramble.js";
-import { openDetailsModal } from "./modal.js";
+import { eventObj, vis } from "../event/eventController.js";
+import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session/session.js";
+import { averageObj, classicStats } from "../average/avgController.js";
+import { renderHistory } from "../render/renderController.js";
+import { displayScramble, currentScramble } from "../scramble/scramble.js";
+import { openDetailsModal } from "../modal/modal.js";
+import { getSessionAverages } from "../session/solve.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
-import { renderStatsPage } from "../stats";
-import { timerDOMObj } from "../timer/timerDOM.js";
-import { applyPenaltyToLast, removeLastSolve } from "../solve.js";
-import { handleFMC } from "../FMC.js";
-import { timeInsertion } from "../settings/timerSett";
+import { renderStatsPage } from "../no  separation/stats";
+import { timerDOMObj } from "../timer/timerController.js";
+import { applyPenaltyToLast, removeLastSolve } from "../session/solve.js";
+import { handleFMC } from "../event/FMC.js";
+import { timeInsertion } from "../settings/settingsController.js";
 import { timerObj } from "../timer/timerState.js";
-import { scrdata } from "./scrData.js";
-import { averageOfN } from "../average.js";
-import { addAverageBlock } from "../solve.js";
-import { handleMBLD } from "../MBLD.js";
+import { scrdata } from "../scramble/scrData.js";
+import { averageOfN } from "../average/avgController.js";
+import { addAverageBlock } from "../session/solve.js";
+import { handleMBLD } from "../event/MBLD.js";
 
 let restoringSession = false;
 
@@ -372,7 +373,7 @@ avgObj.clearBtn.onclick = () => {
     renderHistory();
 }
 
-avgObj.openSessionBtn.onclick = openDetailsModal;
+avgObj.openSessionBtn.onclick = () =>openDetailsModal(modal, getSessionAverages);
 let plus2CounterObj = { penalty: 0 };
 
 avgObj.penaltyOkBtn.onclick = () => {
@@ -422,4 +423,4 @@ document.getElementById("scramble-button").addEventListener("click", () => {
     document.getElementById("scramble-button").innerHTML = "close";
 });
 
-export { modal, syncModeWithEvent, plus2CounterObj };
+export {syncModeWithEvent, plus2CounterObj };

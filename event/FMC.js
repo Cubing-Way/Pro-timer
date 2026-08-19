@@ -7,18 +7,21 @@ import {
   getLastMoveCount, 
   checkSolved,
   setFMC
-} from "./cubisz/api.js";
-import { displayScramble, currentScramble } from "./scramble.js";
-import { averageOfN } from "./average.js";
-import { timerObj } from "./timer/timerState.js";
-import { timerSettObj } from "./settings/timerSett.js";
-import { renderHistory } from "./render.js";
-import { eventObj, vis } from "./topbar/event.js";
-import { addAverageBlock } from "./solve.js";
-import { updateDisplay } from "./timer/countdownTimer.js";
+} from "../cubisz/api.js"; 
+ 
+import { displayScramble, currentScramble } from "../scramble/scramble.js";
+import { averageOfN } from "../average/avgController.js";
+import { timerObj } from "../timer/timerState.js";
+import { timerSettObj } from "../settings/settingsController.js";
+import { renderHistory } from "../render/renderController.js";
+import { eventObj, vis } from "./eventController.js";
+import { addAverageBlock } from "../session/solve.js";
+import { updateDisplay } from "../timer/countdownTimer.js";
+
+//Fix too many imports
 
 let solutionFlag = false;
-function handleFMC() {
+function handleFMC(display = document.getelementById("timer")) {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -39,7 +42,7 @@ function handleFMC() {
     
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("touchOverlay").style.display = "none";
-    updateDisplay();
+    updateDisplay(document.getElementById("timer"));
     mountCube(document.getElementById("fmc-cube"));
     setSize(28);
     setView("3d");

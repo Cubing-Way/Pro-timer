@@ -1,14 +1,15 @@
-import { displayScramble, currentScramble } from "./scramble.js";
-import { averageOfN } from "./average.js";
-import { timerObj } from "./timer/timerState.js";
-import { timerSettObj } from "./settings/timerSett.js";
-import { renderHistory } from "./render.js";
-import { eventObj, vis } from "./topbar/event.js";
-import { addAverageBlock } from "./solve.js";
-import { updateDisplay } from "./timer/countdownTimer.js";
-import { csTimer } from "./cstimer.js";
+import { displayScramble, currentScramble } from "../scramble/scramble.js";
+import { averageOfN } from "../average/avgController.js";
+import { timerObj } from "../timer/timerState.js";
+import { timerSettObj } from "../settings/timerSetObj.js";
+import { renderHistory } from "../render/renderController.js";
+import { eventObj, vis } from "./eventController.js";
+import { addAverageBlock } from "../session/solve.js";
+import { updateDisplay } from "../timer/countdownTimer.js";
+import { csTimer } from "../main/cstimer.js";
 
-function handleMBLD() {
+
+function handleMBLD(display) {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -28,7 +29,7 @@ function handleMBLD() {
     document.getElementById("fmc-label-form").textContent = "Solved / Total: ";
     document.getElementById("open-mbld-modal").style.display = "block";
     document.getElementById("openConfig").style.display = "block";
-    updateDisplay();
+    updateDisplay(display);
 }
 
 function calculateMBLDPoints(resultStr) {

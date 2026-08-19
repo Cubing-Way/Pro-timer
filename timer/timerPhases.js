@@ -1,8 +1,4 @@
-import { timerObj } from "./timerState.js";
-import { setTimerDisplay } from "./timerDOM.js";
-import { getThemeVar } from "../settings/timerSett.js";
-
-function timerPhases(delayFlagType) {
+function timerPhases(delayFlagType, timerObj, setTimerDisplay, getThemeVar) {
     if (timerObj.timerPhase !== 1) {
         timerObj.timerPhase++;
     } else if (timerObj.timerPhase === 1) {
@@ -21,7 +17,7 @@ function timerPhases(delayFlagType) {
 }
 
 
-function wcaDelayFlag() {
+function wcaDelayFlag(timerObj, setTimerDisplay, getThemeVar) {
     if (timerObj.wcaDelayCount >= 1) {
         timerObj.timerPhase++;
         timerObj.wcaDelayCount = 0;

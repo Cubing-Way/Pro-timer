@@ -17,8 +17,9 @@ licensed under GPLv3.
 */
 
 
-import  "./timer/timerDOM.js";
-import "./settings/layout.js";
-import "./settings/settings.js";
-import "./topbar/topbarButtons.js";
-import "./timer/countdownTimer.js";
+import  "../timer/timerController.js";
+import "../settings/layout.js";
+import "../settings/settings.js";
+import "../topbar/topbarController.js";
+import "../timer/countdownTimer.js";
+import "../timeTyping/timeTyping.js";

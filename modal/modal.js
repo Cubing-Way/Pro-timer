@@ -1,8 +1,7 @@
-import { getSessionAverages } from "../solve.js";
-import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../average.js";
-import { modal } from "./topbarButtons.js";
-import { formatStatValue } from "../render.js";
-import { saveSessions } from "../session.js";
+import { getSessionAverages } from "../session/solve.js";
+import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../average/avgController.js";
+import { formatStatValue } from "../render/renderController.js";
+import { saveSessions } from "../session/session.js";
 import { 
   mountCube, 
   setSize, 
@@ -11,13 +10,14 @@ import {
   applySolution, 
   getLastMoveCount, 
   checkSolved 
-} from "../cubisz/api.js";
+} from "../cubisz/api.js"; 
+
 
 function wrapTimesValue(value) {
     return `<span class="times-color-number">${value}</span>`;
 }
 
-function openDetailsModal() {
+function openDetailsModal(modal, getsessionAverages) {
     const averages = getSessionAverages();
 
     let html = `<h3 class="modal-title">Session averages</h3>`;
@@ -138,4 +138,4 @@ window.submitSolution = function(blockIndex, solveIndex) {
     saveSessions();
 };
 
-export { openDetailsModal, modal };
+export { openDetailsModal };

@@ -1,13 +1,23 @@
-import { getCurrentSession } from "../session.js";
-import { syncModeWithEvent } from "./topbarButtons.js"
-import { displayScramble } from "../scramble.js";
-import { handleFMC } from "../FMC.js";
+import { getCurrentSession } from "../session/session.js";
+import { syncModeWithEvent } from "../topbar/topbarController.js"
+import { displayScramble } from "../scramble/scramble.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
-import { timeInsertion } from "../settings/timerSett.js";
+import { timeInsertion } from "../settings/settingsController.js";
 import { timerObj } from "../timer/timerState.js";
-import { handleMBLD } from "../MBLD.js";
-import { eventObj } from "./eventState.js";
-import { vis } from "./eventState.js";
+import { handleFMC } from "./FMC.js";
+import { handleMBLD } from "./MBLD.js";
+
+const eventObj = {
+    event: getCurrentSession().scrambleType || "333", 
+};
+
+let vis = null;
+    if (window.innerWidth > 768) {
+        vis = document.querySelector("#scrambleVis");
+    } else {
+        vis = document.querySelector("#scrambleVis2");
+    }
+    
 
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
         timerSettObj.timerFlag = true;
@@ -34,8 +44,9 @@ eventSelect.value = eventObj.event;
 
 await displayScramble(eventObj.event, vis);
 
-if (eventObj.event === "333fm") handleFMC();
-if (eventObj.event === "r3ni") handleMBLD();
+const display = document.getElementById("timer");
+if (eventObj.event === "333fm") handleFMC(display);
+if (eventObj.event === "r3ni") handleMBLD(display);
 
 
 export { eventObj, vis };

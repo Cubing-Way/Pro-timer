@@ -1,19 +1,32 @@
-import { currentScramble, displayScramble } from "../scramble.js";
-import { eventObj, vis } from "../topbar/event.js";
-import { timerSettObj, delayFlagType } from "../settings/timerSett.js";
+import { currentScramble, displayScramble } from "../scramble/scramble.js";
+import { eventObj, vis } from "../event/eventController.js";
+import { timerSettObj } from "../settings/timerSetObj.js";
+import { delayFlagType } from "../settings/settingsController.js";
 import { timerObj } from "./timerState.js";
 import { timerPhases } from "./timerPhases.js";
 import { inspection, inspection2 } from "./inspection.js";
 import { wcaDelayFlag } from "./timerPhases.js";
+import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
-import { averageOfN, averageObj, classicStats } from "../average.js";
-import { renderHistory } from "../render.js";
-import { addAverageBlock } from "../solve.js";
-import { saveSessions, getCurrentSession} from "../session.js";
+import { averageOfN, averageObj, classicStats } from "../average/avgController.js";
+import { renderHistory } from "../render/renderController.js";
+import { addAverageBlock } from "../session/solve.js";
+import { saveSessions, getCurrentSession} from "../session/session.js";
 import { formatTime } from "./timeFormatting.js";
-import { updateTypingUI } from "../settings/timerSett.js";
-import { plus2CounterObj } from "../topbar/topbarButtons.js";
-import { lastTime } from "./timeTyping.js";
+import { updateTypingUI } from "../settings/settingsController.js";
+import { plus2CounterObj } from "../topbar/topbarController.js";
+import { startTimer2, stopTimer2 } from "./countdownTimer.js";
+
+
+// ===============================
+// Countdown Timer Elements
+// ===============================
+const display = document.getElementById("timer");
+const startBtn = document.getElementById("countdown");
+const stopBtn = document.getElementById("submit-moves");
+
+startBtn.addEventListener("click", startTimer2);
+stopBtn.addEventListener("click", stopTimer2);
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -89,14 +102,14 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         timerObj.timerPhase = 1; // skip inspection
     }
 
-    timerPhases(delayFlagType);
+    timerPhases(delayFlagType, timerObj, setTimerDisplay, getThemeVar);
 
     if (
         timerObj.timerPhase === 1 && !timerObj.inspecting 
         && timerSettObj.inspectionType !== "None" 
         && localStorage.getItem("inspectionStart") === "press-start"
     ) {
-        inspection(timerSettObj.inspectionType);
+        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
     }
 
 });
@@ -123,7 +136,7 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     if (e.repeat) return;
 
     if (timerObj.timerPhase === 1) {
-        wcaDelayFlag();
+        wcaDelayFlag(timerObj, setTimerDisplay, getThemeVar);
     }
 
     if (
@@ -131,11 +144,11 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
         && timerSettObj.inspectionType !== "None" 
         && localStorage.getItem("inspectionStart") === "press-end"
     ) {
-        inspection(timerSettObj.inspectionType);
+        inspection(timerSettObj.inspectionType, setTimerDisplay,timerObj);
     }
 
     if (timerObj.timerPhase === 2) {
-        startTimer();
+        startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
         showOnlyTimerSafe();
     }
 });
@@ -188,7 +201,7 @@ document.addEventListener("keydown", (e) => {
 
     if (e.key === " ") {
         e.preventDefault();
-        timerPhases(delayFlagType);
+        timerPhases(delayFlagType, timerObj, setTimerDisplay, getThemeVar);
     }
 
     if (
@@ -198,7 +211,7 @@ document.addEventListener("keydown", (e) => {
         && e.key === " "
     ) {
         e.preventDefault();
-        inspection(timerSettObj.inspectionType);
+        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
     }
 });
 
@@ -244,7 +257,7 @@ function handleSplitOrStop() {
     // 🔥 Last phase → stop
     plus2CounterObj.penalty = 0; // ✅ correct reset
     document.getElementById("penaltyPlus2Btn").textContent = "+2";
-    stopTimer();
+    stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
 
     const finalTime = document.getElementById("timer").innerHTML;
 
@@ -284,7 +297,7 @@ document.addEventListener("keyup", (e) => {
     if (e.repeat) return;
 
     if (timerObj.timerPhase === 1) {
-        wcaDelayFlag();
+        wcaDelayFlag(timerObj, setTimerDisplay, getThemeVar);
     }
 
     if (
@@ -292,11 +305,11 @@ document.addEventListener("keyup", (e) => {
         && timerSettObj.inspectionType !== "None" 
         && localStorage.getItem("inspectionStart") === "press-end"
     ) {
-        inspection(timerSettObj.inspectionType);
+        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
     }
 
     if (timerObj.timerPhase === 2 && timerObj.currentSolvePhase === 0) {
-        startTimer();
+        startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
         showOnlyTimerSafe();
     }
 });

@@ -1,6 +1,6 @@
-import { timerObj } from "./timerState.js";
-import { setTimerDisplay } from "./timerDOM.js";
-import { getThemeVar } from "../settings/timerSett.js";
+//import { timerObj } from "./timerState.js";
+//import { setTimerDisplay } from "./timerDOM.js";
+//import { getThemeVar } from "../settings/timerSett.js";
 
 function startWcaDelay() {
     // Reset counter

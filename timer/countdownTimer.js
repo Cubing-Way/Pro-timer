@@ -1,4 +1,4 @@
-import { timerWarnings } from "../MBLD";
+import { timerWarnings } from "../event/MBLD.js";
 
 // ===============================
 // Config
@@ -11,12 +11,7 @@ const ONE_HOUR = 60 * 60; // 3600 seconds
 let remainingTime = ONE_HOUR;
 let intervalId = null;
 
-// ===============================
-// Elements
-// ===============================
-const display = document.getElementById("timer");
-const startBtn = document.getElementById("countdown");
-const stopBtn = document.getElementById("submit-moves");
+
 
 // ===============================
 // Helpers
@@ -28,7 +23,8 @@ function formatTime(seconds) {
     return `${hrs}:${mins}:${secs}`;
 }
 
-function updateDisplay() {
+function updateDisplay(display = document.getElementById("timer")) {
+    if (!display) return;
     display.textContent = formatTime(remainingTime);
 }
 
@@ -78,8 +74,7 @@ function stopTimer2() {
 // ===============================
 // Event Listeners
 // ===============================
-startBtn.addEventListener("click", startTimer2);
-stopBtn.addEventListener("click", stopTimer2);
+
 
 // Initialize display
-export { updateDisplay };
+export { updateDisplay, startTimer2, stopTimer2 };

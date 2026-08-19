@@ -1,6 +1,5 @@
-import { timerObj } from "./timerState";
-import { lastTime } from "./timeTyping.js";
-import { setTimerDisplay } from "./timerDOM";
+import { lastTime } from "../timeTyping/timeTyping.js";
+import { setTimerDisplay } from "./timerController.js";
 
 let seconds = 0;
 let interval = null;
@@ -21,11 +20,9 @@ function inspection2() {
                     clearInterval(interval);
                     interval = null;
                     seconds = 0;
-                    if (lastTime) {
-                        setTimerDisplay('time', lastTime);
-                    } else {
+
                         setTimerDisplay('time', "0.00");
-                    }
+
                 }
         }, 1000);
     } else {
@@ -34,16 +31,14 @@ function inspection2() {
         clearInterval(interval);
         interval = null;
         seconds = 0;
-            if (lastTime) {
-                setTimerDisplay('time', lastTime);
-            } else {
+
                 setTimerDisplay('time', "0.00");
-            }
+
 
     }
 }
 
-function inspection(inspecType) {
+function inspection(inspecType, setTimerDisplay, timerObj) {
 
     timerObj.inspecting = true;
 
