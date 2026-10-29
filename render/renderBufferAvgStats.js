@@ -1,3 +1,5 @@
+import {averageObj} from "../average/avgState.js";
+
 function renderAvgStats({ type, solves, mode, block }) {
     // type: "live" | "saved" | null
 
