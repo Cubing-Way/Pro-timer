@@ -131,9 +131,13 @@ const distributionLabels = getDistributionLabels(thresholds);
   thead.innerHTML = "";
   tbody.innerHTML = "";
 
+  // The table's averages: the ones finished in the chosen period, newest first like the rest of the app
+  const inPeriod = new Set(filteredAverages);
+  const tableAverages = session.averages.filter(block => inPeriod.has(block));
+
   // Find max solves in any block (3 or 5)
   let maxSolves = 0;
-  session.averages.forEach(b => {
+  tableAverages.forEach(b => {
     if (b.solves.length > maxSolves) maxSolves = b.solves.length;
 
  
@@ -484,12 +488,13 @@ const sortedSolves = [...filteredSolves].sort(
 
 } else {
 
-  // Block modes: one row per finished average of the whole session, newest first
-  session.averages.forEach((block, i) => {
+  // Block modes: one row per finished average of the period, newest first
+  tableAverages.forEach(block => {
     const tr = document.createElement("tr");
 
+    // Numbered by its place in the whole session (the oldest is #1), like the details pop-up
     let rowHtml = `
-      <td><span class="times-color-number">${session.averages.length - i}</span></td>
+      <td><span class="times-color-number">${session.averages.length - session.averages.indexOf(block)}</span></td>
       <td>${block.mode.toUpperCase()}</td>
       <td><span class="times-color-number">${block.average}</span></td>
       <td><strong><span class="times-color-number">${block.best}</span></strong></td>

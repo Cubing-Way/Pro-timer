@@ -228,7 +228,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
   | bo3 | Best single; `avg` is the mean of the successful attempts | all 3 are DNF |
   | bo5 | Best single; `avg` is the ao5 of the same solves | all 5 are DNF (the best is then a DNF) |
   | fmc3 (ao3) | Mean of 3 move counts | 2 or more DNFs |
-  | ao12, ao100 | Drop the best and worst 5% (rounded down), mean of the rest | 2 or more DNFs |
+  | ao12, ao100 | Drop the best and worst 5% each, rounded up (1 for ao12, 5 for ao100), mean of the rest | more DNFs than that (2 for ao12, 6 for ao100) |
 
   For Multi-Blind, more points is better, so `bestAndWorst` flips the comparison.
 - **`classicAvgs.js`**: `updateClassicStats(recomputeBest, averageObj, classicStats)`. After a new solve, it adds the rolling averages ending at that solve and updates the bests; with `recomputeBest` it rebuilds the whole history by sliding a window over every solve (after a penalty, a removed solve, a session change or switching to classic).
@@ -265,7 +265,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `stats/`
 
-- **`statsController.js`**: `getStatistics()` and `getStatisticsByDate(range)` (the sidebar's "All time" and "Today"), and `renderStatsPage()`, which fills the statistics page for the chosen period: the overview cards, four Chart.js charts (solve times; averages compared with the closest earlier period that has averages; σ per average; how many solves fall under each time) and the averages table (one row per average, or per solve with its rolling averages in classic mode).
+- **`statsController.js`**: `getStatistics()` and `getStatisticsByDate(range)` (the sidebar's "All time" and "Today"), and `renderStatsPage()`, which fills the statistics page for the chosen period: the overview cards, four Chart.js charts (solve times; averages compared with the closest earlier period that has averages; σ per average; how many solves fall under each time) and the averages table (one row per average finished in the period, newest first, or one per solve of the period with its rolling averages in classic mode).
 - **`statsHelpers.js`**: `getAllSolvesFromSession`, `getStatisticsFromSolves` (best single, mean, σ, best average, solve count), the date ranges (`getRangeTimestamps` for the current day, week, month, semester or year in local time; `filterSolvesByRange`, `filterAveragesByRange`, `getAveragesInRange`, `getLastRangeWithData`), and the chart data (`getSigmaGraphData`, `generateSmartThresholds`, `getTimeDistribution`, `getDistributionLabels`, `filterEmptyBuckets`, `buildAvgMaps`).
 
 ### `settings/`

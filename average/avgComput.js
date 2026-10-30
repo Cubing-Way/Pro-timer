@@ -183,14 +183,14 @@ if (mode.startsWith("ao")) {
 
     const N = times.length;
 
+    // How many to drop on each side: 5% rounded up (1 for ao12, 5 for ao100)
+    const trimCount = Math.ceil(N * 0.05);
+
+    // DNFs sort last, so the average is only a DNF when there are more of them than the dropped worst solves
     const dnfs = times.filter(t => t === Infinity).length;
-    if (dnfs >= 2) return { dnf: true };
+    if (dnfs > trimCount) return { dnf: true };
 
     const sorted = [...times].sort((a, b) => a - b);
-
-    // How many to drop on each side (rounded down, so ao12 drops none)
-    let trimCount = Math.floor(N * 0.05);
-    if (N === 5) trimCount = 1;
 
     const trimmed = sorted.slice(trimCount, N - trimCount);
 
