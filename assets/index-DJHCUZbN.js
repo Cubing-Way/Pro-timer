@@ -391,6 +391,14 @@ function getScrambleConfig(code) {
   }
   return null;
 }
+const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
+const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
+function isCubiszEvent(code) {
+  if (CUBISZ_WCA_EVENTS.includes(code)) return true;
+  return scrdata.some(
+    ([category, scrambles]) => CUBISZ_CATEGORIES.includes(category) && scrambles.some(([, scrambleCode]) => scrambleCode === code)
+  );
+}
 function autoFitText(vis2) {
   const container = document.getElementById("scrambleContainer");
   const text = document.getElementById("scrambleDisplay");
@@ -420,6 +428,7 @@ function formatMegaminx(scr) {
   return out.join("\n");
 }
 let currentScramble = "";
+let currentScrambleEvent = "";
 async function displayScramble(event = "333", vis2, length) {
   const config = getScrambleConfig(event);
   if (!config) return;
@@ -428,6 +437,7 @@ async function displayScramble(event = "333", vis2, length) {
   let scramble = await csTimer.getScramble(type, finalLength);
   const svg = await csTimer.getImage(scramble, type);
   currentScramble = scramble;
+  currentScrambleEvent = event;
   vis2.innerHTML = svg;
   adjustVisualizerSize(event, vis2);
   const textEl = document.getElementById("scrambleDisplay");
@@ -499,10 +509,12 @@ function parseTimeToSeconds(str) {
   }
   if (typeof str === "number") return str;
   if (str.includes(":")) {
-    const [m, s] = str.split(":");
-    return parseInt(m, 10) * 60 + parseFloat(s);
+    return str.split(":").reduce((total, part) => total * 60 + parseFloat(part), 0);
   }
   return parseFloat(str);
+}
+function isPointsSolves(solves) {
+  return solves.length > 0 && solves.every((s) => s.result != null);
 }
 function manageTime(time) {
   const t = Number(time);
@@ -521,6 +533,13 @@ function formatSecondsToTime(sec) {
   if (sec === "DNF") return "DNF";
   sec = Number(sec);
   if (!Number.isFinite(sec)) return "DNF";
+  sec = Math.round(sec * 100) / 100;
+  if (sec >= 3600) {
+    const h = Math.floor(sec / 3600);
+    const m = String(Math.floor(sec % 3600 / 60)).padStart(2, "0");
+    const s = (sec % 60).toFixed(2).padStart(5, "0");
+    return `${h}:${m}:${s}`;
+  }
   if (sec >= 60) {
     const m = Math.floor(sec / 60);
     const s = (sec % 60).toFixed(2).padStart(5, "0");
@@ -528,22 +547,30 @@ function formatSecondsToTime(sec) {
   }
   return manageTime(sec);
 }
+function bestAndWorst(times, higherIsBetter) {
+  const valid = times.filter((t) => t !== Infinity);
+  if (valid.length === 0) return { best: Infinity, worst: Infinity };
+  const hasDNF = valid.length < times.length;
+  return {
+    best: higherIsBetter ? Math.max(...valid) : Math.min(...valid),
+    worst: hasDNF ? Infinity : higherIsBetter ? Math.min(...valid) : Math.max(...valid)
+  };
+}
 function computeAverage(solves, mode) {
   const times = solves.map((s) => {
     if (s.penalty === "DNF") return Infinity;
     if (typeof s.penalty === "number") return s.time + s.penalty;
     return s.time;
   });
+  const higherIsBetter = isPointsSolves(solves);
   let best = null;
   let worst = null;
   if (mode === "bo3") {
     const dnfs2 = times.filter((t) => t === Infinity).length;
-    if (dnfs2 >= 2) {
+    if (dnfs2 === times.length) {
       return { dnf: true };
     }
-    const sorted = [...times].sort((a, b) => a - b);
-    best = sorted[0];
-    worst = sorted[sorted.length - 1];
+    ({ best, worst } = bestAndWorst(times, higherIsBetter));
     const validTimes = times.filter((t) => t !== Infinity);
     const avg2 = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
     const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - avg2, 2), 0) / validTimes.length;
@@ -558,8 +585,7 @@ function computeAverage(solves, mode) {
   }
   if (mode === "bo5") {
     const sorted = [...times].sort((a, b) => a - b);
-    best = sorted[0];
-    worst = sorted[sorted.length - 1];
+    ({ best, worst } = bestAndWorst(times, higherIsBetter));
     const trimmed = sorted.slice(1, 4);
     let avg2 = null;
     if (trimmed.includes(Infinity)) {
@@ -679,8 +705,7 @@ function computeAverage(solves, mode) {
   const avg = times.reduce((a, b) => a + b, 0) / times.length;
   const variance = times.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / times.length;
   const sigma = Math.sqrt(variance);
-  best = Math.min(...times);
-  worst = Math.max(...times);
+  ({ best, worst } = bestAndWorst(times, higherIsBetter));
   return {
     dnf: false,
     avg,
@@ -801,13 +826,14 @@ function updateClassicStats(recomputeBest = false) {
 }
 function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, modeFlag = false, isMBLD = false, solvePhases) {
   let inspecPenalty = null;
-  if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
+  if (inspectionType === "WCA") {
     if (inspection3 >= 15) inspecPenalty = 2;
     if (inspection3 >= 17) inspecPenalty = "DNF";
   }
   let seconds2 = null;
   if (isFMC) {
     seconds2 = time.moveCount;
+    if (!time.solved) inspecPenalty = "DNF";
   } else if (isMBLD) {
     seconds2 = time.points;
     if (seconds2 <= 0) {
@@ -823,6 +849,8 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
       result: time.result,
       penalty: inspecPenalty ? inspecPenalty : null,
       scramble,
+      event: currentScrambleEvent,
+      // event the scramble was made for (the modal and history use it)
       inspection: inspection3,
       createdAt: Date.now(),
       solution,
@@ -831,7 +859,7 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
     averageObj.solveCounter++;
   }
   if (averageObj.mode === "classic") {
-    if (!modeFlag) updateClassicStats();
+    updateClassicStats(modeFlag);
     return null;
   }
   let neededSolves = 3;
@@ -900,8 +928,11 @@ function penalty2$1(blockIndex, solveIndex, penalty, getCurrentSession2, saveSes
   const averages = getSessionAverages$1(getCurrentSession2);
   const block = averages[blockIndex];
   block.solves[solveIndex].penalty = penalty;
-  const newAvg = computeAverage(block.solves, block.mode).avg;
-  block.average = newAvg === "DNF" ? "DNF" : formatSecondsToTime(newAvg);
+  const avgObj2 = computeAverage(block.solves, block.mode);
+  block.average = avgObj2.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj2.avg);
+  block.best = formatSecondsToTime(avgObj2.best);
+  block.worst = formatSecondsToTime(avgObj2.worst);
+  block.sigma = formatSecondsToTime(avgObj2.sigma);
   saveSessions2();
 }
 function remove2$1(blockIndex, solveIndex, averageObj2, getCurrentSession2, saveSessions2) {
@@ -1026,8 +1057,10 @@ sessionsObj.selectEl.onchange = () => {
       renderSessionSelect();
       return;
     }
-    sessionsObj.sessions[newName] = sessionsObj.sessions[oldName];
-    delete sessionsObj.sessions[oldName];
+    sessionsObj.sessions = Object.fromEntries(
+      Object.entries(sessionsObj.sessions).map(([name, data]) => [name === oldName ? newName : name, data])
+    );
+    sessionsObj.currentSession = newName;
     switchSession(newName);
     return;
   }
@@ -1075,10 +1108,15 @@ function changedSession() {
     classicStats.current = structuredClone(session2.classicStats.current);
     classicStats.best = structuredClone(session2.classicStats.best);
     classicStats.history = structuredClone(session2.classicStats.history);
+  } else {
+    classicStats.current = { mo3: null, ao5: null, ao12: null, ao100: null };
+    classicStats.best = { mo3: null, ao5: null, ao12: null, ao100: null };
+    classicStats.history = { mo3: [], ao5: [], ao12: [], ao100: [] };
   }
   averageObj.mode = session2.buffer.mode;
   averageObj.solveCounter = session2.buffer.solveCounter;
   averageObj.solvesArray = [...session2.buffer.solvesArray];
+  if (!session2.classicStats && averageObj.mode === "classic") updateClassicStats(true);
   const sel = document.getElementById("modeSelect");
   if (sel) sel.value = averageObj.mode;
 }
@@ -1104,7 +1142,9 @@ const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
 const timerSettObj = {
   inspectionType: inspection$1,
   timerFlag: false,
-  previousInspectionType: inspection$1
+  // true when the timer is off (Typing mode, Fewest Moves or Multi-Blind)
+  untimedEvent: false
+  // true on Fewest Moves and Multi-Blind, set by showTimeInsertion
 };
 const PHASE = Object.freeze({
   IDLE: "idle",
@@ -1305,13 +1345,14 @@ document.getElementById("text-color").addEventListener("change", () => {
       document.body.classList.add(`theme-text-${textColor}`);
       localStorage.setItem("text-color", textColor);
     }
+    document.getElementById("text-color").value = textColor;
   } else {
     document.body.classList.add(`theme-text-${textColor}`);
     localStorage.setItem("text-color", textColor);
     document.getElementById("text-color").value = textColor;
   }
 });
-let inspectionStart = document.getElementById("inspection-start").value;
+let inspectionStart = localStorage.getItem("inspectionStart") || document.getElementById("inspection-start").value;
 localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").value = inspectionStart;
 document.getElementById("inspection-start").addEventListener("change", () => {
@@ -1339,7 +1380,6 @@ if (Number.isInteger(savedPhases) && savedPhases > 0) {
 }
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
-  timerSettObj.previousInspectionType = timerSettObj.inspectionType;
   timerSettObj.inspectionType = document.getElementById("inspection-type").value;
   localStorage.setItem("inspectionType", timerSettObj.inspectionType);
 });
@@ -1350,26 +1390,22 @@ document.getElementById("delay-flag").addEventListener("change", () => {
   localStorage.setItem("delayFlagType", delayFlagType);
 });
 let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
-if (timeInsertion === "Typing") {
-  timerSettObj.timerFlag = true;
-} else {
-  timerSettObj.timerFlag = false;
-}
+timerSettObj.timerFlag = timeInsertion === "Typing";
 document.getElementById("time-insertion").value = timeInsertion;
 document.getElementById("time-insertion").addEventListener("change", () => {
-  timeInsertion = document.getElementById("time-insertion").value;
-  if (timeInsertion === "Typing") {
-    timerSettObj.timerFlag = true;
-  } else {
-    timerSettObj.timerFlag = false;
-  }
-  localStorage.setItem("timeInsertion", timeInsertion);
-  updateTypingUI();
+  setTimeInsertion(document.getElementById("time-insertion").value);
 });
+function setTimeInsertion(value) {
+  timeInsertion = value;
+  localStorage.setItem("timeInsertion", timeInsertion);
+  document.getElementById("time-insertion").value = timeInsertion;
+  timerSettObj.timerFlag = timerSettObj.untimedEvent || timeInsertion === "Typing";
+  updateTypingUI();
+}
 function updateTypingUI() {
   const container = document.getElementById("typing-container");
   if (!container) return;
-  if (localStorage.getItem("timeInsertion") === "Typing") {
+  if (timeInsertion === "Typing" && !timerSettObj.untimedEvent) {
     container.style.display = "block";
     const input = document.getElementById("typed-time");
     if (input) input.focus();
@@ -15823,6 +15859,9 @@ const registerables = [
   scales
 ];
 Chart.register(...registerables);
+function pickBest(values, solves) {
+  return isPointsSolves(solves) ? Math.max(...values) : Math.min(...values);
+}
 function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
   return offsetMinutes * 60 * 1e3;
@@ -15862,11 +15901,11 @@ function getStatisticsFromSolves(solves, session2, averageObj2, classicStats2) {
     }
   });
   solves.forEach((solve) => {
-    if (solve.penalty === null) {
+    if (solve.penalty == null) {
       allSolvesArr.push(solve.time);
       solveCounter++;
-    } else if (solve.penalty === "+2") {
-      allSolvesArr.push(solve.time + 2);
+    } else if (typeof solve.penalty === "number") {
+      allSolvesArr.push(solve.time + solve.penalty);
       solveCounter++;
     } else {
       solveCounter++;
@@ -15882,8 +15921,8 @@ function getStatisticsFromSolves(solves, session2, averageObj2, classicStats2) {
     };
   }
   const validAvgs = ao5Arr.filter((v) => v != null && !isNaN(v));
-  const bestAvg = validAvgs.length ? Math.min(...validAvgs) : null;
-  const bestTime = Math.min(...allSolvesArr);
+  const bestAvg = validAvgs.length ? pickBest(validAvgs, solves) : null;
+  const bestTime = pickBest(allSolvesArr, solves);
   const mean = allSolvesArr.reduce((a, b) => a + b, 0) / allSolvesArr.length;
   const variance = allSolvesArr.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / allSolvesArr.length;
   const sigma = Math.sqrt(variance);
@@ -15957,7 +15996,7 @@ function getAveragesInRange(session2, start, end) {
     const lastSolve = avg.solves[avg.solves.length - 1];
     if (!lastSolve || !lastSolve.createdAt) return false;
     return (!start || lastSolve.createdAt >= start) && (!end || lastSolve.createdAt <= end);
-  }).map((avg) => {
+  }).reverse().map((avg) => {
     if (avg.average === "DNF") return null;
     return parseTimeToSeconds(avg.average);
   });
@@ -15999,7 +16038,7 @@ function getTimeDistribution(solves, thresholds) {
   solves.forEach((solve) => {
     let time = null;
     if (solve.penalty === "DNF") return;
-    if (solve.penalty === "+2") time = solve.time + 2;
+    if (typeof solve.penalty === "number") time = solve.time + solve.penalty;
     else time = solve.time;
     let placed = false;
     for (let i = 0; i < thresholds.length; i++) {
@@ -16102,7 +16141,7 @@ function getStatisticsByDate(range) {
   } else {
     const filteredAvgs = filterAveragesByRange(session2, range);
     const ao5Arr = filteredAvgs.filter((a) => a.average !== "DNF").map((a) => parseTimeToSeconds(a.average));
-    stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+    stats.bestAvg = ao5Arr.length ? pickBest(ao5Arr, filteredSolves) : null;
   }
   return stats;
 }
@@ -16117,7 +16156,7 @@ function renderStatsPage() {
   const filteredAverages = filterAveragesByRange(session2, range);
   const stats = getStatisticsFromSolves(filteredSolves, session2, averageObj, classicStats);
   const ao5Arr = filteredAverages.filter((a) => a.average !== "DNF").map((a) => parseTimeToSeconds(a.average));
-  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  stats.bestAvg = ao5Arr.length ? pickBest(ao5Arr, filteredSolves) : null;
   document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
   document.getElementById("stat-best-time").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestTime)}</span>`;
   document.getElementById("stat-mean").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.mean)}</span>`;
@@ -16144,8 +16183,8 @@ function renderStatsPage() {
     labels.push(i + 1);
     if (solve.penalty === "DNF") {
       times.push(null);
-    } else if (solve.penalty === "+2") {
-      times.push(solve.time + 2);
+    } else if (typeof solve.penalty === "number") {
+      times.push(solve.time + solve.penalty);
     } else {
       times.push(solve.time);
     }
@@ -16199,17 +16238,19 @@ function renderStatsPage() {
   if (averageObj.mode === "classic") {
     const history = classicStats.history.ao5;
     currentAvgs = history.filter((a) => !start || a.createdAt >= start && a.createdAt <= end).map((a) => a.avg === "DNF" ? null : a.avg);
-    previousAvgs = history.filter((a) => !prevRange.start || a.createdAt >= prevRange.start && a.createdAt <= prevRange.end).map((a) => a.avg === "DNF" ? null : a.avg);
+    previousAvgs = !prevRange.start ? [] : history.filter(
+      (a) => a.createdAt >= prevRange.start && a.createdAt <= prevRange.end
+    ).map((a) => a.avg === "DNF" ? null : a.avg);
   } else {
     currentAvgs = getAveragesInRange(sessionData2, start, end);
-    previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
+    previousAvgs = !prevRange.start ? [] : getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
   }
-  const minLen = Math.min(currentAvgs.length, previousAvgs.length);
-  currentAvgs.slice(-minLen);
-  previousAvgs.slice(-minLen);
+  const compareLen = previousAvgs.length ? Math.min(currentAvgs.length, previousAvgs.length) : currentAvgs.length;
+  const currentData = compareLen ? currentAvgs.slice(-compareLen) : [];
+  const previousData = compareLen ? previousAvgs.slice(-compareLen) : [];
   const comparisonLabels = Array.from(
-    { length: minLen },
-    (_, i) => `Block ${sortedSolves.length - i}`
+    { length: compareLen },
+    (_, i) => `Block ${i + 1}`
   );
   const comparisonCtx = document.getElementById("comparisonChart");
   new Chart(comparisonCtx, {
@@ -16220,11 +16261,11 @@ function renderStatsPage() {
       datasets: [
         {
           label: "Current Range (Avg Blocks)",
-          data: currentAvgs
+          data: currentData
         },
         {
           label: "Previous Range (Avg Blocks)",
-          data: previousAvgs
+          data: previousData
         }
       ]
     },
@@ -16409,8 +16450,9 @@ function wrapTimesValue(value) {
 function formatStatValue$1(value, getCurrentSession2) {
   if (value === void 0 || value === null) return wrapTimesValue("-");
   if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return wrapTimesValue("DNF");
-  if (value.time && getCurrentSession2().scrambleType === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
-  if (value.time && getCurrentSession2().scrambleType === "333fm") return wrapTimesValue(`${value.time} moves`);
+  const solveEvent = value.event ?? getCurrentSession2().scrambleType;
+  if (value.time && solveEvent === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
+  if (value.time && solveEvent === "333fm") return wrapTimesValue(`${value.time} moves`);
   if (getCurrentSession2().scrambleType === "r3ni") {
     const num = Number(value);
     if (!Number.isFinite(num)) return wrapTimesValue("DNF");
@@ -16558,11 +16600,11 @@ function renderHistoryList(averages, currentType, averageObj2, formatStatValue2)
     let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${wrapTimesValue(block.average)}`;
     if (block.mode === "bo3") {
       const mo3Avg = computeAverage(block.solves, "mo3");
-      const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(mo3Avg.avg));
+      const mo3Value = mo3Avg.dnf || mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(mo3Avg.avg));
       titleText = `${block.mode}: ${block.best} (mo3: ${wrapTimesValue(mo3Value)})`;
     } else if (block.mode === "bo5") {
       const ao5Avg = computeAverage(block.solves, "ao5");
-      const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(ao5Avg.avg));
+      const ao5Value = ao5Avg.dnf || ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(ao5Avg.avg));
       titleText = `${block.mode}: ${block.best} (ao5: ${wrapTimesValue(ao5Value)})`;
     }
     html += `
@@ -17312,6 +17354,7 @@ function handleFMC$1(display, currentScramble2, countdownObj2) {
   document.getElementById("penaltyDnfBtn").style.display = "none";
   document.getElementById("removeLastBtn").style.display = "block";
   document.getElementById("submit-moves").style.display = "block";
+  document.getElementById("submit-moves").textContent = "Submit solution";
   document.getElementById("fmc-cube").style.display = "block";
   document.getElementById("fmc-solution").style.display = "block";
   document.getElementById("fmc-solution-test").style.display = "block";
@@ -17393,7 +17436,7 @@ async function renderMBLDGrid(grid2, countInput2, currentScramble2) {
     const visualEl = document.createElement("div");
     visualEl.className = "mbld-visual mbld-row";
     visualEl.innerHTML = images[i];
-    visualEl.style.transformOrigin = "top)";
+    visualEl.style.transformOrigin = "top";
     visualEl.style.transform = "scale(0.5)";
     grid2.appendChild(indexEl);
     grid2.appendChild(scrambleEl);
@@ -17413,7 +17456,6 @@ function showTimerLayout(vis2) {
   document.getElementById("fmc-form").style.display = "none";
   document.getElementById("countdown").style.display = "none";
   document.getElementById("touchOverlay").style.display = "block";
-  document.getElementById("typing-container").style.display = "none";
   document.getElementById("timerins").style.marginTop = "0px";
   document.getElementById("open-mbld-modal").style.display = "none";
   document.getElementById("openConfig").style.display = "none";
@@ -17425,19 +17467,19 @@ function showTimerLayout(vis2) {
   document.getElementById("timer").textContent = "0.00";
 }
 function showTimeInsertion(event, timeInsertion2, timerSettObj2) {
-  if (event === "333fm" || event === "r3ni") {
-    timerSettObj2.timerFlag = true;
-    document.getElementById("typing-container").style.display = "none";
-    document.querySelector(".timerOpt").style.display = "none";
+  timerSettObj2.untimedEvent = event === "333fm" || event === "r3ni";
+  const typing = timeInsertion2 === "Typing" && !timerSettObj2.untimedEvent;
+  document.querySelector(".timerOpt").style.display = timerSettObj2.untimedEvent ? "none" : "block";
+  document.getElementById("typing-container").style.display = typing ? "block" : "none";
+  timerSettObj2.timerFlag = timerSettObj2.untimedEvent || typing;
+}
+function setEventInspection(event, timerSettObj2) {
+  if (["333ni", "444bld", "555bld"].includes(event)) {
+    timerSettObj2.inspectionType = "None";
   } else {
-    document.querySelector(".timerOpt").style.display = "block";
-    if (timeInsertion2 === "Typing") {
-      document.getElementById("typing-container").style.display = "block";
-      timerSettObj2.timerFlag = true;
-    } else {
-      timerSettObj2.timerFlag = false;
-    }
+    timerSettObj2.inspectionType = localStorage.getItem("inspectionType") || "WCA";
   }
+  document.getElementById("inspection-type").value = timerSettObj2.inspectionType;
 }
 const eventObj = {
   event: getCurrentSession().scrambleType || "333"
@@ -17484,11 +17526,11 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
   }
   const fmcObj = {
     moveCount,
-    solution: document.getElementById("fmc-solution").value
+    solution: document.getElementById("fmc-solution").value,
+    solved: checkSolved()
+    // averageOfN makes an unsolved cube a DNF
   };
-  timerObj.inspection = 0;
-  if (!checkSolved()) timerObj.inspection = 17;
-  const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);
+  const block = averageOfN(fmcObj, currentScramble, 0, timerSettObj.inspectionType, true);
   if (block) addAverageBlock(block);
   renderHistory();
   await displayScramble(eventObj.event, vis);
@@ -17503,8 +17545,14 @@ async function submitMBLD() {
     alert("Submit needs a result");
     return;
   }
-  const result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
-  const block = averageOfN(result, currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
+  let result = null;
+  try {
+    result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
+  } catch (error) {
+    alert(`${error.message} (for example 4/5)`);
+    return;
+  }
+  const block = averageOfN(result, currentScramble, 0, timerSettObj.inspectionType, false, false, true);
   if (block) addAverageBlock(block);
   renderHistory();
   await displayScramble(eventObj.event, vis);
@@ -17614,6 +17662,7 @@ async function initEvent() {
   const session2 = getCurrentSession();
   eventObj.event = session2.scrambleType || "333";
   eventSelect$1.value = eventObj.event;
+  setEventInspection(eventObj.event, timerSettObj);
   await displayScramble(eventObj.event, vis);
   const display = document.getElementById("timer");
   if (eventObj.event === "333fm") handleFMC(display);
@@ -17690,16 +17739,16 @@ function truncate2(n) {
 function formatTime(milisseconds) {
   let seconds2 = milisseconds / 1e3;
   let minutes = Math.floor(seconds2 / 60);
-  let hours = Math.floor(minutes / 60);
+  const hours = Math.floor(minutes / 60);
   if (minutes < 1) {
     return truncate2(seconds2);
-  } else if (minutes >= 1) {
-    seconds2 = seconds2 - 60 * minutes;
-    return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
-  } else if (minutes >= 60) {
+  }
+  seconds2 = seconds2 - 60 * minutes;
+  if (hours >= 1) {
     minutes = minutes - 60 * hours;
     return `${hours}: ${minutes < 10 ? "0" : ""}${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
   }
+  return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
 }
 const plus2CounterObj = { penalty: 0 };
 const startBtn = document.getElementById("countdown");
@@ -17873,28 +17922,23 @@ function isTyping() {
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
 }
 document.addEventListener("keydown", (e) => {
+  if (document.activeElement.tagName === "SELECT" && (e.key === " " || timerObj.timerPhase === PHASE.RUNNING)) {
+    e.preventDefault();
+    document.activeElement.blur();
+  }
   if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
   if (e.key === " ") {
     e.preventDefault();
-  } else if (timerObj.timerPhase !== PHASE.RUNNING) {
+  } else if (timerObj.timerPhase !== PHASE.RUNNING || e.key === "Tab") {
     return;
   }
   onPressStart();
 });
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Tab") {
-    e.preventDefault();
-    let timeInsertion2 = localStorage.getItem("timeInsertion") || "Timer";
-    if (timeInsertion2 === "Typing") {
-      timeInsertion2 = "Timer";
-      timerSettObj.timerFlag = false;
-    } else if (timeInsertion2 === "Timer") {
-      timeInsertion2 = "Typing";
-      timerSettObj.timerFlag = true;
-    }
-    localStorage.setItem("timeInsertion", timeInsertion2);
-    updateTypingUI();
-  }
+  if (e.key !== "Tab") return;
+  e.preventDefault();
+  if (timerSettObj.untimedEvent || timerObj.timerPhase !== PHASE.IDLE) return;
+  setTimeInsertion(timeInsertion === "Typing" ? "Timer" : "Typing");
 });
 function handleSplitOrStop() {
   const now = performance.now();
@@ -17991,6 +18035,23 @@ function openDetailsModal() {
       modalPenaltyCounters[counterKey] = counter;
       const buttonText = `+${counter + 2}`;
       const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
+      const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
+      const solutionRows = canCheck ? `
+                    <div class="modal-scramble">
+                       Solution: <input
+                            type="text"
+                            id="solution-input-${blockIndex}-${i}"
+                            placeholder="Enter solution"
+                            value="${block.solves[i].solution || ""}"
+                        />
+                        <button data-action="solution" ${solveData}>
+                            Submit
+                        </button>
+                    </div>
+                    <div class="modal-scramble">
+                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || "-"} | Moves: ${block.solves[i].moves || "-"} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : "-"}</span>
+                    </div>
+            ` : "";
       html += `
                 <div class="modal-solve-row">
                     <div class="modal-solve-main">
@@ -18016,21 +18077,7 @@ function openDetailsModal() {
                     <div class="modal-scramble">
                         Date: ${new Date(block.solves[i].createdAt)}
                     </div>
-
-                    <div class="modal-scramble">
-                       Solution: <input
-                            type="text"
-                            id="solution-input-${blockIndex}-${i}"
-                            placeholder="Enter solution"
-                            value="${block.solves[i].solution || ""}"
-                        />
-                        <button data-action="solution" ${solveData}>
-                            Submit
-                        </button>
-                    </div>
-                    <div class="modal-scramble">
-                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || "-"} | Moves: ${block.solves[i].moves || "-"} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : "-"}</span>
-                    </div>
+                    ${solutionRows}
                 </div>
             `;
     });
@@ -18168,17 +18215,9 @@ eventSelect.addEventListener("change", async (e) => {
   if (!restoringSession) {
     syncModeWithEvent(eventObj.event);
   }
+  if (countdownObj.intervalId !== null) stopTimer2(countdownObj);
   showTimerLayout(vis);
-  if (["333ni", "444bld", "555bld"].includes(eventObj.event)) {
-    timerSettObj.previousInspectionType = timerSettObj.inspectionType;
-    timerSettObj.inspectionType = "None";
-    document.getElementById("inspection-type").value = "None";
-    localStorage.setItem("inspectionType", "None");
-  } else {
-    timerSettObj.inspectionType = timerSettObj.previousInspectionType;
-    document.getElementById("inspection-type").value = timerSettObj.previousInspectionType;
-    localStorage.setItem("inspectionType", timerSettObj.previousInspectionType);
-  }
+  setEventInspection(eventObj.event, timerSettObj);
   await displayScramble(eventObj.event, vis);
   if (eventObj.event === "333fm") handleFMC();
   if (eventObj.event === "r3ni") handleMBLD();
@@ -18225,30 +18264,18 @@ function syncModeWithEvent(event) {
     saveSessions();
   }
 }
-document.addEventListener("sessionChanged", async () => {
+document.addEventListener("sessionChanged", () => {
   restoringSession = true;
   changedSession();
   const session2 = getCurrentSession();
-  if (session2.category) {
-    categorySelect.value = session2.category;
-    categorySelect.dispatchEvent(new Event("change"));
-  }
+  categorySelect.value = session2.category || validCategories[0][0];
+  categorySelect.dispatchEvent(new Event("change"));
   const ev = session2.scrambleType || "333";
   eventObj.event = ev;
   eventSelect.value = ev;
   eventSelect.dispatchEvent(new Event("change"));
   restoringSession = false;
   renderHistory();
-  if (eventObj.event === "333fm") {
-    await displayScramble(eventObj.event, vis);
-    handleFMC();
-    return;
-  } else if (eventObj.event === "r3ni") {
-    handleMBLD();
-  } else {
-    showTimerLayout(vis);
-  }
-  await displayScramble(eventObj.event, vis);
 });
 const avgObj = {
   modeSelect: document.getElementById("modeSelect"),
@@ -18336,8 +18363,10 @@ function initTypingSubmission() {
       }
       lastTime = formatSecondsToTime(seconds2);
       document.getElementById("timer").textContent = lastTime;
-      const block = averageOfN(seconds2, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
+      const block = averageOfN(seconds2, currentScramble, 0, timerSettObj.inspectionType);
       if (block) addAverageBlock(block);
+      plus2CounterObj.penalty = 0;
+      document.getElementById("penaltyPlus2Btn").textContent = "+2";
       renderHistory();
       displayScramble(eventObj.event, vis);
       saveSessions();

@@ -1,0 +1,1643 @@
+/* Only stylesheet index.html links: it imports every folder's CSS, and Vite inlines them into one file */
+/* The order matters: when two rules match the same element just as strongly, the one imported later wins */
+
+/* Default color variables */
+/* Default colors (black background, white text); settings/settingsController.js overwrites them on <html> with the chosen theme's */
+:root {
+  /* Page, right sidebar, penalty bar, footer and stats page background ("Main background" setting) */
+  --bg-main: #070707;
+  /* Pop-up and table header background ("Tertiary background" setting) */
+  --bg-secondary: #111;
+  /* Top bar, left sidebar and settings row background ("Secondary background" setting) */
+  --bg-tertiary: #141414;
+  /* Not used by any rule yet, kept so every theme has the full set */
+  --bg-elevated: #1a1a1a;
+
+  /* Body text ("Secondary text" setting picks a .theme-text-* class) */
+  --text-main: #eaeaea;
+  /* Button and settings panel text */
+  --text-strong: #ffffff;
+  /* Not used by any rule yet */
+  --text-muted: rgba(255,255,255,0.6);
+
+  /* Button background and most borders ("Buttons background" setting) */
+  --border-main: #222;
+  /* Button border */
+  --border-soft: #2a2a2a;
+  /* Settings header bottom border */
+  --border-strong: #333;
+
+  /* Not used by any rule yet */
+  --overlay-dark: rgba(0,0,0,0.6);
+  /* Dimmed backdrop behind the solve details pop-up */
+  --overlay-strong: rgba(0,0,0,0.75);
+
+  /* Highlight color, used on the stats page's best average card */
+  --accent: #4ade80;
+
+  /* Scrollbar track, thumb and hovered thumb colors */
+  --scrollbar-track: #0f0f0f;
+  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-thumb-hover: #3a3a3a;
+}
+/* Color tables the settings read from */
+/* Text color themes: "Secondary text" puts one of these classes on <body>, "Main text" only reads its --text-main (settingsController.js) */
+
+/* "White" text color */
+.theme-text-white {
+  --text-main: #eaeaea;
+  --text-strong: #ffffff;
+  --text-muted: rgba(255,255,255,0.6);
+}
+
+/* "Black" text color */
+.theme-text-black {
+  --text-main: #1f2937;
+  --text-strong: #0f172a;
+  --text-muted: rgba(31, 41, 55, 0.6);
+}
+
+/* "Red" text color */
+.theme-text-red {
+  --text-main: #f87171;
+  --text-strong: #ef4444;
+  --text-muted: rgba(248, 113, 113, 0.65);
+}
+
+/* "Orange" text color */
+.theme-text-orange {
+  --text-main: #fb923c;
+  --text-strong: #f97316;
+  --text-muted: rgba(251, 146, 60, 0.65);
+}
+
+/* "Yellow" text color */
+.theme-text-yellow {
+  --text-main: #facc15;
+  --text-strong: #eab308;
+  --text-muted: rgba(250, 204, 21, 0.65);
+}
+
+/* "Green" text color */
+.theme-text-green {
+  --text-main: #4ade80;
+  --text-strong: #22c55e;
+  --text-muted: rgba(74, 222, 128, 0.65);
+}
+
+/* "Blue" text color */
+.theme-text-blue {
+  --text-main: #60a5fa;
+  --text-strong: #3b82f6;
+  --text-muted: rgba(96, 165, 250, 0.65);
+}
+
+/* "Purple" text color */
+.theme-text-purple {
+  --text-main: #c084fc;
+  --text-strong: #a855f7;
+  --text-muted: rgba(192, 132, 252, 0.65);
+}
+
+/* "Pink" text color */
+.theme-text-pink {
+  --text-main: #f472b6;
+  --text-strong: #ec4899;
+  --text-muted: rgba(244, 114, 182, 0.65);
+}
+/* Background color themes: never put on an element, settingsController.js reads one variable from a class and sets it on <html> */
+/* Each color has 4 shades in the settings: 1 = -dark, 2 = no suffix, 3 = -medium, 4 = -light */
+
+/* "Black" background */
+.theme-black {
+  --bg-main: #070707;
+  --bg-secondary: #111;
+  --bg-tertiary: #141414;
+  --bg-elevated: #1a1a1a;
+
+  --border-main: #222;
+  --border-soft: #2a2a2a;
+  --border-strong: #333;
+
+  --overlay-dark: rgba(0,0,0,0.6);
+  --overlay-strong: rgba(0,0,0,0.75);
+
+  --accent: #4ade80;
+}
+
+/* "White" background */
+.theme-white {
+  /* Backgrounds (soft, not pure white) */
+  --bg-main: #f6f7fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #eef1f7;
+  --bg-elevated: #e6eaf2;
+
+  /* Borders */
+  --border-main: #d6dbe6;
+  --border-soft: #e5e9f2;
+  --border-strong: #c7cfdd;
+
+  /* Overlays */
+  --overlay-dark: rgba(0, 0, 0, 0.15);
+  --overlay-strong: rgba(0, 0, 0, 0.25);
+
+  /* Accent */
+  --accent: #3b82f6;
+}
+
+/* "Red 1" background (darkest shade) */
+.theme-red-dark {
+  --bg-main: #120a0a;
+  --bg-secondary: #180c0c;
+  --bg-tertiary: #201010;
+  --bg-elevated: #2a1414;
+
+  --text-main: #f3e8e8;
+  --text-strong: #fbf1f1;
+  --text-muted: rgba(230,200,200,0.7);
+
+  --border-main: #361a1a;
+  --border-soft: #442222;
+  --border-strong: #5c2c2c;
+
+  --overlay-dark: rgba(18, 5, 5, 0.6);
+  --overlay-strong: rgba(18, 5, 5, 0.75);
+
+  --accent: #ef4444;
+}
+
+/* "Orange 1" background (darkest shade) */
+.theme-orange-dark {
+  --bg-main: #12100a;
+  --bg-secondary: #18140c;
+  --bg-tertiary: #20180e;
+  --bg-elevated: #2a1f14;
+
+  --text-main: #f3eee8;
+  --text-strong: #fbf6f1;
+  --text-muted: rgba(230,215,200,0.7);
+
+  --border-main: #36261a;
+  --border-soft: #443022;
+  --border-strong: #5c3f2c;
+
+  --overlay-dark: rgba(18, 10, 5, 0.6);
+  --overlay-strong: rgba(18, 10, 5, 0.75);
+
+  --accent: #f97316;
+}
+
+/* "Yellow 1" background (darkest shade) */
+.theme-yellow-dark {
+  --bg-main: #12120a;
+  --bg-secondary: #18180c;
+  --bg-tertiary: #20200e;
+  --bg-elevated: #2a2a14;
+
+  --text-main: #f3f3e8;
+  --text-strong: #fbfbf1;
+  --text-muted: rgba(230,230,200,0.7);
+
+  --border-main: #36361a;
+  --border-soft: #444422;
+  --border-strong: #5c5c2c;
+
+  --overlay-dark: rgba(18, 18, 5, 0.6);
+  --overlay-strong: rgba(18, 18, 5, 0.75);
+
+  --accent: #eab308;
+}
+
+/* "Green 1" background (darkest shade) */
+.theme-green-dark {
+  --bg-main: #0a120c;
+  --bg-secondary: #0c1810;
+  --bg-tertiary: #0e2014;
+  --bg-elevated: #142a1a;
+
+  --text-main: #e8f3ec;
+  --text-strong: #f1fbf6;
+  --text-muted: rgba(200,230,210,0.7);
+
+  --border-main: #1a3624;
+  --border-soft: #224430;
+  --border-strong: #2c5c3f;
+
+  --overlay-dark: rgba(5, 18, 10, 0.6);
+  --overlay-strong: rgba(5, 18, 10, 0.75);
+
+  --accent: #22c55e;
+}
+
+/* "Blue 1" background (darkest shade) */
+.theme-blue-dark {
+  --bg-main: #0a0c12;
+  --bg-secondary: #0c1018;
+  --bg-tertiary: #0e1320;
+  --bg-elevated: #141a2a;
+
+  --border-main: #1a2236;
+  --border-soft: #222c44;
+  --border-strong: #2c3a5c;
+
+  --overlay-dark: rgba(5, 8, 18, 0.6);
+  --overlay-strong: rgba(5, 8, 18, 0.75);
+
+  --accent: #3b82f6;
+}
+
+/* "Purple 1" background (darkest shade) */
+.theme-purple-dark {
+  --bg-main: #100a12;
+  --bg-secondary: #140c18;
+  --bg-tertiary: #1a0e20;
+  --bg-elevated: #22142a;
+
+  --text-main: #f0e8f3;
+  --text-strong: #f8f1fb;
+  --text-muted: rgba(220,200,230,0.7);
+
+  --border-main: #2c1a36;
+  --border-soft: #382244;
+  --border-strong: #4c2c5c;
+
+  --overlay-dark: rgba(12, 5, 18, 0.6);
+  --overlay-strong: rgba(12, 5, 18, 0.75);
+
+  --accent: #a855f7;
+}
+
+/* "Pink 1" background (darkest shade) */
+.theme-pink-dark {
+  --bg-main: #120a10;
+  --bg-secondary: #180c14;
+  --bg-tertiary: #200e1a;
+  --bg-elevated: #2a1422;
+
+  --text-main: #f3e8ef;
+  --text-strong: #fbf1f7;
+  --text-muted: rgba(230,200,220,0.7);
+
+  --border-main: #361a2c;
+  --border-soft: #442238;
+  --border-strong: #5c2c4c;
+
+  --overlay-dark: rgba(18, 5, 12, 0.6);
+  --overlay-strong: rgba(18, 5, 12, 0.75);
+
+  --accent: #ec4899;
+}
+
+/* "Red 2" background (deep shade) */
+.theme-red {
+  /* Backgrounds (deeper) */
+  --bg-main: #180808;
+  --bg-secondary: #220b0b;
+  --bg-tertiary: #2c0e0e;
+  --bg-elevated: #361212;
+
+  /* Borders */
+  --border-main: #4a1818;
+  --border-soft: #5a1d1d;
+  --border-strong: #6e2424;
+
+  /* Overlay */
+  --overlay-dark: rgba(40, 5, 5, 0.65);
+  --overlay-strong: rgba(40, 5, 5, 0.8);
+
+  /* Accent */
+  --accent: #ef4444;
+}
+
+/* "Orange 2" background (deep shade) */
+.theme-orange {
+  --bg-main: #181006;
+  --bg-secondary: #221608;
+  --bg-tertiary: #2c1c0a;
+  --bg-elevated: #36230d;
+
+  --border-main: #4a2e12;
+  --border-soft: #5a3816;
+  --border-strong: #6e451b;
+
+  --overlay-dark: rgba(40, 20, 5, 0.65);
+  --overlay-strong: rgba(40, 20, 5, 0.8);
+
+  --accent: #f97316;
+}
+
+/* "Yellow 2" background (deep shade) */
+.theme-yellow {
+  --bg-main: #181806;
+  --bg-secondary: #222208;
+  --bg-tertiary: #2c2c0a;
+  --bg-elevated: #36360d;
+
+  --border-main: #4a4a12;
+  --border-soft: #5a5a16;
+  --border-strong: #6e6e1b;
+
+  --overlay-dark: rgba(40, 40, 5, 0.65);
+  --overlay-strong: rgba(40, 40, 5, 0.8);
+
+  --accent: #eab308;
+}
+
+/* "Green 2" background (deep shade) */
+.theme-green {
+  --bg-main: #06180c;
+  --bg-secondary: #082210;
+  --bg-tertiary: #0a2c14;
+  --bg-elevated: #0d3619;
+
+  --border-main: #124a24;
+  --border-soft: #165a2b;
+  --border-strong: #1b6e35;
+
+  --overlay-dark: rgba(5, 40, 20, 0.65);
+  --overlay-strong: rgba(5, 40, 20, 0.8);
+
+  --accent: #22c55e;
+}
+
+/* "Blue 2" background (deep shade) */
+.theme-blue {
+  --bg-main: #060c18;
+  --bg-secondary: #081022;
+  --bg-tertiary: #0a142c;
+  --bg-elevated: #0d1936;
+
+  --border-main: #12244a;
+  --border-soft: #162c5a;
+  --border-strong: #1b356e;
+
+  --overlay-dark: rgba(5, 15, 40, 0.65);
+  --overlay-strong: rgba(5, 15, 40, 0.8);
+
+  --accent: #3b82f6;
+}
+
+/* "Purple 2" background (deep shade) */
+.theme-purple {
+  --bg-main: #120618;
+  --bg-secondary: #180822;
+  --bg-tertiary: #1e0a2c;
+  --bg-elevated: #250d36;
+
+  --border-main: #34124a;
+  --border-soft: #3e165a;
+  --border-strong: #4c1b6e;
+
+  --overlay-dark: rgba(20, 5, 40, 0.65);
+  --overlay-strong: rgba(20, 5, 40, 0.8);
+
+  --accent: #a855f7;
+}
+
+/* "Pink 2" background (deep shade) */
+.theme-pink {
+  --bg-main: #180612;
+  --bg-secondary: #220818;
+  --bg-tertiary: #2c0a1e;
+  --bg-elevated: #360d25;
+
+  --border-main: #4a1234;
+  --border-soft: #5a163e;
+  --border-strong: #6e1b4c;
+
+  --overlay-dark: rgba(40, 5, 25, 0.65);
+  --overlay-strong: rgba(40, 5, 25, 0.8);
+
+  --accent: #ec4899;
+}
+
+/* "Red 4" background (lightest shade) */
+.theme-red-light {
+  /* Backgrounds (clearly light red, not white) */
+  --bg-main: #ffd9d4;
+  --bg-secondary: #ffccc6;
+  --bg-tertiary: #ffbeb7;
+  --bg-elevated: #ffada5;
+
+  /* Borders */
+  --border-main: #e6958e;
+  --border-soft: #d6847c;
+  --border-strong: #c26f67;
+
+  /* Overlay (warmer, less pink) */
+  --overlay-dark: rgba(140, 40, 20, 0.15);
+  --overlay-strong: rgba(140, 40, 20, 0.25);
+
+  /* Accent (true red, not pinkish) */
+  --accent: #dc2626;
+}
+
+/* "Orange 4" background (lightest shade) */
+.theme-orange-light {
+  --bg-main: #ffe2cc;
+  --bg-secondary: #ffd6bd;
+  --bg-tertiary: #ffc9ad;
+  --bg-elevated: #ffb999;
+
+  --border-main: #e69a6f;
+  --border-soft: #d6895e;
+  --border-strong: #c2754d;
+
+  --overlay-dark: rgba(160, 80, 20, 0.15);
+  --overlay-strong: rgba(160, 80, 20, 0.25);
+
+  --accent: #ea580c;
+}
+
+/* "Yellow 4" background (lightest shade) */
+.theme-yellow-light {
+  --bg-main: #fff3b0;
+  --bg-secondary: #ffe98f;
+  --bg-tertiary: #ffdf6e;
+  --bg-elevated: #ffd54f;
+
+  --border-main: #e6c24a;
+  --border-soft: #d6b23f;
+  --border-strong: #c29f32;
+
+  --overlay-dark: rgba(160, 140, 20, 0.15);
+  --overlay-strong: rgba(160, 140, 20, 0.25);
+
+  --accent: #ca8a04;
+}
+
+/* "Green 4" background (lightest shade) */
+.theme-green-light {
+  --bg-main: #d4f5df;
+  --bg-secondary: #c2ebd0;
+  --bg-tertiary: #afe0c0;
+  --bg-elevated: #99d6ad;
+
+  --border-main: #6fc28b;
+  --border-soft: #5fb27c;
+  --border-strong: #4da068;
+
+  --overlay-dark: rgba(20, 120, 60, 0.15);
+  --overlay-strong: rgba(20, 120, 60, 0.25);
+
+  --accent: #16a34a;
+}
+
+/* "Blue 4" background (lightest shade) */
+.theme-blue-light {
+  --bg-main: #d6e8ff;
+  --bg-secondary: #c4dcff;
+  --bg-tertiary: #b1d0ff;
+  --bg-elevated: #9ec3ff;
+
+  --border-main: #6fa0e6;
+  --border-soft: #5f8fd6;
+  --border-strong: #4d7cc2;
+
+  --overlay-dark: rgba(20, 80, 160, 0.15);
+  --overlay-strong: rgba(20, 80, 160, 0.25);
+
+  --accent: #2563eb;
+}
+
+/* "Purple 4" background (lightest shade) */
+.theme-purple-light {
+  --bg-main: #e6d6ff;
+  --bg-secondary: #d9c4ff;
+  --bg-tertiary: #ccb1ff;
+  --bg-elevated: #be9eff;
+
+  --border-main: #9a6fe6;
+  --border-soft: #895fd6;
+  --border-strong: #754dc2;
+
+  --overlay-dark: rgba(90, 20, 160, 0.15);
+  --overlay-strong: rgba(90, 20, 160, 0.25);
+
+  --accent: #7c3aed;
+}
+
+/* "Pink 4" background (lightest shade) */
+.theme-pink-light {
+  --bg-main: #ffd6e8;
+  --bg-secondary: #ffc4dd;
+  --bg-tertiary: #ffb1d1;
+  --bg-elevated: #ff9ec6;
+
+  --border-main: #e66fa3;
+  --border-soft: #d65f92;
+  --border-strong: #c24d7d;
+
+  --overlay-dark: rgba(160, 20, 90, 0.15);
+  --overlay-strong: rgba(160, 20, 90, 0.25);
+
+  --accent: #db2777;
+}
+
+/* "Red 3" background (mid-tone shade) */
+.theme-red-medium {
+  /* Backgrounds (centered around red, not white/black) */
+  --bg-main: #7a1f1f;
+  --bg-secondary: #8f2626;
+  --bg-tertiary: #a12c2c;
+  --bg-elevated: #b53333;
+
+  /* Borders */
+  --border-main: #cc3b3b;
+  --border-soft: #e04444;
+  --border-strong: #ff4d4d;
+
+  /* Overlay */
+  --overlay-dark: rgba(80, 10, 10, 0.5);
+  --overlay-strong: rgba(80, 10, 10, 0.7);
+
+  /* Accent (true red core) */
+  --accent: #ff3b3b;
+}
+
+/* "Orange 3" background (mid-tone shade) */
+.theme-orange-medium {
+  --bg-main: #7a3a1f;
+  --bg-secondary: #8f4526;
+  --bg-tertiary: #a1502c;
+  --bg-elevated: #b55c33;
+
+  --border-main: #cc6a3b;
+  --border-soft: #e07644;
+  --border-strong: #ff844d;
+
+  --overlay-dark: rgba(80, 40, 10, 0.5);
+  --overlay-strong: rgba(80, 40, 10, 0.7);
+
+  --accent: #ff7a1a;
+}
+
+/* "Yellow 3" background (mid-tone shade) */
+.theme-yellow-medium {
+  --bg-main: #7a6a1f;
+  --bg-secondary: #8f7c26;
+  --bg-tertiary: #a18e2c;
+  --bg-elevated: #b5a033;
+
+  --border-main: #ccb83b;
+  --border-soft: #e0c944;
+  --border-strong: #ffdb4d;
+
+  --overlay-dark: rgba(80, 70, 10, 0.5);
+  --overlay-strong: rgba(80, 70, 10, 0.7);
+
+  --accent: #ffd60a;
+}
+
+/* "Green 3" background (mid-tone shade) */
+.theme-green-medium {
+  --bg-main: #1f7a3a;
+  --bg-secondary: #268f45;
+  --bg-tertiary: #2ca150;
+  --bg-elevated: #33b55c;
+
+  --border-main: #3bcc6a;
+  --border-soft: #44e076;
+  --border-strong: #4dff84;
+
+  --overlay-dark: rgba(10, 80, 40, 0.5);
+  --overlay-strong: rgba(10, 80, 40, 0.7);
+
+  --accent: #22c55e;
+}
+
+/* "Blue 3" background (mid-tone shade) */
+.theme-blue-medium {
+  --bg-main: #1f3a7a;
+  --bg-secondary: #26458f;
+  --bg-tertiary: #2c50a1;
+  --bg-elevated: #335cb5;
+
+  --border-main: #3b6acc;
+  --border-soft: #4476e0;
+  --border-strong: #4d84ff;
+
+  --overlay-dark: rgba(10, 30, 80, 0.5);
+  --overlay-strong: rgba(10, 30, 80, 0.7);
+
+  --accent: #3b82f6;
+}
+
+/* "Purple 3" background (mid-tone shade) */
+.theme-purple-medium {
+  --bg-main: #5a1f7a;
+  --bg-secondary: #68268f;
+  --bg-tertiary: #762ca1;
+  --bg-elevated: #8433b5;
+
+  --border-main: #9a3bcc;
+  --border-soft: #aa44e0;
+  --border-strong: #bb4dff;
+
+  --overlay-dark: rgba(40, 10, 80, 0.5);
+  --overlay-strong: rgba(40, 10, 80, 0.7);
+
+  --accent: #a855f7;
+}
+
+/* "Pink 3" background (mid-tone shade) */
+.theme-pink-medium {
+  --bg-main: #7a1f5a;
+  --bg-secondary: #8f2668;
+  --bg-tertiary: #a12c76;
+  --bg-elevated: #b53384;
+
+  --border-main: #cc3b9a;
+  --border-soft: #e044aa;
+  --border-strong: #ff4dbb;
+
+  --overlay-dark: rgba(80, 10, 50, 0.5);
+  --overlay-strong: rgba(80, 10, 50, 0.7);
+
+  --accent: #ec4899;
+}
+
+/* Reset, body, scrollbars and the shared button look */
+/* Page-wide rules: reset, body, scrollbars, the shared look of buttons and inputs, and helper classes */
+
+/* Sizes include padding and border, and every element uses the system font */
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* The page is one full-height column (top bar, then the app) that never scrolls */
+body {
+  margin: 0;
+  background: var(--bg-main);
+  color: var(--text-main);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Thin scrollbars in Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* Thin scrollbars in Chrome, Edge and Safari */
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+/* Scrollbar track */
+*::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+/* Rounded scrollbar thumb, inset from the track by its transparent border */
+*::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb);
+  border-radius: 8px;
+  border: 2px solid var(--scrollbar-track);
+  background-clip: content-box;
+}
+
+/* Lighter thumb on hover */
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--scrollbar-thumb-hover);
+}
+
+/* Shared look for the app's buttons, selects and inputs, colored by the theme */
+.top-bar button,
+.penalty-bar button,
+.top-bar select,
+#typing-container button,
+#typing-container input,
+.main-center button,
+.main-center input,
+.settings-header button,
+.modal button,
+.setting-control select,
+.setting-control button,
+.setting-control input,
+.modal input,
+.stats-page button,
+.stats-page select {
+  background: var(--border-main);
+  color: var(--text-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* Hover keeps the same background as the shared look */
+button:hover, select:hover {
+  background: var(--border-main);
+}
+
+/* Buttons outside the shared list (pop-up buttons) */
+button {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+/* Hides everything but the timer while solving (timer/timerController.js adds it) */
+.focus-hidden {
+  opacity: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Times and numbers in the "Main text" color (--times-color, set by settingsController.js) */
+.times-color-number {
+  color: var(--times-color, inherit);
+}
+
+/* Phones: holding the screen to start the timer must not select text */
+@media (max-width: 768px) {
+  /* Elements a finger lands on while timing */
+  #timer,
+  button,
+  select,
+  #scrambleDisplay {
+    -webkit-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+}
+/* Page grid, sidebars and the main column */
+/* Page layout: the 3-column grid under the top bar, its sidebars and panels, and the main timer column */
+
+/* Grid of left sidebar | main area | right sidebar; the second row leaves room for the desktop cube picture */
+.app-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  grid-template-rows: 1fr 205px;
+  min-height: 0;
+  overflow: hidden;
+  align-items: start;
+}
+
+/* Sidebars fill their whole grid area, the main area only takes its content height */
+.left-sidebar, .right-sidebar {
+  align-self: stretch;
+}
+
+/* Left sidebar: session history, spanning both grid rows */
+.left-sidebar {
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+  grid-row: 1 / 3;
+}
+
+/* Right sidebar: "All time" and "Today" stats, spanning both grid rows of the last column */
+.right-sidebar {
+  background: var(--bg-main);
+  display: grid;
+  grid-template-rows: auto auto auto auto 1fr;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+  grid-column: 3 / 4;
+  grid-row: 1 / 3;
+  justify-content: left;
+}
+
+/* The history panel grows to fill the left sidebar */
+.left-sidebar .panel {
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Panel headings ("Session History", "All time", "Today") */
+.panel-title {
+  opacity: 0.8;
+  margin-left: 25px;
+}
+
+/* Panel bodies, filled by render/renderController.js */
+.panel-content {
+  padding: 8px;
+  overflow: hidden;
+}
+
+/* Main area: the middle column of the first grid row */
+.main-layout {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Main column: scramble, timer block, then the footer; relative so the touch overlay can cover it */
+.main-center {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  position: relative;
+}
+
+/* Invisible layer over the main column that catches touches for the phone timer (timer/timerController.js) */
+#touchOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+/* Phones: one column, no sidebars */
+@media (max-width: 768px) {
+  /* Stack everything instead of the 3-column grid */
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* No room for the sidebars */
+  .left-sidebar,
+  .right-sidebar {
+    display: none;
+  }
+
+  /* Main area takes the full width */
+  .main-layout {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  /* Rows: scramble, timer block, average footer, then spare space; scrolls if it doesn't fit */
+  .main-center {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 2fr auto 180px 1fr;
+    overflow: auto;
+    gap: 12px;
+  }
+}
+
+/* One file per part of the page, in the order it appears */
+/* Top bar: settings, clear, average mode, category, event and session controls */
+
+/* Full-width bar above the app */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+}
+
+/* Row of controls on the left of the bar */
+.left-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Phones: controls wrap onto several lines */
+@media (max-width: 768px) {
+  /* Bar grows to fit the wrapped controls */
+  .top-bar {
+    flex-wrap: wrap;
+    align-self: stretch;
+    gap: 8px;
+  }
+
+  /* Controls wrap and use the whole width */
+  .left-controls {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  /* Selects share each line, at least 100px wide */
+  .top-bar select {
+    flex: 1 1;
+    min-width: 100px;
+    min-height: 10px;
+  }
+}
+/* Scramble text above the timer and the scramble pictures (desktop corner and phone pop-up) */
+
+/* Box for the scramble text, a fixed share of the screen height */
+#scrambleContainer {
+  max-width: 900px;
+  padding: 0 20px;
+  height: 22.5vh;
+}
+
+/* Scramble text, filled by scramble/scrambleController.js */
+#scrambleDisplay {
+  text-align: center;
+  font-size: 20px;
+  opacity: 0.8;
+  word-wrap: break-word;
+}
+
+/* Desktop cube picture, pinned to the bottom-right corner */
+.panel-cube {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+
+/* Phone cube picture: hidden on desktop */
+#scrambleVis2 {
+  display: none;
+}
+
+/* "Scramble visualizer" button that opens the phone picture: hidden on desktop */
+#scramble-button {
+  display: none;
+}
+
+/* Phones: the corner picture goes away, a button opens a pop-up picture instead */
+@media (max-width: 768px) {
+  /* Smaller scramble box */
+  #scrambleContainer {
+    max-width: 100%;
+    padding: 0 12px;
+    height: 16vh;
+  }
+
+  /* Smaller scramble text */
+  #scrambleDisplay {
+    font-size: 16px;
+  }
+
+  /* No room for the corner picture */
+  .panel-cube {
+    display: none;
+  }
+
+  /* Pop-up picture above the button, hidden until the button opens it (topbar/topbarController.js) */
+  .panel-cube2 {
+    display: none;
+    grid-template-columns: 1fr auto 1fr;
+    position: absolute;
+    bottom: 120px;
+    z-index: 1001;
+  }
+
+  /* Button pinned near the bottom of the screen */
+  #scramble-button {
+    display: block;
+    background: var(--bg-main);
+    border: 1px solid var(--bg-main);
+    color: var(--text-strong);
+    z-index: 1001;
+    position: fixed;
+    bottom: 5vh;
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* Phone picture is shown inside its pop-up */
+  #scrambleVis2 {
+    display: block;
+  }
+}
+/* Timer block: the time, what sits next to it, and the penalty bar under it */
+
+/* Column of the timer row and the penalty bar */
+.timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Row of the timer and the event extras (FMC cube and form, typing box), wrapping when narrow */
+#timerins {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* The big running time */
+#timer {
+  font-size: 140px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-top: auto;
+}
+
+/* Penalty and event buttons under the timer, above the touch overlay so they stay clickable */
+.penalty-bar {
+  display: flex;
+  gap: 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--bg-main);
+  z-index: 1001;
+}
+
+/* Phones: smaller timer, penalty buttons spread over the width */
+@media (max-width: 768px) {
+  /* Timer fits a phone screen */
+  #timer {
+    font-size: 72px;
+    letter-spacing: 1px;
+  }
+
+  /* Buttons wrap and center */
+  .penalty-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Each button takes an equal share, on a near-black background with no border */
+  .penalty-bar button {
+    flex: 1;
+    background: #0b0b0b;
+    border: 1px #0b0b0b;
+  }
+}
+/* Typed-in times: the time box, its Add button and the inspection button */
+
+/* Box next to the timer in Typing mode, above the touch overlay so it stays clickable */
+#typing-container {
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-top: 15px;
+}
+
+/* Time input and Add button side by side */
+.typing-controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Narrow time input */
+#typed-time {
+  max-width: 120px;
+}
+
+/* "Inspection (space)" button under the input, full width */
+#inspection-btn {
+  margin-top: 15px;
+  width: 100%;
+}
+/* Fewest Moves: the cube, solution form and move count next to the timer, and the submit button */
+
+/* Hidden until FMC (or Multi-Blind, for the form and submit button) shows them; above the touch overlay so they stay clickable */
+#fmc-cube,
+#fmc-form,
+#fmc-solution,
+#fmc-solution-test,
+#fmc-move-count,
+#submit-moves {
+  display: none;
+  z-index: 1000;
+}
+
+/* Solution label, input and test button stacked (event/FMC.js sets display: flex) */
+#fmc-form {
+  flex-direction: column;
+  gap: 12px;
+}
+/* Multi-Blind: the "View Scrambles" button and the pop-up listing one scramble and picture per cube */
+
+/* Hidden until Multi-Blind shows it; above the touch overlay so it stays clickable */
+#open-mbld-modal {
+  display: none;
+  z-index: 1000;
+}
+
+/* Full-screen dimmed backdrop, hidden until event/eventController.js opens it */
+.mbld-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  overflow: auto;
+}
+
+/* Centered box with big scramble text that scrolls when there are many cubes */
+.mbld-modal-content {
+  background: #111;
+  margin: 20px auto;
+  padding: 15px;
+  width: 95%;
+  font-size: 40px;
+  max-width: 1100px;
+  border-radius: 10px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* Columns: cube number, scramble, picture */
+.mbld-grid {
+  display: grid;
+  grid-template-columns: 40px 700px 160px;
+  gap: 10px 20px;
+  align-items: start;
+}
+
+/* Every cell of the grid */
+.mbld-row {
+  padding: 4px 0;
+  border-bottom: none;
+}
+
+/* Cube number */
+.mbld-index {
+  font-weight: bold;
+}
+
+/* Scramble text */
+.mbld-scramble {
+  font-family: monospace;
+}
+
+/* Scramble picture */
+.mbld-visual {
+  text-align: center;
+}
+
+/* "Cubes:" label and count input */
+.mbld-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Narrow cube count input */
+#mbld-count {
+  width: 60px;
+  padding: 4px;
+  font-size: 14px;
+}
+/* Timed attempts (FMC, Multi-Blind): the "Start attempt" and "Timer Warnings" buttons and the warnings pop-up */
+
+/* Hidden until FMC or Multi-Blind shows them; above the touch overlay so they stay clickable */
+#countdown,
+#openConfig {
+  display: none;
+  z-index: 1000;
+}
+
+/* Warnings pop-up, centered on screen, hidden until event/eventController.js opens it */
+#modal2 {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 1001;
+}
+
+/* Dimmed backdrop behind the warnings pop-up */
+#overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+}
+
+/* One checkbox per warning time, built by event/eventController.js */
+.minute-option {
+  margin: 5px 0;
+}
+/* What render/ draws: the history list in the left sidebar and the average footer under the timer */
+
+/* One average block in the history list, split from the next by a line */
+.history-average {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #222;
+}
+
+/* The average still in progress has no line under it */
+.current-average {
+  border: none;
+}
+
+/* Footer under the timer: the average preview and the current stats, side by side and centered */
+.main-footer {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-main);
+}
+
+/* Each footer panel only takes its content width */
+.main-footer .panel {
+  display: flex;
+  padding: 10px;
+}
+
+/* Pop-ups and full-screen pages */
+/* Details pop-up: a solve or an average with its solves, penalty buttons and scrambles (modal/modalController.js) */
+
+/* Full-screen blurred backdrop that centers the box */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-strong);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Closed pop-up */
+.modal.hidden {
+  display: none;
+}
+
+/* The box, scrolling when the content is taller than the screen */
+.modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-main);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  padding: 16px;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Title at the top ("Session averages") */
+.modal-title {
+  margin-top: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+}
+
+/* Card for one average */
+.modal-average-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-main);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+/* Average result line at the top of the card */
+.modal-average-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+  opacity: 0.9;
+}
+
+/* List of the average's solves */
+.modal-solves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* One solve */
+.modal-solve-row {
+  background: var(--bg-main);
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Solve time on the left, its buttons on the right */
+.modal-solve-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+/* OK / +2 / DNF / remove buttons of a solve */
+.modal-solve-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Small faded scramble under the solve */
+.modal-scramble {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.65;
+  word-break: break-word;
+}
+
+/* Phones: wider box with less padding */
+@media (max-width: 768px) {
+  /* Almost full width */
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+    padding: 12px;
+  }
+}
+/* Statistics page: full-screen page with the date filter, charts, overview cards and averages table */
+
+/* Full-screen page over the timer, hidden until opened */
+.stats-page {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-main);
+  border: 1px solid var(--border-main);
+  color: var(--text-main);
+  z-index: 9999;
+  overflow: scroll;
+  display: none;
+  flex-direction: column;
+}
+
+/* Open page (stats/statsController.js adds .open) */
+.stats-page.open {
+  display: flex;
+}
+
+/* Bar at the top with the back button and title */
+.stats-topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-main);
+}
+
+/* "Back to Timer" button */
+.stats-topbar button {
+  height: 36px;
+}
+
+/* "Session Statistics" title */
+.stats-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Period select (all time, year … day) */
+#date-filter {
+  width: 100px;
+  margin: 10px;
+}
+
+/* Two charts per row, one when narrower than 800px */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+/* Fixed-height box Chart.js draws into */
+.chart-container {
+  width: 100%;
+  height: 300px;
+}
+
+/* Distribution chart centered in its box */
+#distributionChart {
+  justify-self: center;
+}
+
+/* Row of overview cards (solves, best, mean, σ, best average) */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+/* One overview card */
+.stat-card {
+  background: var(--bg-main);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+/* Best average card, outlined in the accent color */
+.stat-card.highlight {
+  outline: 2px solid var(--accent);
+}
+
+/* Small faded card label */
+.stat-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Big card value */
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+/* "Averages History" section, filling the rest of the page */
+.stats-averages {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scroll box around the table, for sessions with many averages */
+.table-scroll {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+}
+
+/* Table at least as wide as its box, wider if the columns need it */
+.avg-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+/* Centered cells on one line, with grid lines */
+.avg-table th,
+.avg-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-main);
+  border-right: 1px solid var(--border-main);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Header row stays visible while scrolling */
+.avg-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+}
+
+/* Hovered row */
+.avg-table tr:hover {
+  background: #1a1f2b;
+}
+
+/* Phones: two cards per row, smaller text */
+@media (max-width: 768px) {
+  /* Two overview cards per row */
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Smaller card values */
+  .stat-value {
+    font-size: 20px;
+  }
+
+  /* Tighter table cells */
+  .avg-table th,
+  .avg-table td {
+    padding: 6px;
+    font-size: 13px;
+  }
+}
+/* Settings panel: centered pop-up with timer options, colors and layout switches */
+
+/* Dimmed full-screen backdrop, hidden until the gear button opens it */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1002;
+}
+
+/* Open settings (settings/settingsController.js adds .open) */
+.overlay.open {
+  display: flex;
+}
+
+/* The panel, scrolling when taller than the screen */
+.settings-panel {
+  width: 320px;
+  background: var(--bg-main);
+  color: var(--text-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  position: relative;
+  font-family: system-ui, sans-serif;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Title and close button, stuck to the top while the panel scrolls */
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px 24px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+/* Close button sits in the header's flex row */
+#closeSettings {
+  position: static;
+}
+
+/* Everything under the header */
+.settings-body {
+  padding: 0 24px 24px 24px;
+}
+
+/* A group of rows with a title ("Timer Options", "Color", "Layout") */
+.settings-section {
+  margin-top: 22px;
+}
+
+/* First group a bit closer to the header */
+.settings-section:first-of-type {
+  margin-top: 12px;
+}
+
+/* Small uppercase group title */
+.section-title {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 6px 4px 10px 4px;
+}
+
+/* One setting: label on the left, control on the right */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+/* Setting name */
+.setting-row label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* Box around the select or input */
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Smaller text in the controls than in the shared button look */
+.setting-control select,
+.setting-control button,
+.setting-control input {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* Phones: no Statistics or Session History switches, since phones never show those sidebars */
+@media (max-width: 768px) {
+  /* The two sidebar switch rows */
+  #pc1, #pc2 {
+    display: none;
+  }
+}
