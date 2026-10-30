@@ -678,11 +678,10 @@ function computeAverage(solves, mode) {
   }
   if (mode.startsWith("ao")) {
     const N = times.length;
+    const trimCount = Math.ceil(N * 0.05);
     const dnfs2 = times.filter((t) => t === Infinity).length;
-    if (dnfs2 >= 2) return { dnf: true };
+    if (dnfs2 > trimCount) return { dnf: true };
     const sorted = [...times].sort((a, b) => a - b);
-    let trimCount = Math.floor(N * 0.05);
-    if (N === 5) trimCount = 1;
     const trimmed = sorted.slice(trimCount, N - trimCount);
     let avg2 = null;
     if (trimmed.includes(Infinity)) {
@@ -16185,8 +16184,10 @@ function renderStatsPage() {
   const tbody = document.getElementById("avg-history-body");
   thead.innerHTML = "";
   tbody.innerHTML = "";
+  const inPeriod = new Set(filteredAverages);
+  const tableAverages = session2.averages.filter((block) => inPeriod.has(block));
   let maxSolves = 0;
-  session2.averages.forEach((b) => {
+  tableAverages.forEach((b) => {
     if (b.solves.length > maxSolves) maxSolves = b.solves.length;
   });
   const existingChart = Chart.getChart("timesChart");
@@ -16446,10 +16447,10 @@ function renderStatsPage() {
       tbody.appendChild(tr);
     });
   } else {
-    session2.averages.forEach((block, i) => {
+    tableAverages.forEach((block) => {
       const tr = document.createElement("tr");
       let rowHtml = `
-      <td><span class="times-color-number">${session2.averages.length - i}</span></td>
+      <td><span class="times-color-number">${session2.averages.length - session2.averages.indexOf(block)}</span></td>
       <td>${block.mode.toUpperCase()}</td>
       <td><span class="times-color-number">${block.average}</span></td>
       <td><strong><span class="times-color-number">${block.best}</span></strong></td>
