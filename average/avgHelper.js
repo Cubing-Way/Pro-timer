@@ -63,10 +63,18 @@ function formatSecondsToTime(sec) {
     return manageTime(sec);
 }
 
+// How many solves finish a block average: 5 for ao5 and bo5, 12 for ao12, 3 for mo3, bo3 and ao3 (fmc3)
+function getNeededSolves(mode) {
+    if (mode === "ao5" || mode === "bo5") return 5;
+    if (mode === "ao12") return 12;
+    return 3;
+}
+
 export {
     parseTimeToSeconds,
     isPointsSolves,
     manageTime,
     formatDisplayTime,
-    formatSecondsToTime
+    formatSecondsToTime,
+    getNeededSolves
 };

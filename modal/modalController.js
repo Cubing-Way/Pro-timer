@@ -1,6 +1,6 @@
 import { getSessionAverages, getCurrentSession, penalty2, remove2 } from "../session/sessionController.js";
 import { computeAverage, formatSecondsToTime } from "../average/avgController.js";
-import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
+import { averageObj, classicStats, updateClassicStats, getNeededSolves } from "../average/avgController.js";
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
 import { isCubiszEvent } from "../scramble/scrambleController.js";
@@ -41,12 +41,113 @@ modalBody.addEventListener("click", (e) => {
     if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
 });
 
+// HTML of one solve row: time, penalty buttons, scramble, inspection, date and, for 3x3, the solution box
+function solveRowHtml(s, i, blockIndex) {
+    // Start this solve's +2 counter at its current penalty
+    const counterKey = `${blockIndex}-${i}`;
+    let counter = 0;
+    if (typeof s.penalty === 'number' && s.penalty > 0) {
+        counter = s.penalty;
+    }
+    modalPenaltyCounters[counterKey] = counter;
+
+    // The +2 button shows what the next click gives, like the top bar's
+    const buttonText = `+${counter + 2}`;
+    const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
+
+    // Cubisz only checks 3x3 solutions; solves saved before solves had an event use the session's event
+    const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
+    // Solution box and its result (status, moves, TPS), only for 3x3 solves
+    const solutionRows = canCheck ? `
+            <div class="modal-scramble">
+                Solution: <input
+                    type="text"
+                    id="solution-input-${blockIndex}-${i}"
+                    placeholder="Enter solution"
+                    value="${s.solution || ''}"
+                />
+                <button data-action="solution" ${solveData}>
+                    Submit
+                </button>
+            </div>
+            <div class="modal-scramble">
+                <span id="tps-${blockIndex}-${i}">Status: ${s.status || '-'} | Moves: ${s.moves || '-'} | TPS: ${s.tps ? s.tps.toFixed(2) : '-'}</span>
+            </div>
+    ` : "";
+
+    // Solve row: time, penalty buttons, scramble, inspection, date, solution
+    return `
+        <div class="modal-solve-row">
+            <div class="modal-solve-main">
+                <span>#${i + 1}: ${formatStatValue(s)}</span>
+
+                <div class="modal-solve-actions">
+                    <button data-action="ok" ${solveData}>OK</button>
+                    <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
+                    <button data-action="dnf" ${solveData}>DNF</button>
+                    <button data-action="remove" ${solveData}>✖</button>
+                </div>
+            </div>
+
+            <div class="modal-scramble">
+                Scramble: ${s.scramble}
+            </div>
+
+            <div class="modal-scramble">
+                Inspection: ${s.inspection}
+            </div>
+
+
+            <div class="modal-scramble">
+                Date: ${new Date(s.createdAt)}
+            </div>
+            ${solutionRows}
+        </div>
+    `;
+}
+
 // Builds the modal's HTML: one card per saved average (newest first) with its solves, then opens it
 function openDetailsModal() {
     const averages = getSessionAverages();
 
     let html = `<h3 class="modal-title">Session averages</h3>`;
     modalBlocks = averages;
+
+    // The average in progress (the session's buffer) goes first, above the finished ones
+    const bufferSolves = averageObj.solvesArray;
+    if (bufferSolves.length > 0) {
+        let bufferHeader;
+        if (averageObj.mode === "classic") {
+            // Classic keeps every solve in the buffer, so just count them
+            bufferHeader = `classic: ${wrapTimesValue(bufferSolves.length)} solves`;
+        } else {
+            // Solves done out of solves needed, like "ao5 in progress: 3/5"
+            bufferHeader = `${averageObj.mode} in progress: ${wrapTimesValue(`${bufferSolves.length}/${getNeededSolves(averageObj.mode)}`)}`;
+            // One solve left in an ao5: also the best and worst possible result, like the footer
+            if (averageObj.mode === "ao5" && bufferSolves.length === 4) {
+                const ao5Avg = computeAverage(bufferSolves, "ao5");
+                // Two DNFs already make both of them a DNF
+                bufferHeader += ` (bpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.bpAo5)}, wpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.wpA05)})`;
+            }
+        }
+
+        // Same card as a finished average; blockIndex -1 tells the buttons it's the average in progress
+        html += `
+            <div class="modal-average-card modal-buffer-card">
+                <div class="modal-average-header">
+                    <b>${bufferHeader}</b>
+                </div>
+
+                <div class="modal-solves">
+        `;
+        bufferSolves.forEach((s, i) => {
+            html += solveRowHtml(s, i, -1);
+        });
+        html += `
+                </div>
+            </div>
+        `;
+    }
 
     averages.forEach((block, blockIndex) => {
         // Header: mode, average number (oldest is #1) and result
@@ -76,67 +177,7 @@ function openDetailsModal() {
         `;
 
         block.solves.forEach((s, i) => {
-            // Start this solve's +2 counter at its current penalty
-            const counterKey = `${blockIndex}-${i}`;
-            let counter = 0;
-            if (typeof s.penalty === 'number' && s.penalty > 0) {
-                counter = s.penalty;
-            }
-            modalPenaltyCounters[counterKey] = counter;
-
-            // The +2 button shows what the next click gives, like the top bar's
-            const buttonText = `+${counter + 2}`;
-            const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
-
-            // Cubisz only checks 3x3 solutions; solves saved before solves had an event use the session's event
-            const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
-            // Solution box and its result (status, moves, TPS), only for 3x3 solves
-            const solutionRows = canCheck ? `
-                    <div class="modal-scramble">
-                       Solution: <input
-                            type="text"
-                            id="solution-input-${blockIndex}-${i}"
-                            placeholder="Enter solution"
-                            value="${block.solves[i].solution || ''}"
-                        />
-                        <button data-action="solution" ${solveData}>
-                            Submit
-                        </button>
-                    </div>
-                    <div class="modal-scramble">
-                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || '-'} | Moves: ${block.solves[i].moves || '-'} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : '-'}</span>
-                    </div>
-            ` : "";
-
-            // Solve row: time, penalty buttons, scramble, inspection, date, solution
-            html += `
-                <div class="modal-solve-row">
-                    <div class="modal-solve-main">
-                        <span>#${i + 1}: ${formatStatValue(s)}</span>
-
-                        <div class="modal-solve-actions">
-                            <button data-action="ok" ${solveData}>OK</button>
-                            <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
-                            <button data-action="dnf" ${solveData}>DNF</button>
-                            <button data-action="remove" ${solveData}>✖</button>
-                        </div>
-                    </div>
-
-                    <div class="modal-scramble">
-                        Scramble: ${block.solves[i].scramble}
-                    </div>
-
-                    <div class="modal-scramble">
-                        Inspection: ${block.solves[i].inspection}
-                    </div>
-
-
-                    <div class="modal-scramble">
-                        Date: ${new Date(block.solves[i].createdAt)}
-                    </div>
-                    ${solutionRows}
-                </div>
-            `;
+            html += solveRowHtml(s, i, blockIndex);
         });
 
         // Close the solves list and the card
@@ -176,14 +217,14 @@ function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
         }
     }
 
-    // Change the solve and recompute its average, then save and redraw
+    // Change the solve and recompute its average
     penalty2(blockIndex, solveIndex, finalPenalty);
-    saveSessions();
-    renderHistory();
-    // Classic mode also recounts its rolling averages
+    // Classic mode also recounts its rolling averages, before they're saved and drawn
     if (averageObj.mode === "classic") updateClassicStats(true);
     const session = getCurrentSession();
     session.classicStats = structuredClone(classicStats);
+    saveSessions();
+    renderHistory();
     // Rebuild the modal if it's open, so it shows the new numbers
     if (!modal.classList.contains("hidden")) {
         openDetailsModal();
@@ -205,8 +246,10 @@ function removeSolve(blockIndex, solveIndex) {
 
 // Checks a typed solution on cubisz: scramble, apply the moves, count them, and work out TPS
 function submitSolution(blockIndex, solveIndex) {
-    const block = modalBlocks[blockIndex];
-    const solve = block.solves[solveIndex];
+    // A solve of the average in progress (blockIndex -1) is in the buffer, the others in their saved average
+    const solve = blockIndex === -1
+        ? averageObj.solvesArray[solveIndex]
+        : modalBlocks[blockIndex].solves[solveIndex];
 
     const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
     const value = input.value;

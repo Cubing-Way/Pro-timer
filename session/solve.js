@@ -47,8 +47,15 @@ function getLastSolveTarget(averageObj, getCurrentSession) {
     };
 }
 
-// Sets the penalty of a solve in a saved average, then recomputes and saves that average
-function penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions) {
+// Sets a solve's penalty: in the average in progress (blockIndex -1), or in a saved average, which is then recomputed
+function penalty2(blockIndex, solveIndex, penalty, averageObj, getCurrentSession, saveSessions) {
+    // Solve of the average in progress: just change it (there are no stored numbers to recompute)
+    if (blockIndex === -1) {
+        averageObj.solvesArray[solveIndex].penalty = penalty;
+        saveSessions();
+        return;
+    }
+
     const averages = getSessionAverages(getCurrentSession);
     const block = averages[blockIndex];
 

@@ -220,9 +220,9 @@ function getSessionAverages() {
     return solve.getSessionAverages(getCurrentSession);
 }
 
-// Sets the penalty of a solve in a saved average and recomputes the average
+// Sets the penalty of a solve (blockIndex -1: in the average in progress) and recomputes its average
 function penalty2(blockIndex, solveIndex, penalty) {
-    solve.penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
+    solve.penalty2(blockIndex, solveIndex, penalty, averageObj, getCurrentSession, saveSessions);
 }
 
 // Removes a solve (blockIndex -1: from the average in progress)

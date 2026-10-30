@@ -2,7 +2,8 @@ import {
     parseTimeToSeconds,
     isPointsSolves,
     formatSecondsToTime,
-    formatDisplayTime
+    formatDisplayTime,
+    getNeededSolves
 } from "./avgHelper.js";
 
 import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
@@ -78,13 +79,9 @@ function averageOfN(
         updateClassicStats(modeFlag);
         return null;
     }
-    // Determine how many solves needed for this mode
-    let neededSolves = 3; // default for mo3, bo3 and ao3 (fmc3)
-    if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
-        neededSolves = 5;
-    } else if (averageObj.mode === "ao12") {
-        neededSolves = 12;
-    }
+
+    // How many solves this mode needs
+    const neededSolves = getNeededSolves(averageObj.mode);
 
     // Enough solves: turn the first neededSolves into a finished block
     if (averageObj.solveCounter >= neededSolves) {
@@ -119,6 +116,7 @@ export {
     formatSecondsToTime,
     computeAverage,
     formatDisplayTime,
+    getNeededSolves,
     updateClassicStats,
     averageObj,
     averageOfN,
