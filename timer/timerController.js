@@ -7,10 +7,10 @@ import { beginHold, cancelHold, resetTimerColor } from "./timerPhases.js";
 import { inspection } from "./inspection.js";
 import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
-import { averageOfN, classicStats } from "../average/avgController.js";
+import { averageOfN, classicStats, formatDisplayTime } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { addAverageBlock } from "../session/sessionController.js";
-import { saveSessions, getCurrentSession} from "../session/sessionController.js";
+import { saveSessions, getCurrentSession, getLastSolve } from "../session/sessionController.js";
 import { formatTime } from "./timeFormatting.js";
 import { timeInsertion, setTimeInsertion } from "../settings/settingsController.js";
 import { plus2CounterObj } from "../topbar/topbarState.js";
@@ -38,6 +38,15 @@ function setTimerDisplay(colorOrTime, content) {
     }
 }
 
+// Shows the most recent solve on the timer, or "0.00" when there's none; FMC and Multi-Blind keep their countdown
+function showLastSolve() {
+    if (timerSettObj.untimedEvent) return;
+    const last = getLastSolve();
+    // A Fewest Moves or Multi-Blind solve in the session is moves / points, not a time
+    const isTime = last && last.event !== "333fm" && last.event !== "r3ni";
+    setTimerDisplay('time', isTime ? formatDisplayTime(last) : "0.00");
+}
+
 // Inspection for typed-in times: a plain seconds count, separate from the solve timer
 
 // Seconds counted, the count's setInterval id, and whether it's running
@@ -62,9 +71,7 @@ function inspection2() {
                     clearInterval(interval);
                     interval = null;
                     seconds = 0;
-
-                        setTimerDisplay('time', "0.00");
-
+                    showLastSolve();
                 }
         }, 1000);
     } else {
@@ -73,10 +80,7 @@ function inspection2() {
         clearInterval(interval);
         interval = null;
         seconds = 0;
-
-                setTimerDisplay('time', "0.00");
-
-
+        showLastSolve();
     }
 }
 
@@ -207,7 +211,7 @@ document.addEventListener("keydown", (event) => {
         timerObj.solvePhases = [];
         timerObj.currentSolvePhase = 0;
         timerObj.lastSplitTime = 0;
-        document.getElementById("timer").textContent = "0.00";
+        showLastSolve();
         resetTimerColor(setTimerDisplay, getThemeVar);
         restoreUI();
     }
@@ -368,4 +372,8 @@ document.addEventListener("keyup", (e) => {
     onPressEnd();
 });
 
-export { setTimerDisplay, timerDOMObj };
+export {
+    setTimerDisplay,
+    timerDOMObj,
+    showLastSolve
+};

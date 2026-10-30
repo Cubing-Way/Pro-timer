@@ -179,7 +179,7 @@ A **solve**, as saved in `averageObj.solvesArray` and in average blocks:
 | `result` | Multi-Blind only: `"4 / 5"` |
 | `scramble`, `event` | The scramble and the event code it was made for |
 | `inspection` | Seconds of inspection used (0 for typed times, FMC and Multi-Blind) |
-| `createdAt` | When it was saved (ms since 1970), used by the date filters |
+| `createdAt` | When it was saved (ms since 1970), used by the date filters and to find the most recent solve |
 | `solution` | Fewest Moves solution, or one typed in the details pop-up |
 | `solvePhases` | Time of each timer phase |
 | `moves`, `tps`, `status` | Set when a solution is checked in the details pop-up |
@@ -208,7 +208,9 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
   | ready | | → running, `startTimer` |
   | running | `handleSplitOrStop` | |
 
-  `onPressLost` cancels a hold when the release can't come (touch cancelled, tab hidden, window blurred). Escape cancels everything. Tab switches between Timer and Typing (`setTimeInsertion`). `setTimerDisplay(colorOrTime, content)` is the only function that writes on the timer; the other timer files get it passed in. `inspection2` is a separate seconds count used for inspection in Typing mode.
+  `onPressLost` cancels a hold when the release can't come (touch cancelled, tab hidden, window blurred). Escape cancels everything and puts the last solve back on the timer. Tab switches between Timer and Typing (`setTimeInsertion`). `setTimerDisplay(colorOrTime, content)` is the only function that writes on the timer; the other timer files get it passed in. `inspection2` is a separate seconds count used for inspection in Typing mode; when it stops (a press, or on its own at 17 s) the timer shows the last solve again.
+
+  `showLastSolve()` writes the session's most recent solve on the timer: it gets the solve from `getLastSolve` (`session/`) and formats it with its penalty using `formatDisplayTime` ("14.34 (+2)", "DNF"), or shows "0.00" when the session has no solves. On Fewest Moves and Multi-Blind (`timerSettObj.untimedEvent`) it does nothing, because the timer shows their countdown there. If the last solve is a Fewest Moves or Multi-Blind result (moves or points, not a time), it shows "0.00". Escape, the end of `inspection2` and deleting a solve (`removeSolve` in `modal/`) all call it.
 - **`timerPhases.js`**: `beginHold` (red, then green after `HOLD_DELAY_MS`), `cancelHold`, `resetTimerColor`.
 - **`timer.js`**: `startTimer` updates the display every 10 ms from `performance.now()` (or shows "Solving" with "Hide while solving"); `stopTimer` writes the final time and goes back to idle.
 - **`inspection.js`**: `inspection(type, setTimerDisplay, timerObj)` counts inspection and stores the exact time in `timerObj.inspection`; WCA inspection plays the 8 and 12 second calls and stops at 17.
@@ -238,7 +240,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 - **`sessionState.js`**: `sessionsObj`: every session by name (from localStorage), the current session's name and the session select.
 - **`sessionController.js`**: `getCurrentSession`, `saveSessions` (copies the average in progress into the session's `buffer`, then saves all sessions), `renderSessionSelect`, and the select's New, Rename and Delete actions. `switchSession` saves, changes session and fires a `sessionChanged` event, which the top bar answers by loading the new session (`changedSession` copies its buffer and classic stats into the shared state) and setting its selects. `clearAverages` empties the session after asking. The other functions pass the session state to `solve.js`.
-- **`solve.js`**: `addAverageBlock`, `getSessionAverages`, `getLastSolveTarget` (the most recent solve: in the buffer, else in the newest block), `penalty2` (change a solve's penalty; a saved solve's block is recomputed), `remove2` (remove a solve; a solve from a finished average either reopens that average or deletes it), `applyPenaltyToLast` and `removeLastSolve` (the buttons under the timer). In `penalty2` and `remove2`, a `blockIndex` of -1 means a solve of the average in progress (`averageObj.solvesArray`), and any other number is the index of a saved average in `session.averages`.
+- **`solve.js`**: `addAverageBlock`, `getSessionAverages`, `getLastSolveTarget` (the most recent solve: the last one of the average in progress or the last one of the newest saved average, whichever has the later `createdAt`; a solve saved without `createdAt` counts as 0, so the average in progress wins ties), `getLastSolve` (the solve object `getLastSolveTarget` points at, or `null`; the timer shows it), `penalty2` (change a solve's penalty; a saved solve's block is recomputed), `remove2` (remove a solve; a solve from a finished average either reopens that average or deletes it), `applyPenaltyToLast` and `removeLastSolve` (the buttons under the timer). In `penalty2` and `remove2`, a `blockIndex` of -1 means a solve of the average in progress (`averageObj.solvesArray`), and any other number is the index of a saved average in `session.averages`.
 
 ### `scramble/`
 
@@ -286,7 +288,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `modal/`
 
-- **`modalController.js`**: `openDetailsModal()` builds the pop-up (the Open Session button). The first card is the average in progress, if it has solves. Its header shows how many solves are done out of how many the mode needs ("ao5 in progress: 3/5"), plus bpAo5 and wpAo5 when an ao5 has one solve left. In classic mode it lists every solve instead, since they all stay in the buffer. Then come the saved averages, newest first. Every solve row is built by `solveRowHtml(solve, index, blockIndex)`: time, penalty buttons, scramble, inspection, date and, for 3x3, a solution box. Its buttons carry `data-block` and `data-solve`, and a `data-block` of -1 marks a solve of the average in progress. `setPenalty` and `removeSolve` change a solve, recount the classic rolling averages, save, redraw and rebuild the pop-up. `submitSolution` checks a typed solution on cubisz and saves its move count, TPS and status on the solve, in the buffer or in its saved average.
+- **`modalController.js`**: `openDetailsModal()` builds the pop-up (the Open Session button). The first card is the average in progress, if it has solves. Its header shows how many solves are done out of how many the mode needs ("ao5 in progress: 3/5"), plus bpAo5 and wpAo5 when an ao5 has one solve left. In classic mode it lists every solve instead, since they all stay in the buffer. Then come the saved averages, newest first. Every solve row is built by `solveRowHtml(solve, index, blockIndex)`: time, penalty buttons, scramble, inspection, date and, for 3x3, a solution box. Its buttons carry `data-block` and `data-solve`, and a `data-block` of -1 marks a solve of the average in progress. `setPenalty` and `removeSolve` change a solve, recount the classic rolling averages, save, redraw and rebuild the pop-up. `removeSolve` also puts the new last solve on the timer (`showLastSolve` from `timer/`); the X button under the timer goes through it too. `submitSolution` checks a typed solution on cubisz and saves its move count, TPS and status on the solve, in the buffer or in its saved average.
 
 ### `timeTyping/`
 

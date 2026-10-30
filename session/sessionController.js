@@ -240,6 +240,11 @@ function removeLastSolve(removeSolve) {
     solve.removeLastSolve(averageObj, getCurrentSession, removeSolve);
 }
 
+// The most recent solve, or null when the session has none
+function getLastSolve() {
+    return solve.getLastSolve(averageObj, getCurrentSession);
+}
+
 export {
     getCurrentSession,
     saveSessions,
@@ -252,5 +257,6 @@ export {
     penalty2,
     remove2,
     applyPenaltyToLast,
-    removeLastSolve
+    removeLastSolve,
+    getLastSolve
 };

@@ -43,6 +43,15 @@ function getLastSolveTarget(averageObj, getCurrentSession) {
     return { type: "current", solveIndex: buffer.length - 1 };
 }
 
+// The most recent solve object, or null when the session has none
+function getLastSolve(averageObj, getCurrentSession) {
+    const target = getLastSolveTarget(averageObj, getCurrentSession);
+    if (!target) return null;
+    // In progress: it's in the buffer; saved: it's in that finished average
+    if (target.type === "current") return averageObj.solvesArray[target.solveIndex];
+    return getSessionAverages(getCurrentSession)[target.blockIndex].solves[target.solveIndex];
+}
+
 // Sets a solve's penalty: in the average in progress (blockIndex -1), or in a saved average, which is then recomputed
 function penalty2(blockIndex, solveIndex, penalty, averageObj, getCurrentSession, saveSessions) {
     // Solve of the average in progress: just change it (there are no stored numbers to recompute)
@@ -158,6 +167,7 @@ export {
     addAverageBlock,
     getSessionAverages,
     getLastSolveTarget,
+    getLastSolve,
     penalty2,
     remove2,
     applyPenaltyToLast,

@@ -4,6 +4,7 @@ import { averageObj, classicStats, updateClassicStats, getNeededSolves } from ".
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
 import { isCubiszEvent } from "../scramble/scrambleController.js";
+import { showLastSolve } from "../timer/timerController.js";
 import {
   applyScramble,
   applySolution,
@@ -239,6 +240,7 @@ function removeSolve(blockIndex, solveIndex) {
     session.classicStats = structuredClone(classicStats);
     saveSessions();
     renderHistory();
+    showLastSolve();
     if (!modal.classList.contains("hidden")) {
         openDetailsModal();
     }
