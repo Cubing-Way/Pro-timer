@@ -1,8 +1,16 @@
+// Named timer phases (transitions in timerController.js and timerPhases.js)
+const PHASE = Object.freeze({
+    IDLE: "idle",             // waiting for the next solve
+    INSPECTING: "inspecting", // inspection running (or armed to start on release)
+    HOLDING: "holding",       // pressed, waiting out the hold delay (red)
+    READY: "ready",           // hold delay done (green), release starts the timer
+    RUNNING: "running",       // solve being timed
+});
+
 const timerObj = {
-    timerPhase: 0,
+    timerPhase: PHASE.IDLE,
     interval: 0,
-    wcaInterval: 0,
-    wcaDelayCount: false,
+    holdTimeout: 0,
     inspecting: false,
     inspection: 0,
     solvePhases: [],
@@ -18,4 +26,4 @@ const countdownObj = {
     intervalId: null,
 };
 
-export { timerObj, countdownObj };
+export { PHASE, timerObj, countdownObj };

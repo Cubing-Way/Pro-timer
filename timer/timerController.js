@@ -2,10 +2,9 @@ import { currentScramble, displayScramble } from "../scramble/scrambleController
 import { eventObj, vis, timerWarnings } from "../event/eventController.js";
 import { timerSettObj } from "../settings/settingsState.js";
 import { delayFlagType } from "../settings/settingsController.js";
-import { timerObj, countdownObj } from "./timerState.js";
-import { timerPhases } from "./timerPhases.js";
+import { PHASE, timerObj, countdownObj } from "./timerState.js";
+import { beginHold, cancelHold, resetTimerColor } from "./timerPhases.js";
 import { inspection } from "./inspection.js";
-import { wcaDelayFlag } from "./timerPhases.js";
 import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
 import { averageOfN, classicStats } from "../average/avgController.js";
@@ -116,6 +115,60 @@ function restoreUI() {
   });
 }
 
+// ===============================
+// Phase transitions (shared by keyboard and touch)
+// ===============================
+
+// Space down / first finger down
+function onPressStart() {
+    switch (timerObj.timerPhase) {
+        case PHASE.IDLE:
+            if (timerSettObj.inspectionType === "None") {
+                beginHold(delayFlagType, timerObj, setTimerDisplay);
+                return;
+            }
+            timerObj.timerPhase = PHASE.INSPECTING;
+            if (localStorage.getItem("inspectionStart") === "press-start") {
+                inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
+            }
+            return;
+        case PHASE.INSPECTING:
+            beginHold(delayFlagType, timerObj, setTimerDisplay);
+            return;
+        case PHASE.RUNNING:
+            handleSplitOrStop();
+            return;
+        // HOLDING / READY: already pressed (extra finger, lost keyup), nothing to do
+    }
+}
+
+// Space up / last finger up
+function onPressEnd() {
+    switch (timerObj.timerPhase) {
+        case PHASE.HOLDING:
+            cancelHold(timerObj, setTimerDisplay, getThemeVar);
+            return;
+        case PHASE.READY:
+            timerObj.timerPhase = PHASE.RUNNING;
+            startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
+            showOnlyTimerSafe();
+            return;
+        case PHASE.INSPECTING:
+            if (!timerObj.inspecting && localStorage.getItem("inspectionStart") === "press-end") {
+                inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
+            }
+            return;
+    }
+}
+
+// The release will never come (touchcancel, tab hidden, window lost focus)
+function onPressLost() {
+    if (timerObj.timerPhase === PHASE.INSPECTING && !timerObj.inspecting) {
+        timerObj.timerPhase = PHASE.IDLE; // press-end inspection never started
+    }
+    cancelHold(timerObj, setTimerDisplay, getThemeVar);
+}
+
 document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     // If the touch originated inside an input or the typing UI, ignore it
     const touchTarget = e.target;
@@ -123,45 +176,33 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
         return;
     }
     e.preventDefault();
-    if (e.repeat || timerSettObj.timerFlag) return;
+    if (timerSettObj.timerFlag) return;
+    // Only the first finger down counts as a press
+    if (e.touches.length > e.changedTouches.length) return;
 
-        // 🔥 If running → handle split here
-    if (timerObj.timerPhase === 2) {
-
-        handleSplitOrStop();
-        return;
-    }
-    if (timerDOMObj.scrDisplayFlag) {
+    if (timerObj.timerPhase !== PHASE.RUNNING && timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
         document.getElementById("scramble-button").style.justifySelf = "center";
         document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
         timerDOMObj.scrDisplayFlag = false;
         return;
     }
-    if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None") {
-        timerObj.timerPhase = 1; // skip inspection
-    }
 
-    timerPhases(delayFlagType, timerObj, setTimerDisplay, getThemeVar);
-
-    if (
-        timerObj.timerPhase === 1 && !timerObj.inspecting 
-        && timerSettObj.inspectionType !== "None" 
-        && localStorage.getItem("inspectionStart") === "press-start"
-    ) {
-        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
-    }
-
+    onPressStart();
 });
 
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         clearInterval(timerObj.interval);
-        clearInterval(timerObj.wcaInterval);
+        clearTimeout(timerObj.holdTimeout);
         timerObj.inspecting = false;
         timerObj.inspection = 0;
-        timerObj.timerPhase = 0;
+        timerObj.timerPhase = PHASE.IDLE;
+        timerObj.solvePhases = [];
+        timerObj.currentSolvePhase = 0;
+        timerObj.lastSplitTime = 0;
         document.getElementById("timer").textContent = "0.00";
+        resetTimerColor(setTimerDisplay, getThemeVar);
         restoreUI();
     }
 });
@@ -173,24 +214,16 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
         return;
     }
     e.preventDefault();
-    if (e.repeat) return;
+    // Only the last finger up counts as a release
+    if (e.touches.length > 0) return;
 
-    if (timerObj.timerPhase === 1) {
-        wcaDelayFlag(timerObj, setTimerDisplay, getThemeVar);
-    }
+    onPressEnd();
+});
 
-    if (
-        timerObj.timerPhase === 1 && !timerObj.inspecting 
-        && timerSettObj.inspectionType !== "None" 
-        && localStorage.getItem("inspectionStart") === "press-end"
-    ) {
-        inspection(timerSettObj.inspectionType, setTimerDisplay,timerObj);
-    }
-
-    if (timerObj.timerPhase === 2) {
-        startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
-        showOnlyTimerSafe();
-    }
+document.getElementById("touchOverlay").addEventListener("touchcancel", onPressLost);
+window.addEventListener("blur", onPressLost);
+document.addEventListener("visibilitychange", () => {
+    if (document.hidden) onPressLost();
 });
 
 document.getElementById("touchOverlay").addEventListener("touchstart", () => {
@@ -224,35 +257,15 @@ function isTyping() {
 
 document.addEventListener("keydown", (e) => {
     if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
-   
 
-    // 🔥 If running → handle split here
-    if (timerObj.timerPhase === 2) {
-
-        handleSplitOrStop();
+    // Any key splits/stops a running timer, only space drives the other phases
+    if (e.key === " ") {
+        e.preventDefault();
+    } else if (timerObj.timerPhase !== PHASE.RUNNING) {
         return;
     }
 
-    // Normal phase logic
-    if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None" && e.key === " ") {
-        e.preventDefault();
-        timerObj.timerPhase = 1;
-    }
-
-    if (e.key === " ") {
-        e.preventDefault();
-        timerPhases(delayFlagType, timerObj, setTimerDisplay, getThemeVar);
-    }
-
-    if (
-        timerObj.timerPhase === 1 && !timerObj.inspecting 
-        && timerSettObj.inspectionType !== "None" 
-        && localStorage.getItem("inspectionStart") === "press-start"
-        && e.key === " "
-    ) {
-        e.preventDefault();
-        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
-    }
+    onPressStart();
 });
 
 document.addEventListener("keydown", (e) => {
@@ -334,22 +347,7 @@ document.addEventListener("keyup", (e) => {
     e.preventDefault();
     if (e.repeat) return;
 
-    if (timerObj.timerPhase === 1) {
-        wcaDelayFlag(timerObj, setTimerDisplay, getThemeVar);
-    }
-
-    if (
-        timerObj.timerPhase === 1 && !timerObj.inspecting 
-        && timerSettObj.inspectionType !== "None" 
-        && localStorage.getItem("inspectionStart") === "press-end"
-    ) {
-        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
-    }
-
-    if (timerObj.timerPhase === 2 && timerObj.currentSolvePhase === 0) {
-        startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
-        showOnlyTimerSafe();
-    }
+    onPressEnd();
 });
 
 export { setTimerDisplay, timerDOMObj };

@@ -1,6 +1,7 @@
 //import { timerObj } from "./timerState";
 //import { formatTime } from "./timeFormatting";
 //import { getThemeVar } from "../settings/timerSett";
+import { PHASE } from "./timerState.js";
 
 function startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
 
@@ -30,7 +31,7 @@ function startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
 function stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
     clearInterval(timerObj.interval);
     setTimerDisplay('time', formatTime(performance.now() - timerObj.startTime));
-    timerObj.timerPhase = 0;
+    timerObj.timerPhase = PHASE.IDLE;
 }
 
 export { startTimer, stopTimer };
