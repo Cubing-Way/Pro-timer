@@ -50,6 +50,34 @@ const csTimer = {
   setSeed: (seed) => call("seed", [seed]),
   setGlobal: (key, value) => call("set", [key, value])
 };
+function setVisualizerScale(scale, right, bottom, vis2) {
+  let wrapper = null;
+  if (vis2.id === "scrambleVis") {
+    wrapper = document.querySelector(".panel-cube");
+    wrapper.style.transformOrigin = "bottom right";
+    wrapper.style.transform = `scale(${scale})`;
+    wrapper.style.position = "absolute";
+    wrapper.style.right = `${right}px`;
+    wrapper.style.bottom = `${bottom}px`;
+    const canvas = document.getElementById("scrambleVis");
+    const originalWidth = canvas.width || 600;
+    const originalHeight = canvas.height || 400;
+    wrapper.style.width = originalWidth * scale + "px";
+    wrapper.style.height = originalHeight * scale + "px";
+  } else {
+    bottom += 50;
+    wrapper = document.querySelector(".panel-cube2");
+    wrapper.style.transformOrigin = "bottom center";
+    wrapper.style.transform = `scale(${scale})`;
+    wrapper.style.right = `${right}px`;
+    wrapper.style.bottom = `${bottom}px`;
+    const canvas = document.getElementById("scrambleVis");
+    const originalWidth = canvas.width || 600;
+    const originalHeight = canvas.height || 400;
+    wrapper.style.width = originalWidth * scale + "px";
+    wrapper.style.height = originalHeight * scale + "px";
+  }
+}
 const scrdata = [
   ["WCA", [
     ["3x3x3", "333", 0],
@@ -363,6 +391,34 @@ function getScrambleConfig(code) {
   }
   return null;
 }
+function autoFitText(vis2) {
+  const container = document.getElementById("scrambleContainer");
+  const text = document.getElementById("scrambleDisplay");
+  let fontSize = 40;
+  if (vis2.id === "scrambleVis2") fontSize = 30;
+  text.style.fontSize = fontSize + "px";
+  text.style.whiteSpace = "pre-wrap";
+  text.style.wordBreak = "break-word";
+  text.offsetHeight;
+  while (text.scrollHeight > container.clientHeight + 50) {
+    fontSize -= 1;
+    text.style.fontSize = fontSize + "px";
+  }
+}
+function formatMegaminx(scr) {
+  const moves = scr.split(" ");
+  let out = [];
+  let line = [];
+  for (const move of moves) {
+    line.push(move);
+    if (move === "U" || move === "U'") {
+      out.push(line.join(" "));
+      line = [];
+    }
+  }
+  if (line.length) out.push(line.join(" "));
+  return out.join("\n");
+}
 let currentScramble = "";
 async function displayScramble(event = "333", vis2, length) {
   const config = getScrambleConfig(event);
@@ -381,34 +437,6 @@ async function displayScramble(event = "333", vis2, length) {
     textEl.textContent = scramble;
   }
   autoFitText(vis2);
-}
-function formatMegaminx(scr) {
-  const moves = scr.split(" ");
-  let out = [];
-  let line = [];
-  for (const move of moves) {
-    line.push(move);
-    if (move === "U" || move === "U'") {
-      out.push(line.join(" "));
-      line = [];
-    }
-  }
-  if (line.length) out.push(line.join(" "));
-  return out.join("\n");
-}
-function autoFitText(vis2) {
-  const container = document.getElementById("scrambleContainer");
-  const text = document.getElementById("scrambleDisplay");
-  let fontSize = 40;
-  if (vis2.id === "scrambleVis2") fontSize = 30;
-  text.style.fontSize = fontSize + "px";
-  text.style.whiteSpace = "pre-wrap";
-  text.style.wordBreak = "break-word";
-  text.offsetHeight;
-  while (text.scrollHeight > container.clientHeight + 50) {
-    fontSize -= 1;
-    text.style.fontSize = fontSize + "px";
-  }
 }
 function adjustVisualizerSize(event, vis2) {
   const category = document.getElementById("categorySelect").value;
@@ -465,57 +493,8 @@ function adjustVisualizerSize(event, vis2) {
   if (category === "Icosahedron") setVisualizerScale(0.55, 105, 25, vis2);
   if (category === "Relays") setVisualizerScale(0.45, 105, 140, vis2);
 }
-function setVisualizerScale(scale, right, bottom, vis2) {
-  let wrapper = null;
-  if (vis2.id === "scrambleVis") {
-    wrapper = document.querySelector(".panel-cube");
-    wrapper.style.transformOrigin = "bottom right";
-    wrapper.style.transform = `scale(${scale})`;
-    wrapper.style.position = "absolute";
-    wrapper.style.right = `${right}px`;
-    wrapper.style.bottom = `${bottom}px`;
-    const canvas = document.getElementById("scrambleVis");
-    const originalWidth = canvas.width || 600;
-    const originalHeight = canvas.height || 400;
-    wrapper.style.width = originalWidth * scale + "px";
-    wrapper.style.height = originalHeight * scale + "px";
-  } else {
-    bottom += 50;
-    wrapper = document.querySelector(".panel-cube2");
-    wrapper.style.transformOrigin = "bottom center";
-    wrapper.style.transform = `scale(${scale})`;
-    wrapper.style.right = `${right}px`;
-    wrapper.style.bottom = `${bottom}px`;
-    const canvas = document.getElementById("scrambleVis");
-    const originalWidth = canvas.width || 600;
-    const originalHeight = canvas.height || 400;
-    wrapper.style.width = originalWidth * scale + "px";
-    wrapper.style.height = originalHeight * scale + "px";
-  }
-}
-const averageObj = {
-  mode: "ao5",
-  solveCounter: 0,
-  solvesArray: []
-  // array of solve objects
-};
-const classicStats = {
-  current: {
-    mo3: null,
-    ao5: null,
-    ao12: null,
-    ao100: null
-  },
-  best: {
-    mo3: null,
-    ao5: null,
-    ao12: null,
-    ao100: null
-  }
-};
 function parseTimeToSeconds(str) {
   if (str == null) {
-    console.log(str);
     return null;
   }
   if (typeof str === "number") return str;
@@ -530,21 +509,13 @@ function manageTime(time) {
   if (!Number.isFinite(t)) return "-";
   return t.toFixed(2);
 }
-function formatIntoMinutes(num) {
-  if (num >= 60) {
-    const m = Math.floor(num / 60);
-    const s = (num % 60).toFixed(2).padStart(5, "0");
-    return `${m}:${s}`;
-  }
-  return num.toFixed(2);
-}
 function formatDisplayTime(solveObj) {
   if (solveObj.time == null) return "-";
   if (solveObj.penalty === "DNF") return "DNF";
   if (typeof solveObj.penalty === "number") {
-    return formatIntoMinutes(solveObj.time + solveObj.penalty) + ` (+${solveObj.penalty})`;
+    return formatSecondsToTime(solveObj.time + solveObj.penalty) + ` (+${solveObj.penalty})`;
   }
-  return formatIntoMinutes(solveObj.time);
+  return formatSecondsToTime(solveObj.time);
 }
 function formatSecondsToTime(sec) {
   if (sec === "DNF") return "DNF";
@@ -556,63 +527,6 @@ function formatSecondsToTime(sec) {
     return `${m}:${s}`;
   }
   return manageTime(sec);
-}
-function updateClassicStats(recomputeBest = false) {
-  const solves = averageObj.solvesArray;
-  const updateRolling = (n, modeName) => {
-    if (solves.length < n) return null;
-    const result = computeAverage(
-      solves.slice(-n),
-      modeName
-    );
-    if (result.dnf) return "DNF";
-    return result.avg;
-  };
-  const mo3 = updateRolling(3, "mo3");
-  const ao5 = updateRolling(5, "ao5");
-  const ao12 = updateRolling(12, "ao12");
-  const ao100 = updateRolling(100, "ao100");
-  classicStats.current.mo3 = mo3;
-  classicStats.current.ao5 = ao5;
-  classicStats.current.ao12 = ao12;
-  classicStats.current.ao100 = ao100;
-  const updateBest = (key, value) => {
-    if (value == null) return;
-    if (classicStats.best[key] == null || value < classicStats.best[key]) {
-      classicStats.best[key] = value;
-    }
-  };
-  if (!recomputeBest) {
-    updateBest("mo3", mo3);
-    updateBest("ao5", ao5);
-    updateBest("ao12", ao12);
-    updateBest("ao100", ao100);
-  } else {
-    classicStats.best.mo3 = null;
-    classicStats.best.ao5 = null;
-    classicStats.best.ao12 = null;
-    classicStats.best.ao100 = null;
-    const recomputeBestAvg = (n, modeName) => {
-      if (solves.length < n) return null;
-      let best = null;
-      for (let i = n; i <= solves.length; i++) {
-        const result = computeAverage(
-          solves.slice(i - n, i),
-          modeName
-        );
-        if (result.dnf) return "DNF";
-        if (best === null || result.avg < best) {
-          best = result.avg;
-        }
-      }
-      return best;
-    };
-    classicStats.best.mo3 = recomputeBestAvg(3, "mo3");
-    classicStats.best.ao5 = recomputeBestAvg(5, "ao5");
-    classicStats.best.ao12 = recomputeBestAvg(12, "ao12");
-    classicStats.best.ao100 = recomputeBestAvg(100, "ao100");
-  }
-  console.log("solves length:", solves.length);
 }
 function computeAverage(solves, mode) {
   const times = solves.map((s) => {
@@ -775,10 +689,120 @@ function computeAverage(solves, mode) {
     sigma
   };
 }
+function updateClassicStats$1(recomputeBest, averageObj2, classicStats2) {
+  if (recomputeBest) {
+    const solves2 = averageObj2.solvesArray;
+    classicStats2.history.mo3 = [];
+    classicStats2.history.ao5 = [];
+    classicStats2.history.ao12 = [];
+    classicStats2.history.ao100 = [];
+    classicStats2.best.mo3 = null;
+    classicStats2.best.ao5 = null;
+    classicStats2.best.ao12 = null;
+    classicStats2.best.ao100 = null;
+    const rebuild = (n, key, modeName) => {
+      for (let i = n; i <= solves2.length; i++) {
+        const window2 = solves2.slice(i - n, i);
+        const result = computeAverage(window2, modeName);
+        const entry = {
+          avg: result.dnf ? "DNF" : result.avg,
+          solves: window2,
+          lastSolve: window2[window2.length - 1],
+          createdAt: window2[window2.length - 1].createdAt,
+          sigma: result.sigma ?? null
+        };
+        classicStats2.history[key].push(entry);
+        if (entry.avg !== "DNF") {
+          if (classicStats2.best[key] == null || entry.avg < classicStats2.best[key].avg) {
+            classicStats2.best[key] = entry;
+          }
+        }
+      }
+    };
+    rebuild(3, "mo3", "mo3");
+    rebuild(5, "ao5", "ao5");
+    rebuild(12, "ao12", "ao12");
+    rebuild(100, "ao100", "ao100");
+    classicStats2.current.mo3 = classicStats2.history.mo3.at(-1) ?? null;
+    classicStats2.current.ao5 = classicStats2.history.ao5.at(-1) ?? null;
+    classicStats2.current.ao12 = classicStats2.history.ao12.at(-1) ?? null;
+    classicStats2.current.ao100 = classicStats2.history.ao100.at(-1) ?? null;
+    return;
+  }
+  const solves = averageObj2.solvesArray;
+  const updateRolling = (n, modeName) => {
+    if (solves.length < n) return null;
+    const window2 = solves.slice(-n);
+    const result = computeAverage(window2, modeName);
+    const rollingAvg = {
+      avg: result.dnf ? "DNF" : result.avg,
+      best: result.best,
+      worst: result.worst,
+      sigma: result.sigma,
+      // 🔥 ADD THIS
+      solves: window2,
+      lastSolve: window2[window2.length - 1],
+      createdAt: window2[window2.length - 1].createdAt
+    };
+    const historyArr = classicStats2.history[modeName];
+    const lastEntry = historyArr[historyArr.length - 1];
+    if (!lastEntry || lastEntry.createdAt !== rollingAvg.createdAt) {
+      historyArr.push(rollingAvg);
+    }
+    return rollingAvg;
+  };
+  const mo3 = updateRolling(3, "mo3");
+  const ao5 = updateRolling(5, "ao5");
+  const ao12 = updateRolling(12, "ao12");
+  const ao100 = updateRolling(100, "ao100");
+  classicStats2.current.mo3 = mo3;
+  classicStats2.current.ao5 = ao5;
+  classicStats2.current.ao12 = ao12;
+  classicStats2.current.ao100 = ao100;
+  const updateBest = (key, value) => {
+    if (!value || value.avg == null || value.avg === "DNF") return;
+    if (classicStats2.best[key] == null || value.avg < classicStats2.best[key].avg) {
+      classicStats2.best[key] = value;
+    }
+  };
+  updateBest("mo3", mo3);
+  updateBest("ao5", ao5);
+  updateBest("ao12", ao12);
+  updateBest("ao100", ao100);
+}
+const averageObj = {
+  mode: "ao5",
+  solveCounter: 0,
+  solvesArray: []
+  // array of solve objects
+};
+const classicStats = {
+  current: {
+    mo3: null,
+    ao5: null,
+    ao12: null,
+    ao100: null
+  },
+  best: {
+    mo3: null,
+    ao5: null,
+    ao12: null,
+    ao100: null
+  },
+  history: {
+    mo3: [],
+    ao5: [],
+    ao12: [],
+    ao100: []
+  }
+};
+function updateClassicStats(recomputeBest = false) {
+  updateClassicStats$1(recomputeBest, averageObj, classicStats);
+}
 function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, modeFlag = false, isMBLD = false, solvePhases) {
   let inspecPenalty = null;
   if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
-    if (inspection3 >= 15) inspecPenalty = "+2";
+    if (inspection3 >= 15) inspecPenalty = 2;
     if (inspection3 >= 17) inspecPenalty = "DNF";
   }
   let seconds2 = null;
@@ -808,20 +832,13 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
   }
   if (averageObj.mode === "classic") {
     if (!modeFlag) updateClassicStats();
-    const relevantSolves = averageObj.solvesArray.slice(-5);
-    if (classicStats.current.ao5 !== null) {
-      return {
-        mode: "classic",
-        average: classicStats.current.ao5,
-        solves: structuredClone(relevantSolves)
-      };
-    } else {
-      return null;
-    }
+    return null;
   }
   let neededSolves = 3;
   if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
     neededSolves = 5;
+  } else if (averageObj.mode === "ao12") {
+    neededSolves = 12;
   }
   if (averageObj.solveCounter >= neededSolves) {
     const relevantSolves = averageObj.solvesArray.slice(0, neededSolves);
@@ -847,11 +864,105 @@ const sessionsObj = {
   currentSession: localStorage.getItem("currentSession") || "Default",
   selectEl: document.getElementById("sessionSelect")
 };
-const session$1 = getCurrentSession();
-averageObj.mode = session$1.mode || "ao5";
+function ensureSessionShape(getCurrentSession2) {
+  const session2 = getCurrentSession2();
+  if (!session2.averages) session2.averages = [];
+}
+function addAverageBlock$1(block, getCurrentSession2, saveSessions2) {
+  ensureSessionShape(getCurrentSession2);
+  const session2 = getCurrentSession2();
+  session2.averages.unshift(block);
+  saveSessions2();
+}
+function getSessionAverages$1(getCurrentSession2) {
+  const session2 = getCurrentSession2();
+  return session2.averages || [];
+}
+function getLastSolveTarget(averageObj2, getCurrentSession2) {
+  if (averageObj2.solvesArray.length > 0) {
+    return {
+      type: "current",
+      solveIndex: averageObj2.solvesArray.length - 1
+    };
+  }
+  const averages = getSessionAverages$1(getCurrentSession2);
+  if (averages.length === 0) return null;
+  const newestBlockIndex = 0;
+  const newestBlock = averages[0];
+  if (!newestBlock || newestBlock.solves.length === 0) return null;
+  return {
+    type: "saved",
+    blockIndex: newestBlockIndex,
+    solveIndex: newestBlock.solves.length - 1
+  };
+}
+function penalty2$1(blockIndex, solveIndex, penalty, getCurrentSession2, saveSessions2) {
+  const averages = getSessionAverages$1(getCurrentSession2);
+  const block = averages[blockIndex];
+  block.solves[solveIndex].penalty = penalty;
+  const newAvg = computeAverage(block.solves, block.mode).avg;
+  block.average = newAvg === "DNF" ? "DNF" : formatSecondsToTime(newAvg);
+  saveSessions2();
+}
+function remove2$1(blockIndex, solveIndex, averageObj2, getCurrentSession2, saveSessions2) {
+  const averages = getSessionAverages$1(getCurrentSession2);
+  const modal3 = document.getElementById("detailsModal");
+  if (blockIndex === -1) {
+    if (solveIndex < 0 || solveIndex >= averageObj2.solvesArray.length) return;
+    averageObj2.solvesArray.splice(solveIndex, 1);
+    averageObj2.solveCounter--;
+    if (averageObj2.solveCounter < 0) averageObj2.solveCounter = 0;
+    return;
+  }
+  const block = averages[blockIndex];
+  if (blockIndex === 0 && averageObj2.solvesArray.length === 0) {
+    const newSolves = block.solves.filter((_, i) => i !== solveIndex);
+    averageObj2.solvesArray = structuredClone(newSolves);
+    averageObj2.solveCounter = newSolves.length;
+    averages.splice(blockIndex, 1);
+    modal3.classList.add("hidden");
+    saveSessions2();
+    return;
+  }
+  const choice = confirm(
+    "This solve belongs to a finished average.\n\nOK = Replace this solve (reopen average)\nCancel = Delete the whole average"
+  );
+  if (choice) {
+    const newSolves = block.solves.filter((_, i) => i !== solveIndex);
+    averageObj2.solvesArray = structuredClone(newSolves);
+    averageObj2.solveCounter = newSolves.length;
+    averages.splice(blockIndex, 1);
+    modal3.classList.add("hidden");
+    saveSessions2();
+    return;
+  }
+  if (!confirm("Delete the entire average? This cannot be undone.")) return;
+  averages.splice(blockIndex, 1);
+  saveSessions2();
+}
+function applyPenaltyToLast$1(penalty, averageObj2, getCurrentSession2, updateClassicStats2, setPenalty2) {
+  const target = getLastSolveTarget(averageObj2, getCurrentSession2);
+  if (!target) return;
+  if (target.type === "current") {
+    averageObj2.solvesArray[target.solveIndex].penalty = penalty;
+    updateClassicStats2(true);
+  } else {
+    setPenalty2(target.blockIndex, target.solveIndex, penalty);
+  }
+}
+function removeLastSolve$1(averageObj2, getCurrentSession2, removeSolve2) {
+  const target = getLastSolveTarget(averageObj2, getCurrentSession2);
+  if (!target) return;
+  if (target.type === "current") {
+    removeSolve2(-1, target.solveIndex);
+  } else {
+    removeSolve2(target.blockIndex, target.solveIndex);
+  }
+}
+const session = getCurrentSession();
+averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
 if (modeSel) modeSel.value = averageObj.mode;
-console.log(session$1);
 function saveSessions() {
   const session2 = sessionsObj.sessions[sessionsObj.currentSession];
   session2.buffer = {
@@ -946,7 +1057,6 @@ function clearAverages() {
   const session2 = getCurrentSession();
   session2.averages = [];
   averageObj.solvesArray = [];
-  averageObj.scramblesArray = [];
   averageObj.solveCounter = 0;
   if (averageObj.mode === "classic") updateClassicStats(true);
   session2.classicStats = structuredClone(classicStats);
@@ -964,6 +1074,7 @@ function changedSession() {
   if (session2.classicStats) {
     classicStats.current = structuredClone(session2.classicStats.current);
     classicStats.best = structuredClone(session2.classicStats.best);
+    classicStats.history = structuredClone(session2.classicStats.history);
   }
   averageObj.mode = session2.buffer.mode;
   averageObj.solveCounter = session2.buffer.solveCounter;
@@ -971,690 +1082,299 @@ function changedSession() {
   const sel = document.getElementById("modeSelect");
   if (sel) sel.value = averageObj.mode;
 }
-const cube = {
-  U: Array(9).fill("W"),
-  R: Array(9).fill("R"),
-  F: Array(9).fill("G"),
-  D: Array(9).fill("Y"),
-  L: Array(9).fill("O"),
-  B: Array(9).fill("B")
-};
-function rotateFaceCW(face) {
-  [
-    face[0],
-    face[1],
-    face[2],
-    face[3],
-    face[4],
-    face[5],
-    face[6],
-    face[7],
-    face[8]
-  ] = [
-    face[6],
-    face[3],
-    face[0],
-    face[7],
-    face[4],
-    face[1],
-    face[8],
-    face[5],
-    face[2]
-  ];
-}
-function M() {
-  const u1 = cube.U[1], u4 = cube.U[4], u7 = cube.U[7];
-  const f1 = cube.F[1], f4 = cube.F[4], f7 = cube.F[7];
-  const d1 = cube.D[1], d4 = cube.D[4], d7 = cube.D[7];
-  const b7 = cube.B[7], b4 = cube.B[4], b1 = cube.B[1];
-  cube.F[1] = u1;
-  cube.F[4] = u4;
-  cube.F[7] = u7;
-  cube.D[1] = f1;
-  cube.D[4] = f4;
-  cube.D[7] = f7;
-  cube.B[7] = d1;
-  cube.B[4] = d4;
-  cube.B[1] = d7;
-  cube.U[1] = b7;
-  cube.U[4] = b4;
-  cube.U[7] = b1;
-}
-function E() {
-  const f3 = cube.F[3], f4 = cube.F[4], f5 = cube.F[5];
-  const r3 = cube.R[3], r4 = cube.R[4], r5 = cube.R[5];
-  const b3 = cube.B[3], b4 = cube.B[4], b5 = cube.B[5];
-  const l3 = cube.L[3], l4 = cube.L[4], l5 = cube.L[5];
-  cube.R[3] = f3;
-  cube.R[4] = f4;
-  cube.R[5] = f5;
-  cube.B[3] = r3;
-  cube.B[4] = r4;
-  cube.B[5] = r5;
-  cube.L[3] = b3;
-  cube.L[4] = b4;
-  cube.L[5] = b5;
-  cube.F[3] = l3;
-  cube.F[4] = l4;
-  cube.F[5] = l5;
-}
-function S() {
-  const u3 = cube.U[3], u4 = cube.U[4], u5 = cube.U[5];
-  const r1 = cube.R[1], r4 = cube.R[4], r7 = cube.R[7];
-  const d5 = cube.D[5], d4 = cube.D[4], d3 = cube.D[3];
-  const l7 = cube.L[7], l4 = cube.L[4], l1 = cube.L[1];
-  cube.R[1] = u3;
-  cube.R[4] = u4;
-  cube.R[7] = u5;
-  cube.D[5] = r1;
-  cube.D[4] = r4;
-  cube.D[3] = r7;
-  cube.L[7] = d5;
-  cube.L[4] = d4;
-  cube.L[1] = d3;
-  cube.U[3] = l7;
-  cube.U[4] = l4;
-  cube.U[5] = l1;
-}
-function x() {
-  R();
-  M();
-  M();
-  M();
-  L();
-  L();
-  L();
-}
-function y() {
-  U();
-  E();
-  E();
-  E();
-  D();
-  D();
-  D();
-}
-function z() {
-  F();
-  S();
-  B();
-  B();
-  B();
-}
-function resetCube() {
-  cube.U.fill("W");
-  cube.R.fill("R");
-  cube.F.fill("G");
-  cube.D.fill("Y");
-  cube.L.fill("O");
-  cube.B.fill("B");
-}
-function cloneCubeState() {
-  return {
-    U: [...cube.U],
-    R: [...cube.R],
-    F: [...cube.F],
-    D: [...cube.D],
-    L: [...cube.L],
-    B: [...cube.B]
-  };
-}
-function restoreCubeState(state) {
-  cube.U = [...state.U];
-  cube.R = [...state.R];
-  cube.F = [...state.F];
-  cube.D = [...state.D];
-  cube.L = [...state.L];
-  cube.B = [...state.B];
-}
-function U() {
-  rotateFaceCW(cube.U);
-  const f0 = cube.F[0], f1 = cube.F[1], f2 = cube.F[2];
-  const r0 = cube.R[0], r1 = cube.R[1], r2 = cube.R[2];
-  const b0 = cube.B[0], b1 = cube.B[1], b2 = cube.B[2];
-  const l0 = cube.L[0], l1 = cube.L[1], l2 = cube.L[2];
-  cube.F[0] = r0;
-  cube.F[1] = r1;
-  cube.F[2] = r2;
-  cube.R[0] = b0;
-  cube.R[1] = b1;
-  cube.R[2] = b2;
-  cube.B[0] = l0;
-  cube.B[1] = l1;
-  cube.B[2] = l2;
-  cube.L[0] = f0;
-  cube.L[1] = f1;
-  cube.L[2] = f2;
-}
-function D() {
-  rotateFaceCW(cube.D);
-  const f6 = cube.F[6], f7 = cube.F[7], f8 = cube.F[8];
-  const r6 = cube.R[6], r7 = cube.R[7], r8 = cube.R[8];
-  const b6 = cube.B[6], b7 = cube.B[7], b8 = cube.B[8];
-  const l6 = cube.L[6], l7 = cube.L[7], l8 = cube.L[8];
-  cube.R[6] = f6;
-  cube.R[7] = f7;
-  cube.R[8] = f8;
-  cube.B[6] = r6;
-  cube.B[7] = r7;
-  cube.B[8] = r8;
-  cube.L[6] = b6;
-  cube.L[7] = b7;
-  cube.L[8] = b8;
-  cube.F[6] = l6;
-  cube.F[7] = l7;
-  cube.F[8] = l8;
-}
-function R() {
-  rotateFaceCW(cube.R);
-  const u2 = cube.U[2], u5 = cube.U[5], u8 = cube.U[8];
-  const f2 = cube.F[2], f5 = cube.F[5], f8 = cube.F[8];
-  const d2 = cube.D[2], d5 = cube.D[5], d8 = cube.D[8];
-  const b6 = cube.B[6], b3 = cube.B[3], b0 = cube.B[0];
-  cube.B[6] = u2;
-  cube.B[3] = u5;
-  cube.B[0] = u8;
-  cube.D[2] = b6;
-  cube.D[5] = b3;
-  cube.D[8] = b0;
-  cube.F[2] = d2;
-  cube.F[5] = d5;
-  cube.F[8] = d8;
-  cube.U[2] = f2;
-  cube.U[5] = f5;
-  cube.U[8] = f8;
-}
-function L() {
-  rotateFaceCW(cube.L);
-  const u0 = cube.U[0], u3 = cube.U[3], u6 = cube.U[6];
-  const f0 = cube.F[0], f3 = cube.F[3], f6 = cube.F[6];
-  const d0 = cube.D[0], d3 = cube.D[3], d6 = cube.D[6];
-  const b8 = cube.B[8], b5 = cube.B[5], b2 = cube.B[2];
-  cube.F[0] = u0;
-  cube.F[3] = u3;
-  cube.F[6] = u6;
-  cube.D[0] = f0;
-  cube.D[3] = f3;
-  cube.D[6] = f6;
-  cube.B[8] = d0;
-  cube.B[5] = d3;
-  cube.B[2] = d6;
-  cube.U[0] = b8;
-  cube.U[3] = b5;
-  cube.U[6] = b2;
-}
-function F() {
-  rotateFaceCW(cube.F);
-  const u6 = cube.U[6], u7 = cube.U[7], u8 = cube.U[8];
-  const r0 = cube.R[0], r3 = cube.R[3], r6 = cube.R[6];
-  const d2 = cube.D[2], d1 = cube.D[1], d0 = cube.D[0];
-  const l8 = cube.L[8], l5 = cube.L[5], l2 = cube.L[2];
-  cube.R[0] = u6;
-  cube.R[3] = u7;
-  cube.R[6] = u8;
-  cube.D[2] = r0;
-  cube.D[1] = r3;
-  cube.D[0] = r6;
-  cube.L[8] = d2;
-  cube.L[5] = d1;
-  cube.L[2] = d0;
-  cube.U[6] = l8;
-  cube.U[7] = l5;
-  cube.U[8] = l2;
-}
-function B() {
-  rotateFaceCW(cube.B);
-  const u0 = cube.U[0], u1 = cube.U[1], u2 = cube.U[2];
-  const r2 = cube.R[2], r5 = cube.R[5], r8 = cube.R[8];
-  const d8 = cube.D[8], d7 = cube.D[7], d6 = cube.D[6];
-  const l0 = cube.L[0], l3 = cube.L[3], l6 = cube.L[6];
-  cube.U[0] = r2;
-  cube.U[1] = r5;
-  cube.U[2] = r8;
-  cube.R[2] = d8;
-  cube.R[5] = d7;
-  cube.R[8] = d6;
-  cube.D[6] = l0;
-  cube.D[7] = l3;
-  cube.D[8] = l6;
-  cube.L[0] = u2;
-  cube.L[3] = u1;
-  cube.L[6] = u0;
-}
-function isSolved() {
-  for (const face in cube) {
-    const first = cube[face][0];
-    for (let i = 1; i < 9; i++) {
-      if (cube[face][i] !== first) {
-        return false;
-      }
-    }
-  }
-  return true;
-}
-let _moveCount = 0;
-function getMoveCount() {
-  return _moveCount;
-}
-function printScrambleMoves(scr, shouldReset = true) {
-  const displayedScramble = scr;
-  const moves = displayedScramble.split(" ");
-  const moveFunctions = {
-    "U": U,
-    "U'": () => {
-      U();
-      U();
-      U();
-    },
-    "U2": () => {
-      U();
-      U();
-    },
-    "D": D,
-    "D'": () => {
-      D();
-      D();
-      D();
-    },
-    "D2": () => {
-      D();
-      D();
-    },
-    "R": R,
-    "R'": () => {
-      R();
-      R();
-      R();
-    },
-    "R2": () => {
-      R();
-      R();
-    },
-    "L": L,
-    "L'": () => {
-      L();
-      L();
-      L();
-    },
-    "L2": () => {
-      L();
-      L();
-    },
-    "F": F,
-    "F'": () => {
-      F();
-      F();
-      F();
-    },
-    "F2": () => {
-      F();
-      F();
-    },
-    "B": B,
-    "B'": () => {
-      B();
-      B();
-      B();
-    },
-    "B2": () => {
-      B();
-      B();
-    },
-    "y": y,
-    "y'": () => {
-      y();
-      y();
-      y();
-    },
-    "y2": () => {
-      y();
-      y();
-    },
-    "x": x,
-    "x'": () => {
-      x();
-      x();
-      x();
-    },
-    "x2": () => {
-      x();
-      x();
-    },
-    "z": z,
-    "z'": () => {
-      z();
-      z();
-      z();
-    },
-    "z2": () => {
-      z();
-      z();
-    }
-  };
-  if (shouldReset) resetCube();
-  _moveCount = 0;
-  moves.forEach((move) => {
-    const func = moveFunctions[move];
-    if (func) {
-      func();
-      if (!["y", "y'", "y2", "x", "x'", "x2", "z", "z'", "z2"].includes(move)) _moveCount++;
-    }
-  });
-}
-function injectCubeCSS() {
-  if (document.getElementById("cubisz-css")) return;
-  const link = document.createElement("link");
-  link.id = "cubisz-css";
-  link.rel = "stylesheet";
-  link.href = new URL("data:text/css;base64,LnBhZ2UtY2VudGVyLCAjY3ViZS13cmFwcGVyIHsNCiAgcG9zaXRpb246IHJlbGF0aXZlOyAgICAgICAgICAvKiByZW1vdmUgZnJvbSBkb2N1bWVudCBmbG93ICovDQogIGluc2V0OiAwOyAgICAgICAgICAgICAgICAgLyogZnVsbCB2aWV3cG9ydCAqLw0KICBkaXNwbGF5OiBncmlkOw0KICBwbGFjZS1pdGVtczogY2VudGVyOyAgICAgIC8qIHRydWUgY2VudGVyICovDQogIHBvaW50ZXItZXZlbnRzOiBub25lOyAgICAgLyogYWxsb3cgY2xpY2tzIG91dHNpZGUgY3ViZSAqLw0KfQ0KDQouZ3JpZC1jb250YWluZXIgew0KICBwb2ludGVyLWV2ZW50czogYXV0bzsgICAgIC8qIGN1YmUgaXMgY2xpY2thYmxlICovDQogIGRpc3BsYXk6IGdyaWQ7DQogIGdyaWQtdGVtcGxhdGUtY29sdW1uczogcmVwZWF0KDQsIG1heC1jb250ZW50KTsNCiAgZ3JpZC10ZW1wbGF0ZS1yb3dzOiByZXBlYXQoMywgbWF4LWNvbnRlbnQpOw0KICB3aWR0aDogZml0LWNvbnRlbnQ7DQogIGhlaWdodDogZml0LWNvbnRlbnQ7DQp9DQoNCg0KICAuZ3JpZCB7DQogICAgZGlzcGxheTogZ3JpZDsNCiAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6IHJlcGVhdCgzLCA2MHB4KTsgLyogMyBjb2x1bW5zIG9mIDYwcHggZWFjaCAqLw0KICAgIGdhcDogNXB4OyAvKiBnYXAgYmV0d2VlbiB0aGUgc3F1YXJlcyAqLw0KICAgIGJvcmRlcjogMnB4IHNvbGlkIGJsYWNrOyAvKiBBZGQgYSBibGFjayBib3JkZXIgKi8NCiAgICBtYXJnaW46IC0ycHg7DQogICAgcGFkZGluZzogNXB4OyAvKiBPcHRpb25hbCBwYWRkaW5nIGluc2lkZSB0aGUgYm9yZGVyICovDQogICAgYmFja2dyb3VuZC1jb2xvcjogYmxhY2s7DQogIH0NCg0KICAuc3F1YXJlIHsNCiAgICB3aWR0aDogNThweDsgLyogd2lkdGggb2YgZWFjaCBzcXVhcmUgKi8NCiAgICBoZWlnaHQ6IDYwcHg7IC8qIGhlaWdodCBvZiBlYWNoIHNxdWFyZSAqLw0KICB9DQoNCiAgLndoaXRlLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogd2hpdGU7DQogIH0NCg0KICAub3JhbmdlLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogb3JhbmdlOw0KICB9DQoNCiAgLmdyZWVuLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogZ3JlZW47DQogIH0NCg0KICAucmVkLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogcmVkOw0KICB9DQoNCiAgLmJsdWUtc3F1YXJlIHsNCiAgICBiYWNrZ3JvdW5kLWNvbG9yOiBibHVlOw0KICB9DQoNCiAgLnllbGxvdy1zcXVhcmUgew0KICAgIGJhY2tncm91bmQtY29sb3I6IHllbGxvdzsNCiAgfQ0KIA0KDQoNCiN3aGl0ZVNxdWFyZUdyaWQgIHsgZ3JpZC1jb2x1bW46IDI7IGdyaWQtcm93OiAxOyB9DQojb3JhbmdlU3F1YXJlR3JpZCB7IGdyaWQtY29sdW1uOiAxOyBncmlkLXJvdzogMjsgfQ0KI2dyZWVuU3F1YXJlR3JpZCAgeyBncmlkLWNvbHVtbjogMjsgZ3JpZC1yb3c6IDI7IH0NCiNyZWRTcXVhcmVHcmlkICAgIHsgZ3JpZC1jb2x1bW46IDM7IGdyaWQtcm93OiAyOyB9DQojYmx1ZVNxdWFyZUdyaWQgICB7IGdyaWQtY29sdW1uOiA0OyBncmlkLXJvdzogMjsgfQ0KI3llbGxvd1NxdWFyZUdyaWQgeyBncmlkLWNvbHVtbjogMjsgZ3JpZC1yb3c6IDM7IH0NCg0KI2N1c3RvbS1zY3JhbWJsZSwgI2N1c3RvbS1zb2x2ZSB7DQogIHdpZHRoOiAzMCU7DQp9DQoNCi8qID09PT09PT09PT09PT09PT09PT09PT09PT0gKi8NCi8qIDNEIE1PREUgKGRvZXMgTk9UIGFmZmVjdCAyRCkgKi8NCi8qID09PT09PT09PT09PT09PT09PT09PT09PT0gKi8NCg0KLnBhZ2UtY2VudGVyew0KICBwZXJzcGVjdGl2ZTogMTAwMHB4OyAvKiBuZWVkZWQgZm9yIDNEICovDQp9DQoNCi8qIHdoZW4gM0QgaXMgYWN0aXZlLCBraWxsIHRoZSBncmlkIGxheW91dCAqLw0KLmN1YmUzZCAuZ3JpZC1jb250YWluZXJ7DQogIGRpc3BsYXk6IGJsb2NrOw0KICBwb3NpdGlvbjogcmVsYXRpdmU7DQogIHRyYW5zZm9ybS1zdHlsZTogcHJlc2VydmUtM2Q7DQogIHdpZHRoOiAyMDBweDsNCiAgaGVpZ2h0OiAyMDBweDsNCg0KICB0cmFuc2Zvcm06IHJvdGF0ZVgoLTI1ZGVnKSByb3RhdGVZKC0zNWRlZyk7DQp9DQoNCg0KLyogYWxsIGZhY2VzIHN0YWNrIGluIHNhbWUgb3JpZ2luICovDQouY3ViZTNkIC5ncmlkew0KICBwb3NpdGlvbjogYWJzb2x1dGU7DQogIHRvcDogNTAlOw0KICBsZWZ0OiA1MCU7DQogIHRyYW5zZm9ybS1vcmlnaW46IGNlbnRlciBjZW50ZXI7DQogIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjZzIGVhc2U7DQogIGJhY2tncm91bmQtY29sb3I6IGJsYWNrOw0KfQ0KDQovKiBSRUFMIGN1YmUgZGVwdGggKGRlcGVuZHMgb24gc3RpY2tlciBzaXplKSAqLw0KOnJvb3R7DQogIC0tY3ViZS1kZXB0aDogNDhweDsNCn0NCg0KLyogRlJPTlQgKGdyZWVuKSAqLw0KLmN1YmUzZCAjZ3JlZW5TcXVhcmVHcmlkew0KICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKSByb3RhdGVZKDBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBCQUNLIChibHVlKSAqLw0KLmN1YmUzZCAjYmx1ZVNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVkoMTgwZGVnKSB0cmFuc2xhdGVaKHZhcigtLWN1YmUtZGVwdGgpKTsNCn0NCg0KLyogUklHSFQgKHJlZCkgKi8NCi5jdWJlM2QgI3JlZFNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVkoOTBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBMRUZUIChvcmFuZ2UpICovDQouY3ViZTNkICNvcmFuZ2VTcXVhcmVHcmlkew0KICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKSByb3RhdGVZKC05MGRlZykgdHJhbnNsYXRlWih2YXIoLS1jdWJlLWRlcHRoKSk7DQp9DQoNCi8qIFRPUCAod2hpdGUpICovDQouY3ViZTNkICN3aGl0ZVNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVgoOTBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBCT1RUT00gKHllbGxvdykgKi8NCi5jdWJlM2QgI3llbGxvd1NxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVgoLTkwZGVnKSB0cmFuc2xhdGVaKHZhcigtLWN1YmUtZGVwdGgpKTsNCn0NCi8qIEZJWCB2ZXJ0aWNhbCBjZW50ZXJpbmcgT05MWSBpbiAzRCBtb2RlICovDQouY3ViZTNkLnBhZ2UtY2VudGVyew0KICBwb3NpdGlvbjogZml4ZWQ7DQogIGluc2V0OiAwOw0KICBkaXNwbGF5OiBmbGV4Ow0KICBhbGlnbi1pdGVtczogY2VudGVyOw0KICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCn0NCg==", import.meta.url).href;
-  document.head.appendChild(link);
-}
-let facesToSquares = {};
-function mountRenderer(container) {
-  injectCubeCSS();
-  container.innerHTML = `
-    <div id="cube-net">
-      <div class="page-center">
-        <div class="grid-container">
-          <div id="whiteSquareGrid" class="grid"></div>
-          <div id="orangeSquareGrid" class="grid"></div>
-          <div id="greenSquareGrid" class="grid"></div>
-          <div id="redSquareGrid" class="grid"></div>
-          <div id="blueSquareGrid" class="grid"></div>
-          <div id="yellowSquareGrid" class="grid"></div>
-        </div>
-      </div>
-    </div>
-  `;
-  createGrid("whiteSquareGrid", "white-square");
-  createGrid("orangeSquareGrid", "orange-square");
-  createGrid("greenSquareGrid", "green-square");
-  createGrid("redSquareGrid", "red-square");
-  createGrid("blueSquareGrid", "blue-square");
-  createGrid("yellowSquareGrid", "yellow-square");
-  facesToSquares = {
-    U: document.querySelectorAll("#whiteSquareGrid .square"),
-    R: document.querySelectorAll("#redSquareGrid .square"),
-    F: document.querySelectorAll("#greenSquareGrid .square"),
-    D: document.querySelectorAll("#yellowSquareGrid .square"),
-    L: document.querySelectorAll("#orangeSquareGrid .square"),
-    B: document.querySelectorAll("#blueSquareGrid .square")
-  };
-  paint();
-}
-function createGrid(id, cls) {
-  const grid2 = document.getElementById(id);
-  for (let i = 0; i < 9; i++) {
-    const s = document.createElement("div");
-    s.className = `square ${cls}`;
-    grid2.appendChild(s);
-  }
-}
-function paint() {
-  const colorMap = { W: "white", R: "red", G: "green", Y: "yellow", O: "orange", B: "blue" };
-  for (const f in cube) {
-    const squares = facesToSquares[f];
-    for (let i = 0; i < 9; i++) {
-      squares[i].className = `square ${colorMap[cube[f][i]]}-square`;
-    }
-  }
-}
-function resize(size) {
-  const gap = Math.round(size * 0.08);
-  const padding = gap;
-  document.querySelectorAll(".grid").forEach((g) => {
-    g.style.gridTemplateColumns = `repeat(3, ${size}px)`;
-    g.style.gap = `${gap}px`;
-    g.style.padding = `${padding}px`;
-  });
-  document.querySelectorAll(".square").forEach((s) => {
-    s.style.width = `${size}px`;
-    s.style.height = `${size}px`;
-  });
-  const depth = size * 3 + gap * 2 + padding * 2;
-  document.documentElement.style.setProperty("--cube-depth", `${depth / 2}px`);
-}
-function set3D(enabled) {
-  const net = document.getElementById("cube-net");
-  net.classList.toggle("cube3d", enabled);
-}
-let scrambledState = null;
-function mountCube(div) {
-  mountRenderer(div);
-  paint();
-}
-function setSize(px) {
-  resize(px);
-}
-function setView(mode) {
-  set3D(mode === "3d");
-}
-function applyScramble(scr, skipPaint = false) {
-  printScrambleMoves(scr, true);
-  if (!skipPaint) paint();
-  scrambledState = cloneCubeState();
-}
-function applySolution(sol, skipPaint = false) {
-  restoreCubeState(scrambledState);
-  printScrambleMoves(sol, false);
-  if (!skipPaint) paint();
-}
-function getLastMoveCount() {
-  return getMoveCount();
-}
-function checkSolved() {
-  return isSolved();
-}
-function wrapTimesValue$1(value) {
-  return `<span class="times-color-number">${value}</span>`;
-}
-function openDetailsModal() {
-  const averages = getSessionAverages();
-  let html = `<h3 class="modal-title">Session averages</h3>`;
-  window.modalBlocks = averages;
-  averages.forEach((block, blockIndex) => {
-    let headerText = `${block.mode} #${wrapTimesValue$1(averages.length - blockIndex)}: ${wrapTimesValue$1(block.average)}`;
-    if (block.mode === "bo3") {
-      const mo3Avg = computeAverage(block.solves, "mo3");
-      const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(mo3Avg.avg);
-      headerText = `${block.mode} #${wrapTimesValue$1(averages.length - blockIndex)}: ${wrapTimesValue$1(block.average)} (mo3: ${wrapTimesValue$1(mo3Value)})`;
-    } else if (block.mode === "bo5") {
-      const ao5Avg = computeAverage(block.solves, "ao5");
-      const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
-      headerText = `${block.mode} #${wrapTimesValue$1(averages.length - blockIndex)}: ${wrapTimesValue$1(block.average)} (ao5: ${wrapTimesValue$1(ao5Value)})`;
-    }
-    html += `
-            <div class="modal-average-card">
-                <div class="modal-average-header">
-                    <b>${headerText}</b>
-                </div>
-
-                <div class="modal-solves">
-        `;
-    block.solves.forEach((s, i) => {
-      html += `
-                <div class="modal-solve-row">
-                    <div class="modal-solve-main">
-                        <span>#${i + 1}: ${formatStatValue(s)}</span>
-
-                        <div class="modal-solve-actions">
-                            <button onclick="setPenalty(${blockIndex}, ${i}, null)">OK</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, '+2')">+2</button>
-                            <button onclick="setPenalty(${blockIndex}, ${i}, 'DNF')">DNF</button>
-                            <button onclick="removeSolve(${blockIndex}, ${i})">✖</button>
-                        </div>
-                    </div>
-
-                    <div class="modal-scramble">
-                        Scramble: ${block.solves[i].scramble}
-                    </div>
-                    
-                    <div class="modal-scramble">
-                        Inspection: ${block.solves[i].inspection}
-                    </div>
-
-
-                    <div class="modal-scramble">
-                        Date: ${new Date(block.solves[i].createdAt)}
-                    </div>                    
-
-                    <div class="modal-scramble">
-                       Solution: <input 
-                            type="text" 
-                            id="solution-input-${blockIndex}-${i}" 
-                            placeholder="Enter solution"
-                            value="${block.solves[i].solution || ""}"
-                        />
-                        <button onclick="submitSolution(${blockIndex}, ${i})">
-                            Submit
-                        </button>
-                    </div>       
-                    <div class="modal-scramble">
-                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || "-"} | Moves: ${block.solves[i].moves || "-"} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : "-"}</span>
-                    </div>                                   
-                </div>
-            `;
-    });
-    html += `
-                </div>
-            </div>
-        `;
-  });
-  modalBody.innerHTML = html;
-  modal.classList.remove("hidden");
-}
-window.submitSolution = function(blockIndex, solveIndex) {
-  const block = window.modalBlocks[blockIndex];
-  const solve = block.solves[solveIndex];
-  const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
-  const value = input.value;
-  applyScramble(solve.scramble, true);
-  applySolution(value, true);
-  const moveCount2 = getLastMoveCount();
-  const tps = moveCount2 / solve.time;
-  const isSolved2 = checkSolved();
-  const status = isSolved2 ? "Solved" : "DNF";
-  solve.solution = value;
-  solve.tps = tps;
-  solve.moves = moveCount2;
-  solve.status = status;
-  document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount2} | TPS: ${tps.toFixed(2)}`;
-  saveSessions();
-};
-function ensureSessionShape() {
-  const session2 = getCurrentSession();
-  if (!session2.averages) session2.averages = [];
-}
 function addAverageBlock(block) {
-  ensureSessionShape();
-  const session2 = getCurrentSession();
-  session2.averages.unshift(block);
-  saveSessions();
+  addAverageBlock$1(block, getCurrentSession, saveSessions);
 }
 function getSessionAverages() {
-  const session2 = getCurrentSession();
-  return session2.averages || [];
+  return getSessionAverages$1(getCurrentSession);
 }
-function getLastSolveTarget() {
-  if (averageObj.solvesArray.length > 0) {
-    return {
-      type: "current",
-      solveIndex: averageObj.solvesArray.length - 1
-    };
-  }
-  const averages = getSessionAverages();
-  if (averages.length === 0) return null;
-  const newestBlockIndex = 0;
-  const newestBlock = averages[0];
-  if (!newestBlock || newestBlock.solves.length === 0) return null;
-  return {
-    type: "saved",
-    blockIndex: newestBlockIndex,
-    solveIndex: newestBlock.solves.length - 1
-  };
-}
-window.setPenalty = function(blockIndex, solveIndex, penalty) {
-  penalty2(blockIndex, solveIndex, penalty);
-  saveSessions();
-  renderHistory();
-  if (averageObj.mode === "classic") updateClassicStats(true);
-  const session2 = getCurrentSession();
-  session2.classicStats = structuredClone(classicStats);
-  if (!modal.classList.contains("hidden")) {
-    openDetailsModal();
-  }
-};
-window.removeSolve = function(blockIndex, solveIndex) {
-  remove2(blockIndex, solveIndex);
-  if (averageObj.mode === "classic") updateClassicStats(true);
-  const session2 = getCurrentSession();
-  session2.classicStats = structuredClone(classicStats);
-  saveSessions();
-  renderHistory();
-  if (!modal.classList.contains("hidden")) {
-    openDetailsModal();
-  }
-};
 function penalty2(blockIndex, solveIndex, penalty) {
-  const averages = getSessionAverages();
-  const block = averages[blockIndex];
-  block.solves[solveIndex].penalty = penalty;
-  const newAvg = computeAverage(block.solves, block.mode).avg;
-  block.average = newAvg === "DNF" ? "DNF" : formatSecondsToTime(newAvg);
-  saveSessions();
+  penalty2$1(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
 }
 function remove2(blockIndex, solveIndex) {
-  const averages = getSessionAverages();
-  if (blockIndex === -1) {
-    if (solveIndex < 0 || solveIndex >= averageObj.solvesArray.length) return;
-    averageObj.solvesArray.splice(solveIndex, 1);
-    averageObj.solveCounter--;
-    if (averageObj.solveCounter < 0) averageObj.solveCounter = 0;
-    return;
-  }
-  const block = averages[blockIndex];
-  if (blockIndex === 0 && averageObj.solvesArray.length === 0) {
-    const newSolves = block.solves.filter((_, i) => i !== solveIndex);
-    averageObj.solvesArray = structuredClone(newSolves);
-    averageObj.solveCounter = newSolves.length;
-    averages.splice(blockIndex, 1);
-    modal.classList.add("hidden");
-    saveSessions();
-    return;
-  }
-  const choice = confirm(
-    "This solve belongs to a finished average.\n\nOK = Replace this solve (reopen average)\nCancel = Delete the whole average"
-  );
-  if (choice) {
-    const newSolves = block.solves.filter((_, i) => i !== solveIndex);
-    averageObj.solvesArray = structuredClone(newSolves);
-    averageObj.solveCounter = newSolves.length;
-    averages.splice(blockIndex, 1);
-    modal.classList.add("hidden");
-    saveSessions();
-    return;
-  }
-  if (!confirm("Delete the entire average? This cannot be undone.")) return;
-  averages.splice(blockIndex, 1);
-  saveSessions();
+  remove2$1(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions);
 }
-function applyPenaltyToLast(penalty) {
-  const target = getLastSolveTarget();
-  if (!target) return;
-  if (target.type === "current") {
-    averageObj.solvesArray[target.solveIndex].penalty = penalty;
-    updateClassicStats(true);
-  } else {
-    window.setPenalty(target.blockIndex, target.solveIndex, penalty);
-  }
+function applyPenaltyToLast(penalty, setPenalty2) {
+  applyPenaltyToLast$1(penalty, averageObj, getCurrentSession, updateClassicStats, setPenalty2);
 }
-function removeLastSolve() {
-  const target = getLastSolveTarget();
-  if (!target) return;
-  if (target.type === "current") {
-    window.removeSolve(-1, target.solveIndex, true);
+function removeLastSolve(removeSolve2) {
+  removeLastSolve$1(averageObj, getCurrentSession, removeSolve2);
+}
+const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
+const timerSettObj = {
+  inspectionType: inspection$1,
+  timerFlag: false,
+  previousInspectionType: inspection$1
+};
+const PHASE = Object.freeze({
+  IDLE: "idle",
+  // waiting for the next solve
+  INSPECTING: "inspecting",
+  // inspection running (or armed to start on release)
+  HOLDING: "holding",
+  // pressed, waiting out the hold delay (red)
+  READY: "ready",
+  // hold delay done (green), release starts the timer
+  RUNNING: "running"
+  // solve being timed
+});
+const timerObj = {
+  timerPhase: PHASE.IDLE,
+  interval: 0,
+  holdTimeout: 0,
+  inspecting: false,
+  inspection: 0,
+  solvePhases: [],
+  currentSolvePhase: 0,
+  totalSolvePhases: 1,
+  lastSplitTime: 0
+};
+const countdownObj = {
+  remainingTime: 60 * 60,
+  // 3600 seconds
+  intervalId: null
+};
+function bindVisibilityToggle(selectId, targetClass) {
+  const select = document.getElementById(selectId);
+  const targets = document.querySelectorAll(`.${targetClass}`);
+  if (!select || targets.length === 0) return;
+  const storageKey = `visibility-${selectId}`;
+  const savedValue = localStorage.getItem(storageKey);
+  if (savedValue) {
+    select.value = savedValue;
+  }
+  function apply() {
+    const isShown = select.value === "show";
+    targets.forEach((el) => {
+      el.style.display = isShown ? "" : "none";
+    });
+    localStorage.setItem(storageKey, select.value);
+  }
+  select.addEventListener("change", apply);
+  apply();
+}
+const overlay$1 = document.getElementById("settingsOverlay");
+const openBtn$1 = document.getElementById("settingsBtn");
+const closeBtn$1 = document.getElementById("closeSettings");
+openBtn$1.addEventListener("click", () => {
+  overlay$1.classList.add("open");
+});
+closeBtn$1.addEventListener("click", () => {
+  overlay$1.classList.remove("open");
+});
+bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
+bindVisibilityToggle("toggle-statistics", "right-sidebar");
+bindVisibilityToggle("toggle-session-history", "left-sidebar");
+bindVisibilityToggle("toggle-scramble-text", "scramble-container");
+bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
+bindVisibilityToggle("toggle-average-preview", "main-footer");
+function getThemeVar(themeClass, variable) {
+  const temp = document.createElement("div");
+  temp.className = themeClass;
+  document.body.appendChild(temp);
+  const value = getComputedStyle(temp).getPropertyValue(variable).trim();
+  document.body.removeChild(temp);
+  return value;
+}
+let mainBackground = localStorage.getItem("main-background") || "black";
+document.getElementById("main-background").value = mainBackground;
+const bgMain4 = getThemeVar(`theme-${mainBackground}`, "--bg-main");
+document.documentElement.style.setProperty("--bg-main", bgMain4);
+document.getElementById("main-background").addEventListener("change", () => {
+  mainBackground = document.getElementById("main-background").value;
+  localStorage.setItem("main-background", mainBackground);
+  const bgMain5 = getThemeVar(`theme-${mainBackground}`, "--bg-main");
+  document.documentElement.style.setProperty("--bg-main", bgMain5);
+});
+let tertiaryBackgroumd = localStorage.getItem("tertiary-background") || "black";
+document.getElementById("tertiary-background").value = tertiaryBackgroumd;
+const bgMain3 = getThemeVar(`theme-${tertiaryBackgroumd}`, "--bg-secondary");
+document.documentElement.style.setProperty("--bg-secondary", bgMain3);
+document.getElementById("tertiary-background").addEventListener("change", () => {
+  tertiaryBackgroumd = document.getElementById("tertiary-background").value;
+  localStorage.setItem("tertiary-background", tertiaryBackgroumd);
+  const bgMain5 = getThemeVar(`theme-${tertiaryBackgroumd}`, "--bg-secondary");
+  document.documentElement.style.setProperty("--bg-secondary", bgMain5);
+});
+let secondaryBackground = localStorage.getItem("secondary-background") || "black";
+document.getElementById("secondary-background").value = secondaryBackground;
+const bgMain2 = getThemeVar(`theme-${secondaryBackground}`, "--bg-tertiary");
+document.documentElement.style.setProperty("--bg-tertiary", bgMain2);
+let textColor = localStorage.getItem("text-color") || "white";
+document.getElementById("secondary-background").addEventListener("change", () => {
+  secondaryBackground = document.getElementById("secondary-background").value;
+  localStorage.setItem("secondary-background", secondaryBackground);
+  const bgMain5 = getThemeVar(`theme-${secondaryBackground}`, "--bg-tertiary");
+  document.documentElement.style.setProperty("--bg-tertiary", bgMain5);
+  const timesBase = getBaseColor(textColor);
+  const bgBase = getBaseColor(secondaryBackground);
+  if (timesBase === bgBase) {
+    const isLight = secondaryBackground.endsWith("-light") || secondaryBackground.endsWith("-medium") || secondaryBackground === "white";
+    if (isLight) {
+      document.body.classList.remove(`theme-text-${textColor}`);
+      textColor = "black";
+      document.body.classList.add(`theme-text-${textColor}`);
+      localStorage.setItem("text-color", textColor);
+      document.getElementById("text-color").value = textColor;
+    } else {
+      document.body.classList.remove(`theme-text-${textColor}`);
+      textColor = "white";
+      document.body.classList.add(`theme-text-${textColor}`);
+      localStorage.setItem("text-color", textColor);
+      document.getElementById("text-color").value = textColor;
+    }
   } else {
-    window.removeSolve(target.blockIndex, target.solveIndex, true);
+    document.body.classList.add(`theme-text-${textColor}`);
+    localStorage.setItem("text-color", textColor);
+    document.getElementById("text-color").value = textColor;
+  }
+});
+let buttonsBackground = localStorage.getItem("buttons-background") || "black";
+document.getElementById("buttons-background").value = buttonsBackground;
+const bgMain = getThemeVar(`theme-${buttonsBackground}`, "--border-main");
+document.documentElement.style.setProperty("--border-main", bgMain);
+document.getElementById("buttons-background").addEventListener(
+  "change",
+  () => {
+    buttonsBackground = document.getElementById("buttons-background").value;
+    localStorage.setItem("buttons-background", buttonsBackground);
+    const bgMain5 = getThemeVar(`theme-${buttonsBackground}`, "--border-main");
+    document.documentElement.style.setProperty("--border-main", bgMain5);
+    const isLight = buttonsBackground.endsWith("-light") || buttonsBackground.endsWith("-medium") || buttonsBackground === "white";
+    if (isLight) {
+      timesColor = "black";
+      applyTimesColor("black");
+    } else {
+      timesColor = "white";
+      applyTimesColor("white");
+    }
+  }
+);
+let timesColor = localStorage.getItem("times-color") || "white";
+document.documentElement.style.setProperty("--times-color", getThemeVar(`theme-text-${timesColor}`, "--text-main"));
+function applyTimesColor(colorKey) {
+  const colorValue = getThemeVar(`theme-text-${colorKey}`, "--text-main");
+  document.documentElement.style.setProperty("--times-color", colorValue);
+  document.getElementById("timer").style.color = colorValue;
+  document.querySelectorAll("button").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
+  document.querySelectorAll("select").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
+  document.querySelectorAll("input").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
+  document.getElementById("times-color").value = timesColor;
+  localStorage.setItem("times-color", colorKey);
+}
+function getBaseColor(value) {
+  return value.split("-")[0];
+}
+document.getElementById("times-color").value = timesColor;
+applyTimesColor(timesColor);
+document.getElementById("times-color").addEventListener("change", (e) => {
+  timesColor = e.target.value;
+  applyTimesColor(timesColor);
+  const timesBase = getBaseColor(timesColor);
+  const bgBase = getBaseColor(buttonsBackground);
+  if (timesBase === bgBase) {
+    const isLight = buttonsBackground.endsWith("-light") || buttonsBackground.endsWith("-medium") || buttonsBackground === "white";
+    if (isLight) {
+      timesColor = "black";
+      applyTimesColor("black");
+    } else {
+      timesColor = "white";
+      applyTimesColor("white");
+    }
+  } else {
+    applyTimesColor(timesColor);
+  }
+});
+document.getElementById("text-color").value = textColor;
+document.body.classList.remove(`theme-text-${textColor}`);
+textColor = document.getElementById("text-color").value;
+document.body.classList.add(`theme-text-${textColor}`);
+document.getElementById("text-color").addEventListener("change", () => {
+  document.body.classList.remove(`theme-text-${textColor}`);
+  textColor = document.getElementById("text-color").value;
+  const timesBase = getBaseColor(textColor);
+  const bgBase = getBaseColor(secondaryBackground);
+  if (timesBase === bgBase) {
+    const isLight = secondaryBackground.endsWith("-light") || secondaryBackground.endsWith("-medium") || secondaryBackground === "white";
+    if (isLight) {
+      textColor = "black";
+      document.body.classList.add(`theme-text-${textColor}`);
+      localStorage.setItem("text-color", textColor);
+    } else {
+      textColor = "white";
+      document.body.classList.add(`theme-text-${textColor}`);
+      localStorage.setItem("text-color", textColor);
+    }
+  } else {
+    document.body.classList.add(`theme-text-${textColor}`);
+    localStorage.setItem("text-color", textColor);
+    document.getElementById("text-color").value = textColor;
+  }
+});
+let inspectionStart = document.getElementById("inspection-start").value;
+localStorage.setItem("inspectionStart", inspectionStart);
+document.getElementById("inspection-start").value = inspectionStart;
+document.getElementById("inspection-start").addEventListener("change", () => {
+  inspectionStart = document.getElementById("inspection-start").value;
+  localStorage.setItem("inspectionStart", inspectionStart);
+});
+let timerDisplay = localStorage.getItem("timerDisplay") || "Show";
+document.getElementById("timer-display").value = timerDisplay;
+document.getElementById("timer-display").addEventListener("change", () => {
+  timerDisplay = document.getElementById("timer-display").value;
+  localStorage.setItem("timerDisplay", timerDisplay);
+});
+const phaseInput = document.getElementById("phase-count");
+phaseInput.value = timerObj.totalSolvePhases;
+phaseInput.addEventListener("input", (e) => {
+  const value = Number(e.target.value);
+  if (!Number.isInteger(value) || value < 1) return;
+  timerObj.totalSolvePhases = value;
+  localStorage.setItem("totalSolvePhases", value);
+});
+const savedPhases = Number(localStorage.getItem("totalSolvePhases"));
+if (Number.isInteger(savedPhases) && savedPhases > 0) {
+  timerObj.totalSolvePhases = savedPhases;
+  document.getElementById("phase-count").value = savedPhases;
+}
+document.getElementById("inspection-type").value = timerSettObj.inspectionType;
+document.getElementById("inspection-type").addEventListener("change", () => {
+  timerSettObj.previousInspectionType = timerSettObj.inspectionType;
+  timerSettObj.inspectionType = document.getElementById("inspection-type").value;
+  localStorage.setItem("inspectionType", timerSettObj.inspectionType);
+});
+let delayFlagType = localStorage.getItem("delayFlagType") || "WCA";
+document.getElementById("delay-flag").value = delayFlagType;
+document.getElementById("delay-flag").addEventListener("change", () => {
+  delayFlagType = document.getElementById("delay-flag").value;
+  localStorage.setItem("delayFlagType", delayFlagType);
+});
+let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
+if (timeInsertion === "Typing") {
+  timerSettObj.timerFlag = true;
+} else {
+  timerSettObj.timerFlag = false;
+}
+document.getElementById("time-insertion").value = timeInsertion;
+document.getElementById("time-insertion").addEventListener("change", () => {
+  timeInsertion = document.getElementById("time-insertion").value;
+  if (timeInsertion === "Typing") {
+    timerSettObj.timerFlag = true;
+  } else {
+    timerSettObj.timerFlag = false;
+  }
+  localStorage.setItem("timeInsertion", timeInsertion);
+  updateTypingUI();
+});
+function updateTypingUI() {
+  const container = document.getElementById("typing-container");
+  if (!container) return;
+  if (localStorage.getItem("timeInsertion") === "Typing") {
+    container.style.display = "block";
+    const input = document.getElementById("typed-time");
+    if (input) input.focus();
+  } else {
+    container.style.display = "none";
   }
 }
 function round(v) {
@@ -8666,9 +8386,9 @@ class Scale extends Element {
       height: 0
     };
     const { chart, options: { ticks: tickOpts, title: titleOpts, grid: gridOpts } } = this;
-    const display2 = this._isVisible();
+    const display = this._isVisible();
     const isHorizontal = this.isHorizontal();
-    if (display2) {
+    if (display) {
       const titleHeight = getTitleHeight(titleOpts, chart.options.font);
       if (isHorizontal) {
         minSize.width = this.maxWidth;
@@ -8892,9 +8612,9 @@ class Scale extends Element {
     return this.isHorizontal() ? h * cos > w * sin ? w / cos : h / sin : h * sin < w * cos ? h / cos : w / sin;
   }
   _isVisible() {
-    const display2 = this.options.display;
-    if (display2 !== "auto") {
-      return !!display2;
+    const display = this.options.display;
+    if (display !== "auto") {
+      return !!display;
     }
     return this.getMatchingVisibleMetas().length > 0;
   }
@@ -15191,7 +14911,7 @@ function buildPointLabelItems(scale, labelSizes, padding) {
   const items = [];
   const valueCount = scale._pointLabels.length;
   const opts = scale.options;
-  const { centerPointLabels, display: display2 } = opts.pointLabels;
+  const { centerPointLabels, display } = opts.pointLabels;
   const itemOpts = {
     extra: getTickBackdropHeight(opts) / 2,
     additionalAngle: centerPointLabels ? PI / valueCount : 0
@@ -15202,7 +14922,7 @@ function buildPointLabelItems(scale, labelSizes, padding) {
     itemOpts.size = labelSizes[i];
     const item = createPointLabelItem(scale, i, itemOpts);
     items.push(item);
-    if (display2 === "auto") {
+    if (display === "auto") {
       item.visible = isNotOverlapped(item, area);
       if (item.visible) {
         area = item;
@@ -16107,7 +15827,7 @@ function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
   return offsetMinutes * 60 * 1e3;
 }
-function getAllSolvesFromSession(session2) {
+function getAllSolvesFromSession(session2, averageObj2) {
   const all = [];
   session2.averages.forEach((avg) => {
     if (avg.mode !== "classic") {
@@ -16116,15 +15836,25 @@ function getAllSolvesFromSession(session2) {
       });
     }
   });
-  averageObj.solvesArray.forEach((s) => all.push(s));
+  averageObj2.solvesArray.forEach((s) => all.push(s));
   return all;
 }
-function getStatisticsFromSolves(solves, session2) {
+function getStatisticsFromSolves(solves, session2, averageObj2, classicStats2) {
   let allSolvesArr = [];
   let ao5Arr = [];
   let solveCounter = 0;
-  if (averageObj.mode === "classic") {
-    ao5Arr.push(classicStats.best.ao5);
+  if (averageObj2.mode === "classic") {
+    const { start, end } = getRangeTimestamps("day");
+    const todayHistory = classicStats2.history.ao5.filter(
+      (avg) => avg.createdAt >= start && avg.createdAt <= end && avg.avg !== "DNF"
+    );
+    const bestToday = todayHistory.reduce((best, curr) => {
+      if (!best || curr.avg < best.avg) return curr;
+      return best;
+    }, null);
+    if (bestToday?.avg != null) {
+      ao5Arr.push(bestToday.avg);
+    }
   }
   session2.averages.forEach((avg) => {
     if (avg.mode !== "classic") {
@@ -16151,7 +15881,8 @@ function getStatisticsFromSolves(solves, session2) {
       solveCounter
     };
   }
-  const bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  const validAvgs = ao5Arr.filter((v) => v != null && !isNaN(v));
+  const bestAvg = validAvgs.length ? Math.min(...validAvgs) : null;
   const bestTime = Math.min(...allSolvesArr);
   const mean = allSolvesArr.reduce((a, b) => a + b, 0) / allSolvesArr.length;
   const variance = allSolvesArr.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / allSolvesArr.length;
@@ -16215,46 +15946,176 @@ function filterAveragesByRange(session2, range) {
     const lastSolve = avg.solves[avg.solves.length - 1];
     if (!lastSolve || !lastSolve.createdAt) return false;
     return lastSolve.createdAt >= start && lastSolve.createdAt <= end;
+  }).sort((a, b) => {
+    const aTime = a.solves[a.solves.length - 1].createdAt;
+    const bTime = b.solves[b.solves.length - 1].createdAt;
+    return aTime - bTime;
   });
+}
+function getAveragesInRange(session2, start, end) {
+  return session2.averages.filter((avg) => {
+    const lastSolve = avg.solves[avg.solves.length - 1];
+    if (!lastSolve || !lastSolve.createdAt) return false;
+    return (!start || lastSolve.createdAt >= start) && (!end || lastSolve.createdAt <= end);
+  }).map((avg) => {
+    if (avg.average === "DNF") return null;
+    return parseTimeToSeconds(avg.average);
+  });
+}
+function getLastRangeWithData(session2, range, maxLookback = 10) {
+  let { start, end } = getRangeTimestamps(range);
+  if (!start) return { start: null, end: null };
+  const duration = end - start;
+  for (let i = 1; i <= maxLookback; i++) {
+    const testStart = start - duration * i;
+    const testEnd = start - duration * (i - 1);
+    const hasData = session2.averages.some((avg) => {
+      if (!avg.solves || avg.solves.length === 0) return false;
+      const lastSolve = avg.solves[avg.solves.length - 1];
+      if (!lastSolve.createdAt) return false;
+      return lastSolve.createdAt >= testStart && lastSolve.createdAt <= testEnd;
+    });
+    if (hasData) {
+      return { start: testStart, end: testEnd };
+    }
+  }
+  return { start: null, end: null };
+}
+function getSigmaGraphData(averagesArr) {
+  const labels = [];
+  const sigmas = [];
+  averagesArr.forEach((block, i) => {
+    labels.push(i + 1);
+    if (!block || block.average === "DNF") {
+      sigmas.push(null);
+    } else {
+      sigmas.push(block.sigma ?? null);
+    }
+  });
+  return { labels, sigmas };
+}
+function getTimeDistribution(solves, thresholds) {
+  const buckets = new Array(thresholds.length + 1).fill(0);
+  solves.forEach((solve) => {
+    let time = null;
+    if (solve.penalty === "DNF") return;
+    if (solve.penalty === "+2") time = solve.time + 2;
+    else time = solve.time;
+    let placed = false;
+    for (let i = 0; i < thresholds.length; i++) {
+      if (time <= thresholds[i]) {
+        buckets[i]++;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      buckets[buckets.length - 1]++;
+    }
+  });
+  return buckets;
+}
+function getDistributionLabels(thresholds) {
+  const labels = [];
+  for (let i = 0; i < thresholds.length; i++) {
+    labels.push(`Sub ${formatSecondsToTime(thresholds[i])}`);
+  }
+  labels.push(`> ${formatSecondsToTime(thresholds[thresholds.length - 1])}`);
+  return labels;
+}
+function filterEmptyBuckets(labels, data) {
+  const filteredLabels = [];
+  const filteredData = [];
+  labels.forEach((label, i) => {
+    if (data[i] > 0) {
+      filteredLabels.push(label);
+      filteredData.push(data[i]);
+    }
+  });
+  return { labels: filteredLabels, data: filteredData };
+}
+function generateSmartThresholds() {
+  const thresholds = [];
+  function addRange(start, end, step) {
+    for (let t = start + step; t <= end; t += step) {
+      thresholds.push(t);
+    }
+  }
+  addRange(0, 10, 0.5);
+  addRange(10, 20, 1);
+  addRange(20, 60, 5);
+  addRange(60, 120, 10);
+  addRange(120, 300, 30);
+  addRange(300, 600, 60);
+  addRange(600, 1800, 300);
+  addRange(1800, 3600, 600);
+  addRange(3600, 18e3, 1800);
+  addRange(18e3, 36e3, 3600);
+  return thresholds;
+}
+function buildAvgMaps(classicStats2) {
+  const maps = {
+    mo3: /* @__PURE__ */ new Map(),
+    ao5: /* @__PURE__ */ new Map(),
+    ao12: /* @__PURE__ */ new Map(),
+    ao100: /* @__PURE__ */ new Map()
+  };
+  Object.keys(maps).forEach((key) => {
+    classicStats2.history[key].forEach((avg) => {
+      maps[key].set(avg.createdAt, avg);
+    });
+  });
+  return maps;
 }
 document.getElementById("date-filter").addEventListener("change", () => {
   renderStatsPage();
 });
-function getStatistcs() {
+const statsPage = document.getElementById("stats-page");
+const openStatsBtn = document.getElementById("open-stats-btn");
+const closeStatsBtn = document.getElementById("close-stats-btn");
+openStatsBtn.addEventListener("click", () => {
+  renderStatsPage();
+  statsPage.classList.add("open");
+});
+closeStatsBtn.addEventListener("click", () => {
+  statsPage.classList.remove("open");
+});
+function getStatistics() {
   const session2 = getCurrentSession();
-  const allSolves = getAllSolvesFromSession(session2);
-  return getStatisticsFromSolves(allSolves, session2);
+  const allSolves = getAllSolvesFromSession(session2, averageObj);
+  return getStatisticsFromSolves(allSolves, session2, averageObj, classicStats);
 }
 function getStatisticsByDate(range) {
   const session2 = getCurrentSession();
-  const allSolves = getAllSolvesFromSession(session2);
+  const allSolves = getAllSolvesFromSession(session2, averageObj);
   const filteredSolves = filterSolvesByRange(allSolves, range);
-  const stats = getStatisticsFromSolves(filteredSolves, session2);
-  const filteredAvgs = filterAveragesByRange(session2, range);
-  const ao5Arr = filteredAvgs.filter((a) => a.average !== "DNF").map((a) => parseTimeToSeconds(a.average));
-  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  const stats = getStatisticsFromSolves(filteredSolves, session2, averageObj, classicStats);
+  if (averageObj.mode === "classic") {
+    const { start, end } = getRangeTimestamps(range);
+    const best = classicStats.history.ao5.filter(
+      (a) => a.avg !== "DNF" && (!start || a.createdAt >= start && a.createdAt <= end)
+    ).reduce(
+      (best2, curr) => !best2 || curr.avg < best2.avg ? curr : best2,
+      null
+    );
+    stats.bestAvg = best?.avg ?? null;
+  } else {
+    const filteredAvgs = filterAveragesByRange(session2, range);
+    const ao5Arr = filteredAvgs.filter((a) => a.average !== "DNF").map((a) => parseTimeToSeconds(a.average));
+    stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  }
   return stats;
-}
-function getPreviousRange(range) {
-  const { start, end } = getRangeTimestamps(range);
-  if (!start) return { start: null, end: null };
-  const duration = end - start;
-  return {
-    start: start - duration,
-    end: start
-  };
-}
-function filterSolvesCustomRange(solves, start, end) {
-  if (!start) return solves;
-  return solves.filter((s) => s.createdAt >= start && s.createdAt <= end);
 }
 function renderStatsPage() {
   const range = document.getElementById("date-filter").value;
   const session2 = getCurrentSession();
-  const allSolves = getAllSolvesFromSession(session2);
+  const allSolves = getAllSolvesFromSession(session2, averageObj);
   const filteredSolves = filterSolvesByRange(allSolves, range);
+  const thresholds = generateSmartThresholds();
+  const distribution = getTimeDistribution(filteredSolves, thresholds);
+  const distributionLabels = getDistributionLabels(thresholds);
   const filteredAverages = filterAveragesByRange(session2, range);
-  const stats = getStatisticsFromSolves(filteredSolves, session2);
+  const stats = getStatisticsFromSolves(filteredSolves, session2, averageObj, classicStats);
   const ao5Arr = filteredAverages.filter((a) => a.average !== "DNF").map((a) => parseTimeToSeconds(a.average));
   stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
   document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
@@ -16274,10 +16135,12 @@ function renderStatsPage() {
   if (existingChart) {
     existingChart.destroy();
   }
-  getCurrentSession();
   const labels = [];
   const times = [];
-  filteredSolves.forEach((solve, i) => {
+  const sortedSolves = [...filteredSolves].sort(
+    (a, b) => a.createdAt - b.createdAt
+  );
+  sortedSolves.forEach((solve, i) => {
     labels.push(i + 1);
     if (solve.penalty === "DNF") {
       times.push(null);
@@ -16328,40 +16191,40 @@ function renderStatsPage() {
   if (existingComparison) {
     existingComparison.destroy();
   }
-  getCurrentSession();
+  const sessionData2 = getCurrentSession();
   const { start, end } = getRangeTimestamps(range);
-  const prevRange = getPreviousRange(range);
-  filterSolvesCustomRange(allSolves, start, end);
-  filterSolvesCustomRange(allSolves, prevRange.start, prevRange.end);
-  const currentBlocks = session2.averages.filter((avg) => {
-    const last = avg.solves[avg.solves.length - 1];
-    return last && last.createdAt >= start && last.createdAt <= end;
-  });
-  const previousBlocks = session2.averages.filter((avg) => {
-    const last = avg.solves[avg.solves.length - 1];
-    return last && last.createdAt >= prevRange.start && last.createdAt <= prevRange.end;
-  });
-  function blockToValue(block) {
-    if (block.average === "DNF") return null;
-    return parseTimeToSeconds(block.average);
+  const prevRange = getLastRangeWithData(sessionData2, range);
+  let currentAvgs = [];
+  let previousAvgs = [];
+  if (averageObj.mode === "classic") {
+    const history = classicStats.history.ao5;
+    currentAvgs = history.filter((a) => !start || a.createdAt >= start && a.createdAt <= end).map((a) => a.avg === "DNF" ? null : a.avg);
+    previousAvgs = history.filter((a) => !prevRange.start || a.createdAt >= prevRange.start && a.createdAt <= prevRange.end).map((a) => a.avg === "DNF" ? null : a.avg);
+  } else {
+    currentAvgs = getAveragesInRange(sessionData2, start, end);
+    previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
   }
-  const currentValues = currentBlocks.map(blockToValue);
-  const previousValues = previousBlocks.map(blockToValue);
-  const maxLen = Math.max(currentValues.length, previousValues.length);
-  const comparisonLabels = Array.from({ length: maxLen }, (_, i) => `#${i + 1}`);
+  const minLen = Math.min(currentAvgs.length, previousAvgs.length);
+  currentAvgs.slice(-minLen);
+  previousAvgs.slice(-minLen);
+  const comparisonLabels = Array.from(
+    { length: minLen },
+    (_, i) => `Block ${sortedSolves.length - i}`
+  );
   const comparisonCtx = document.getElementById("comparisonChart");
   new Chart(comparisonCtx, {
     type: "bar",
     data: {
       labels: comparisonLabels,
+      // ✅ use new name
       datasets: [
         {
-          label: "Current",
-          data: currentValues
+          label: "Current Range (Avg Blocks)",
+          data: currentAvgs
         },
         {
-          label: "Previous",
-          data: previousValues
+          label: "Previous Range (Avg Blocks)",
+          data: previousAvgs
         }
       ]
     },
@@ -16374,290 +16237,186 @@ function renderStatsPage() {
         y: {
           title: {
             display: true,
-            text: "Time (seconds)"
+            text: "Average (seconds)"
           }
         }
       }
     }
   });
-  let headHtml = `<tr>
-  <th>#</th>
-  <th>Type</th>
-  <th>Avg</th>
-  <th>Best</th>
-  <th>Worst</th>
-
-`;
-  for (let i = 0; i < maxSolves; i++) {
-    headHtml += `<th>${i + 1}</th>`;
+  let sigmaLabels = [];
+  let sigmas = [];
+  if (averageObj.mode === "classic") {
+    const { start: start2, end: end2 } = getRangeTimestamps(range);
+    const filteredHistory = classicStats.history.ao5.filter(
+      (a) => !start2 || a.createdAt >= start2 && a.createdAt <= end2
+    );
+    sigmaLabels = filteredHistory.map((_, i) => i + 1);
+    sigmas = filteredHistory.map((a) => a.sigma ?? null);
+  } else {
+    const sigmaData = getSigmaGraphData(filteredAverages);
+    sigmaLabels = sigmaData.labels;
+    sigmas = sigmaData.sigmas;
   }
-  headHtml += `  <th>σ</th></tr>`;
-  thead.innerHTML = headHtml;
-  session2.averages.forEach((block, i) => {
-    const tr = document.createElement("tr");
-    block.mode === "bo3" || block.mode === "bo5";
-    let rowHtml = `
+  const existingSigma = Chart.getChart("sigmaChart");
+  if (existingSigma) {
+    existingSigma.destroy();
+  }
+  const sigmaCtx = document.getElementById("sigmaChart");
+  new Chart(sigmaCtx, {
+    type: "line",
+    data: {
+      labels: sigmaLabels,
+      datasets: [
+        {
+          label: "Consistency (σ)",
+          data: sigmas,
+          tension: 0.25,
+          spanGaps: true
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: {
+          display: true
+        }
+      },
+      scales: {
+        y: {
+          title: {
+            display: true,
+            text: "Standard Deviation (seconds)"
+          }
+        },
+        x: {
+          title: {
+            display: true,
+            text: "Average Block #"
+          }
+        }
+      }
+    }
+  });
+  const existingDist = Chart.getChart("distributionChart");
+  if (existingDist) {
+    existingDist.destroy();
+  }
+  const distCtx = document.getElementById("distributionChart");
+  const { labels: finalLabels, data: finalData } = filterEmptyBuckets(distributionLabels, distribution);
+  new Chart(distCtx, {
+    type: "pie",
+    data: {
+      labels: finalLabels,
+      datasets: [
+        {
+          data: finalData
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true },
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              const total = distribution.reduce((a, b) => a + b, 0);
+              const value = context.raw;
+              const percent = total ? (value / total * 100).toFixed(1) : 0;
+              return `${context.label}: ${value} (${percent}%)`;
+            }
+          }
+        }
+      }
+    }
+  });
+  if (averageObj.mode === "classic") {
+    thead.innerHTML = `
+    <tr>
+      <th>#</th>
+      <th>Solve</th>
+      <th>mo3</th>
+      <th>ao5</th>
+      <th>ao12</th>
+      <th>ao100</th>
+    </tr>
+  `;
+  } else {
+    let headHtml = `<tr>
+    <th>#</th>
+    <th>Type</th>
+    <th>Avg</th>
+    <th>Best</th>
+    <th>Worst</th>
+  `;
+    for (let i = 0; i < maxSolves; i++) {
+      headHtml += `<th>${i + 1}</th>`;
+    }
+    headHtml += `<th>σ</th></tr>`;
+    thead.innerHTML = headHtml;
+  }
+  if (averageObj.mode === "classic") {
+    const maps = buildAvgMaps(classicStats);
+    const sortedSolves2 = [...filteredSolves].sort(
+      (a, b) => b.createdAt - a.createdAt
+    );
+    sortedSolves2.forEach((solve, i) => {
+      const tr = document.createElement("tr");
+      const solveTime = formatDisplayTime(solve);
+      function getVal(map2) {
+        const avg = map2.get(solve.createdAt);
+        if (!avg) return "-";
+        if (avg.avg === "DNF") return "DNF";
+        return formatSecondsToTime(avg.avg);
+      }
+      const mo3 = getVal(maps.mo3);
+      const ao5 = getVal(maps.ao5);
+      const ao12 = getVal(maps.ao12);
+      const ao100 = getVal(maps.ao100);
+      tr.innerHTML = `
+      <td><span class="times-color-number">${i + 1}</span></td>
+      <td><span class="times-color-number">${solveTime}</span></td>
+      <td><span class="times-color-number">${mo3}</span></td>
+      <td><span class="times-color-number">${ao5}</span></td>
+      <td><span class="times-color-number">${ao12}</span></td>
+      <td><span class="times-color-number">${ao100}</span></td>
+    `;
+      tbody.appendChild(tr);
+    });
+  } else {
+    session2.averages.forEach((block, i) => {
+      const tr = document.createElement("tr");
+      let rowHtml = `
       <td><span class="times-color-number">${session2.averages.length - i}</span></td>
       <td>${block.mode.toUpperCase()}</td>
       <td><span class="times-color-number">${block.average}</span></td>
       <td><strong><span class="times-color-number">${block.best}</span></strong></td>
       <td><span class="times-color-number">${block.worst}</span></td>
-
     `;
-    block.solves.forEach((solve) => {
-      rowHtml += `<td><span class="times-color-number">${formatDisplayTime(solve)}</span></td>`;
-    });
-    rowHtml += `<td><span class="times-color-number">${block.sigma}</span></td>`;
-    tr.innerHTML = rowHtml;
-    tbody.appendChild(tr);
-  });
-}
-const timerObj = {
-  timerPhase: 0,
-  interval: 0,
-  wcaInterval: 0,
-  wcaDelayCount: false,
-  inspecting: false,
-  inspection: 0,
-  solvePhases: [],
-  currentSolvePhase: 0,
-  totalSolvePhases: 1,
-  lastSplitTime: 0
-};
-const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
-const timerSettObj = {
-  inspectionType: inspection$1,
-  timerFlag: false,
-  previousInspectionType: inspection$1
-};
-function getThemeVar(themeClass, variable) {
-  const temp = document.createElement("div");
-  temp.className = themeClass;
-  document.body.appendChild(temp);
-  const value = getComputedStyle(temp).getPropertyValue(variable).trim();
-  document.body.removeChild(temp);
-  return value;
-}
-let mainBackground = localStorage.getItem("main-background") || "black";
-document.getElementById("main-background").value = mainBackground;
-const bgMain4 = getThemeVar(`theme-${mainBackground}`, "--bg-main");
-document.documentElement.style.setProperty("--bg-main", bgMain4);
-document.getElementById("main-background").addEventListener("change", () => {
-  mainBackground = document.getElementById("main-background").value;
-  localStorage.setItem("main-background", mainBackground);
-  const bgMain5 = getThemeVar(`theme-${mainBackground}`, "--bg-main");
-  document.documentElement.style.setProperty("--bg-main", bgMain5);
-});
-let tertiaryBackgroumd = localStorage.getItem("tertiary-background") || "black";
-document.getElementById("tertiary-background").value = tertiaryBackgroumd;
-const bgMain3 = getThemeVar(`theme-${tertiaryBackgroumd}`, "--bg-secondary");
-document.documentElement.style.setProperty("--bg-secondary", bgMain3);
-document.getElementById("tertiary-background").addEventListener("change", () => {
-  tertiaryBackgroumd = document.getElementById("tertiary-background").value;
-  localStorage.setItem("tertiary-background", tertiaryBackgroumd);
-  const bgMain5 = getThemeVar(`theme-${tertiaryBackgroumd}`, "--bg-secondary");
-  document.documentElement.style.setProperty("--bg-secondary", bgMain5);
-});
-let secondaryBackground = localStorage.getItem("secondary-background") || "black";
-document.getElementById("secondary-background").value = secondaryBackground;
-const bgMain2 = getThemeVar(`theme-${secondaryBackground}`, "--bg-tertiary");
-document.documentElement.style.setProperty("--bg-tertiary", bgMain2);
-document.getElementById("secondary-background").addEventListener("change", () => {
-  secondaryBackground = document.getElementById("secondary-background").value;
-  localStorage.setItem("secondary-background", secondaryBackground);
-  const bgMain5 = getThemeVar(`theme-${secondaryBackground}`, "--bg-tertiary");
-  document.documentElement.style.setProperty("--bg-tertiary", bgMain5);
-});
-let buttonsBackground = localStorage.getItem("buttons-background") || "black";
-document.getElementById("buttons-background").value = buttonsBackground;
-const bgMain = getThemeVar(`theme-${buttonsBackground}`, "--border-main");
-document.documentElement.style.setProperty("--border-main", bgMain);
-document.getElementById("buttons-background").addEventListener("change", () => {
-  buttonsBackground = document.getElementById("buttons-background").value;
-  localStorage.setItem("buttons-background", buttonsBackground);
-  const bgMain5 = getThemeVar(`theme-${buttonsBackground}`, "--border-main");
-  document.documentElement.style.setProperty("--border-main", bgMain5);
-});
-let timesColor = localStorage.getItem("times-color") || "white";
-document.documentElement.style.setProperty("--times-color", getThemeVar(`theme-text-${timesColor}`, "--text-main"));
-function applyTimesColor(colorKey) {
-  const colorValue = getThemeVar(`theme-text-${colorKey}`, "--text-main");
-  document.documentElement.style.setProperty("--times-color", colorValue);
-  document.getElementById("timer").style.color = colorValue;
-  document.querySelectorAll("button").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
-  document.querySelectorAll("select").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
-  document.querySelectorAll("input").forEach((btn) => btn.style.color = getThemeVar(`theme-text-${timesColor}`, "--text-main"));
-  localStorage.setItem("times-color", colorKey);
-}
-document.getElementById("times-color").value = timesColor;
-applyTimesColor(timesColor);
-document.getElementById("times-color").addEventListener("change", (e) => {
-  timesColor = e.target.value;
-  applyTimesColor(timesColor);
-});
-let textColor = localStorage.getItem("text-color") || "white";
-document.getElementById("text-color").value = textColor;
-document.body.classList.remove(`theme-text-${textColor}`);
-textColor = document.getElementById("text-color").value;
-document.body.classList.add(`theme-text-${textColor}`);
-document.getElementById("text-color").addEventListener("change", () => {
-  document.body.classList.remove(`theme-text-${textColor}`);
-  textColor = document.getElementById("text-color").value;
-  document.body.classList.add(`theme-text-${textColor}`);
-  localStorage.setItem("text-color", textColor);
-});
-let inspectionStart = document.getElementById("inspection-start").value;
-localStorage.setItem("inspectionStart", inspectionStart);
-document.getElementById("inspection-start").value = inspectionStart;
-document.getElementById("inspection-start").addEventListener("change", () => {
-  inspectionStart = document.getElementById("inspection-start").value;
-  localStorage.setItem("inspectionStart", inspectionStart);
-});
-let timerDisplay = localStorage.getItem("timerDisplay") || "Show";
-document.getElementById("timer-display").value = timerDisplay;
-document.getElementById("timer-display").addEventListener("change", () => {
-  timerDisplay = document.getElementById("timer-display").value;
-  localStorage.setItem("timerDisplay", timerDisplay);
-});
-const phaseInput = document.getElementById("phase-count");
-phaseInput.value = timerObj.totalSolvePhases;
-phaseInput.addEventListener("input", (e) => {
-  const value = Number(e.target.value);
-  if (!Number.isInteger(value) || value < 1) return;
-  timerObj.totalSolvePhases = value;
-  console.log("Total solve phases set to:", value);
-  localStorage.setItem("totalSolvePhases", value);
-});
-const savedPhases = Number(localStorage.getItem("totalSolvePhases"));
-if (Number.isInteger(savedPhases) && savedPhases > 0) {
-  timerObj.totalSolvePhases = savedPhases;
-  document.getElementById("phase-count").value = savedPhases;
-}
-document.getElementById("inspection-type").value = timerSettObj.inspectionType;
-document.getElementById("inspection-type").addEventListener("change", () => {
-  timerSettObj.previousInspectionType = timerSettObj.inspectionType;
-  timerSettObj.inspectionType = document.getElementById("inspection-type").value;
-  localStorage.setItem("inspectionType", timerSettObj.inspectionType);
-});
-let delayFlagType = localStorage.getItem("delayFlagType") || "WCA";
-document.getElementById("delay-flag").value = delayFlagType;
-document.getElementById("delay-flag").addEventListener("change", () => {
-  delayFlagType = document.getElementById("delay-flag").value;
-  localStorage.setItem("delayFlagType", delayFlagType);
-});
-let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
-if (timeInsertion === "Typing") {
-  timerSettObj.timerFlag = true;
-} else {
-  timerSettObj.timerFlag = false;
-}
-document.getElementById("time-insertion").value = timeInsertion;
-document.getElementById("time-insertion").addEventListener("change", () => {
-  timeInsertion = document.getElementById("time-insertion").value;
-  if (timeInsertion === "Typing") {
-    timerSettObj.timerFlag = true;
-  } else {
-    timerSettObj.timerFlag = false;
-  }
-  localStorage.setItem("timeInsertion", timeInsertion);
-  updateTypingUI();
-});
-function updateTypingUI() {
-  const container = document.getElementById("typing-container");
-  if (!container) return;
-  if (localStorage.getItem("timeInsertion") === "Typing") {
-    container.style.display = "block";
-    const input = document.getElementById("typed-time");
-    if (input) input.focus();
-  } else {
-    container.style.display = "none";
-  }
-}
-let lastTime = null;
-document.addEventListener("DOMContentLoaded", () => {
-  updateTypingUI();
-  const addBtn = document.getElementById("typed-time-add");
-  const input = document.getElementById("typed-time");
-  if (addBtn && input) {
-    addBtn.addEventListener("click", () => {
-      const rawInput = input.value;
-      const normalized = normalizeTypedTime(rawInput);
-      if (!normalized) {
-        input.style.border = "2px solid #e74c3c";
-        input.focus();
-        setTimeout(() => input.style.border = "", 1500);
-        return;
-      }
-      const seconds2 = parseTimeToSeconds(normalized);
-      if (!Number.isFinite(seconds2)) {
-        input.style.border = "2px solid #e74c3c";
-        input.focus();
-        setTimeout(() => input.style.border = "", 1500);
-        return;
-      }
-      lastTime = formatSecondsToTime(seconds2);
-      document.getElementById("timer").textContent = lastTime;
-      const block = averageOfN(seconds2, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
-      if (block) addAverageBlock(block);
-      renderHistory();
-      displayScramble(eventObj.event, vis);
-      saveSessions();
-      input.value = "";
-    });
-    input.addEventListener("keydown", (ev) => {
-      if (ev.key === "Enter") {
-        ev.preventDefault();
-        addBtn.click();
-      }
+      block.solves.forEach((solve) => {
+        rowHtml += `<td><span class="times-color-number">${formatDisplayTime(solve)}</span></td>`;
+      });
+      rowHtml += `<td><span class="times-color-number">${block.sigma}</span></td>`;
+      tr.innerHTML = rowHtml;
+      tbody.appendChild(tr);
     });
   }
-});
-function normalizeTypedTime(raw) {
-  raw = raw.trim().replace(",", ".");
-  if (!raw) return null;
-  if (raw.includes(":") || raw.includes(".")) {
-    return raw;
-  }
-  if (!/^\d+$/.test(raw)) return null;
-  const digits = raw;
-  if (digits.length === 1) {
-    return `0.0${digits}`;
-  }
-  if (digits.length === 2) {
-    return `0.${digits}`;
-  }
-  const hundredths = digits.slice(-2);
-  const rest = digits.slice(0, -2);
-  if (rest.length <= 2) {
-    return `${rest}.${hundredths}`;
-  }
-  const seconds2 = rest.slice(-2);
-  const minutes = rest.slice(0, -2);
-  return `${minutes}:${seconds2}.${hundredths}`;
-}
-const eventObj = {
-  event: getCurrentSession().scrambleType || "333"
-};
-let vis = null;
-if (window.innerWidth > 768) {
-  vis = document.querySelector("#scrambleVis");
-} else {
-  vis = document.querySelector("#scrambleVis2");
 }
 function wrapTimesValue(value) {
   return `<span class="times-color-number">${value}</span>`;
 }
-function formatStatValue(value) {
+function formatStatValue$1(value, getCurrentSession2) {
   if (value === void 0 || value === null) return wrapTimesValue("-");
   if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return wrapTimesValue("DNF");
-  if (value.time && eventObj.event === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
-  if (value.time && eventObj.event === "333fm") return wrapTimesValue(`${value.time} moves`);
-  if (eventObj.event === "r3ni") {
+  if (value.time && getCurrentSession2().scrambleType === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
+  if (value.time && getCurrentSession2().scrambleType === "333fm") return wrapTimesValue(`${value.time} moves`);
+  if (getCurrentSession2().scrambleType === "r3ni") {
     const num = Number(value);
     if (!Number.isFinite(num)) return wrapTimesValue("DNF");
     return wrapTimesValue(`${Number.isInteger(num) ? num : num.toFixed(2)} pts`);
   }
-  if (eventObj.event === "333fm") {
+  if (getCurrentSession2().scrambleType === "333fm") {
     const num = Number(value);
     if (!Number.isFinite(num)) return wrapTimesValue("DNF");
     return wrapTimesValue(`${num} moves`);
@@ -16671,20 +16430,76 @@ function formatStatValue(value) {
   }
   return wrapTimesValue(formatSecondsToTime(value));
 }
-function renderCurrentAverage(currentType, currentBlock) {
+function renderAvgStats({ type, solves, mode, block }, averageObj2, classicStats2, formatStatValue2) {
+  if (averageObj2.mode === "classic") {
+    return `
+    Best mo3: ${formatStatValue2(classicStats2.best.mo3?.avg) ?? wrapTimesValue("-")}
+    <br>
+    Best ao5: ${formatStatValue2(classicStats2.best.ao5?.avg) ?? wrapTimesValue("-")}
+    <br>
+    Best ao12: ${formatStatValue2(classicStats2.best.ao12?.avg) ?? wrapTimesValue("-")}
+    <br>
+    Best ao100: ${formatStatValue2(classicStats2.best.ao100?.avg) ?? wrapTimesValue("-")}
+`;
+  }
+  if (type === "live") {
+    if (!solves || solves.length === 0) return "";
+    const avgObj2 = computeAverage(solves, mode);
+    const best = avgObj2.best;
+    const worst = avgObj2.worst;
+    const sigma = avgObj2.sigma;
+    const bpAo5 = avgObj2.bpAo5;
+    const wpA05 = avgObj2.wpA05;
+    if (solves.length === 4 && mode === "ao5") {
+      return `                
+                Best: ${formatStatValue2(best)}
+                <br>
+                Worst: ${formatStatValue2(worst)}
+                <br>
+                &sigma;: ${formatStatValue2(sigma)}
+                <hr>
+                bpAo5: ${formatStatValue2(bpAo5)}
+                <br>
+                wpAo5: ${formatStatValue2(wpA05)}
+            `;
+    }
+    return `                
+            Best: ${formatStatValue2(best)}
+            <br>
+            Worst: ${formatStatValue2(worst)}
+            <br>
+            &sigma;: ${formatStatValue2(sigma)}
+        `;
+  }
+  if (type === "saved") {
+    if (!block) return "";
+    return `                
+            Best: ${formatStatValue2(parseTimeToSeconds(block.best))}
+            <br>
+            Worst: ${formatStatValue2(parseTimeToSeconds(block.worst))}
+            <br>
+            &sigma;: ${formatStatValue2(parseTimeToSeconds(block.sigma))}
+            <hr>
+            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue2(parseTimeToSeconds(block.mode === "bo3" || block.mode === "bo5" ? block.best : block.average))}
+
+        `;
+  }
+  return "";
+}
+function renderCurrentAverage(currentType, currentBlock, averageObj2, classicStats2, formatStatValue2) {
   let html = "";
-  if (averageObj.mode === "classic") {
+  if (averageObj2.mode === "classic") {
     const renderRow = (label, value) => `
             <div class="history-solve">
-                ${label}: ${value != null ? formatStatValue(value) : "-"}
+                ${label}: ${value != null ? wrapTimesValue(formatStatValue2(value)) : wrapTimesValue("-")}
             </div>
         `;
     return `
             <div class="history-average current-average">
-                ${renderRow("mo3", classicStats.current.mo3)}
-                ${renderRow("ao5", classicStats.current.ao5)}
-                ${renderRow("ao12", classicStats.current.ao12)}
-                ${renderRow("ao100", classicStats.current.ao100)}
+                ${renderRow("mo3", classicStats2.current.mo3?.avg)}
+                ${renderRow("ao5", classicStats2.current.ao5?.avg)}
+                ${renderRow("ao12", classicStats2.current.ao12?.avg)}
+                ${renderRow("ao100", classicStats2.current.ao100?.avg)}
             </div>
         `;
   }
@@ -16693,10 +16508,10 @@ function renderCurrentAverage(currentType, currentBlock) {
             <div class="history-average current-average">
                 <div class="history-solves">
         `;
-    averageObj.solvesArray.forEach((s, i) => {
+    averageObj2.solvesArray.forEach((s, i) => {
       html += `
                 <div class="history-solve">
-                    ${i + 1} - ${formatStatValue(s)}
+                    ${i + 1} - ${formatStatValue2(s)}
                 </div>
             `;
     });
@@ -16713,7 +16528,7 @@ function renderCurrentAverage(currentType, currentBlock) {
     currentBlock.solves.forEach((s, i) => {
       html += `
                 <div class="history-solve">
-                    ${i + 1} - ${formatStatValue(s)}
+                    ${i + 1} - ${formatStatValue2(s)}
                 </div>
             `;
     });
@@ -16724,16 +16539,14 @@ function renderCurrentAverage(currentType, currentBlock) {
   }
   return html;
 }
-function renderHistoryList(averages, currentType) {
-  if (lastTime && timerSettObj.timerFlag)
-    document.getElementById("timer").textContent = lastTime;
+function renderHistoryList(averages, currentType, averageObj2, formatStatValue2) {
   let html = "";
-  if (averageObj.mode === "classic") {
-    averageObj.solvesArray.slice().reverse().forEach((solve, index2) => {
+  if (averageObj2.mode === "classic") {
+    averageObj2.solvesArray.slice().reverse().forEach((solve, index2) => {
       html += `
                     <div class="history-block history-solve">
-                        ${averageObj.solvesArray.length - index2}
-                        - ${formatStatValue(solve)}
+                        ${averageObj2.solvesArray.length - index2}
+                        - ${formatStatValue2(solve)}
                     </div>
                 `;
     });
@@ -16745,11 +16558,11 @@ function renderHistoryList(averages, currentType) {
     let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${wrapTimesValue(block.average)}`;
     if (block.mode === "bo3") {
       const mo3Avg = computeAverage(block.solves, "mo3");
-      const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(mo3Avg.avg));
+      const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(mo3Avg.avg));
       titleText = `${block.mode}: ${block.best} (mo3: ${wrapTimesValue(mo3Value)})`;
     } else if (block.mode === "bo5") {
       const ao5Avg = computeAverage(block.solves, "ao5");
-      const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(ao5Avg.avg));
+      const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue2(ao5Avg.avg));
       titleText = `${block.mode}: ${block.best} (ao5: ${wrapTimesValue(ao5Value)})`;
     }
     html += `
@@ -16759,7 +16572,7 @@ function renderHistoryList(averages, currentType) {
     block.solves.forEach((s, idx) => {
       html += `
                 <div class="history-solve">
-                    ${idx + 1} - ${formatStatValue(s)}
+                    ${idx + 1} - ${formatStatValue2(s)}
                 </div>
             `;
     });
@@ -16773,80 +16586,26 @@ function renderHistoryList(averages, currentType) {
   }
   return html;
 }
-function renderStats(stats) {
+function renderStats(stats, formatStatValue2) {
   return `
-        Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : wrapTimesValue("-")}
+        Best single: ${stats.bestTime !== Infinity ? formatStatValue2(stats.bestTime) : wrapTimesValue("-")}
         <br>
-        Best avg: ${stats.bestAvg !== Infinity ? formatStatValue(stats.bestAvg) : wrapTimesValue("-")}
+        Best avg: ${stats.bestAvg !== Infinity ? formatStatValue2(stats.bestAvg) : wrapTimesValue("-")}
         <br>
-        Session Mean: ${stats.mean ? formatStatValue(stats.mean) : wrapTimesValue("-")}
+        Session Mean: ${stats.mean ? formatStatValue2(stats.mean) : wrapTimesValue("-")}
         <br>
-        Session &sigma;: ${stats.sigma ? formatStatValue(stats.sigma) : wrapTimesValue("-")}
+        Session &sigma;: ${stats.sigma ? formatStatValue2(stats.sigma) : wrapTimesValue("-")}
         <br>
         Solves: ${stats.solveCounter ? wrapTimesValue(stats.solveCounter) : wrapTimesValue("-")}
     `;
 }
-function renderAvgStats({ type, solves, mode, block }) {
-  if (averageObj.mode === "classic") {
-    return `
-    Best mo3: ${formatStatValue(classicStats.best.mo3) ?? wrapTimesValue("-")}
-    <br>
-    Best ao5: ${formatStatValue(classicStats.best.ao5) ?? wrapTimesValue("-")}
-    <br>
-    Best ao12: ${formatStatValue(classicStats.best.ao12) ?? wrapTimesValue("-")}
-    <br>
-    Best ao100: ${formatStatValue(classicStats.best.ao100) ?? wrapTimesValue("-")}
-`;
-  }
-  if (type === "live") {
-    if (!solves || solves.length === 0) return "";
-    const avgObj2 = computeAverage(solves, mode);
-    const best = avgObj2.best;
-    const worst = avgObj2.worst;
-    const sigma = avgObj2.sigma;
-    const bpAo5 = avgObj2.bpAo5;
-    const wpA05 = avgObj2.wpA05;
-    if (solves.length === 4 && mode === "ao5") {
-      return `                
-                Best: ${formatStatValue(best)}
-                <br>
-                Worst: ${formatStatValue(worst)}
-                <br>
-                &sigma;: ${formatStatValue(sigma)}
-                <hr>
-                bpAo5: ${formatStatValue(bpAo5)}
-                <br>
-                wpAo5: ${formatStatValue(wpA05)}
-            `;
-    }
-    return `                
-            Best: ${formatStatValue(best)}
-            <br>
-            Worst: ${formatStatValue(worst)}
-            <br>
-            &sigma;: ${formatStatValue(sigma)}
-        `;
-  }
-  if (type === "saved") {
-    if (!block) return "";
-    console.log(block);
-    return `                
-            Best: ${formatStatValue(parseTimeToSeconds(block.best))}
-            <br>
-            Worst: ${formatStatValue(parseTimeToSeconds(block.worst))}
-            <br>
-            &sigma;: ${formatStatValue(parseTimeToSeconds(block.sigma))}
-            <hr>
-            ${block.mode === "fmc3" ? "ao3" : block.mode}: ${formatStatValue(parseTimeToSeconds(block.mode === "bo3" || block.mode === "bo5" ? block.best : block.average))}
-
-        `;
-  }
-  return "";
+function formatStatValue(value) {
+  return formatStatValue$1(value, getCurrentSession);
 }
 function renderHistory() {
   const averages = getSessionAverages();
-  const stats = getStatistcs();
-  const todayStats = getStatisticsByDate("today");
+  const stats = getStatistics();
+  const todayStats = getStatisticsByDate("day");
   const currentContainer = document.getElementById("currentAverageValue");
   const historyContainer = document.getElementById("historyPanel");
   const doneContainer = document.getElementById("current-stats");
@@ -16861,7 +16620,13 @@ function renderHistory() {
     currentBlock = averages[0];
   }
   if (currentContainer) {
-    currentContainer.innerHTML = renderCurrentAverage(currentType, currentBlock);
+    currentContainer.innerHTML = renderCurrentAverage(
+      currentType,
+      currentBlock,
+      averageObj,
+      classicStats,
+      formatStatValue
+    );
   }
   if (doneContainer) {
     doneContainer.innerHTML = renderAvgStats({
@@ -16869,17 +16634,704 @@ function renderHistory() {
       solves: averageObj.solvesArray,
       mode: averageObj.mode,
       block: currentBlock
-    });
+    }, averageObj, classicStats, formatStatValue);
   }
   if (historyContainer) {
-    historyContainer.innerHTML = renderHistoryList(averages, currentType);
+    historyContainer.innerHTML = renderHistoryList(averages, currentType, averageObj, formatStatValue);
   }
   if (statisticsContainer) {
-    statisticsContainer.innerHTML = renderStats(stats);
-    todayStatsContainer.innerHTML = renderStats(todayStats);
+    statisticsContainer.innerHTML = renderStats(stats, formatStatValue);
+    todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue);
   }
 }
-function handleMBLD() {
+const cube = {
+  U: Array(9).fill("W"),
+  R: Array(9).fill("R"),
+  F: Array(9).fill("G"),
+  D: Array(9).fill("Y"),
+  L: Array(9).fill("O"),
+  B: Array(9).fill("B")
+};
+function rotateFaceCW(face) {
+  [
+    face[0],
+    face[1],
+    face[2],
+    face[3],
+    face[4],
+    face[5],
+    face[6],
+    face[7],
+    face[8]
+  ] = [
+    face[6],
+    face[3],
+    face[0],
+    face[7],
+    face[4],
+    face[1],
+    face[8],
+    face[5],
+    face[2]
+  ];
+}
+function M() {
+  const u1 = cube.U[1], u4 = cube.U[4], u7 = cube.U[7];
+  const f1 = cube.F[1], f4 = cube.F[4], f7 = cube.F[7];
+  const d1 = cube.D[1], d4 = cube.D[4], d7 = cube.D[7];
+  const b7 = cube.B[7], b4 = cube.B[4], b1 = cube.B[1];
+  cube.F[1] = u1;
+  cube.F[4] = u4;
+  cube.F[7] = u7;
+  cube.D[1] = f1;
+  cube.D[4] = f4;
+  cube.D[7] = f7;
+  cube.B[7] = d1;
+  cube.B[4] = d4;
+  cube.B[1] = d7;
+  cube.U[1] = b7;
+  cube.U[4] = b4;
+  cube.U[7] = b1;
+}
+function E() {
+  const f3 = cube.F[3], f4 = cube.F[4], f5 = cube.F[5];
+  const r3 = cube.R[3], r4 = cube.R[4], r5 = cube.R[5];
+  const b3 = cube.B[3], b4 = cube.B[4], b5 = cube.B[5];
+  const l3 = cube.L[3], l4 = cube.L[4], l5 = cube.L[5];
+  cube.R[3] = f3;
+  cube.R[4] = f4;
+  cube.R[5] = f5;
+  cube.B[3] = r3;
+  cube.B[4] = r4;
+  cube.B[5] = r5;
+  cube.L[3] = b3;
+  cube.L[4] = b4;
+  cube.L[5] = b5;
+  cube.F[3] = l3;
+  cube.F[4] = l4;
+  cube.F[5] = l5;
+}
+function S() {
+  const u3 = cube.U[3], u4 = cube.U[4], u5 = cube.U[5];
+  const r1 = cube.R[1], r4 = cube.R[4], r7 = cube.R[7];
+  const d5 = cube.D[5], d4 = cube.D[4], d3 = cube.D[3];
+  const l7 = cube.L[7], l4 = cube.L[4], l1 = cube.L[1];
+  cube.L[7] = u3;
+  cube.L[4] = u4;
+  cube.L[1] = u5;
+  cube.D[5] = l7;
+  cube.D[4] = l4;
+  cube.D[3] = l1;
+  cube.R[1] = d5;
+  cube.R[4] = d4;
+  cube.R[7] = d3;
+  cube.U[3] = r1;
+  cube.U[4] = r4;
+  cube.U[5] = r7;
+}
+function x() {
+  R();
+  M();
+  M();
+  M();
+  L();
+  L();
+  L();
+}
+function y() {
+  U();
+  E();
+  E();
+  E();
+  D();
+  D();
+  D();
+}
+function z() {
+  F();
+  S();
+  S();
+  S();
+  B();
+  B();
+  B();
+}
+function resetCube() {
+  cube.U.fill("W");
+  cube.R.fill("R");
+  cube.F.fill("G");
+  cube.D.fill("Y");
+  cube.L.fill("O");
+  cube.B.fill("B");
+}
+function cloneCubeState() {
+  return {
+    U: [...cube.U],
+    R: [...cube.R],
+    F: [...cube.F],
+    D: [...cube.D],
+    L: [...cube.L],
+    B: [...cube.B]
+  };
+}
+function restoreCubeState(state) {
+  cube.U = [...state.U];
+  cube.R = [...state.R];
+  cube.F = [...state.F];
+  cube.D = [...state.D];
+  cube.L = [...state.L];
+  cube.B = [...state.B];
+}
+function U() {
+  rotateFaceCW(cube.U);
+  const f0 = cube.F[0], f1 = cube.F[1], f2 = cube.F[2];
+  const r0 = cube.R[0], r1 = cube.R[1], r2 = cube.R[2];
+  const b0 = cube.B[0], b1 = cube.B[1], b2 = cube.B[2];
+  const l0 = cube.L[0], l1 = cube.L[1], l2 = cube.L[2];
+  cube.F[0] = r0;
+  cube.F[1] = r1;
+  cube.F[2] = r2;
+  cube.R[0] = b0;
+  cube.R[1] = b1;
+  cube.R[2] = b2;
+  cube.B[0] = l0;
+  cube.B[1] = l1;
+  cube.B[2] = l2;
+  cube.L[0] = f0;
+  cube.L[1] = f1;
+  cube.L[2] = f2;
+}
+function D() {
+  rotateFaceCW(cube.D);
+  const f6 = cube.F[6], f7 = cube.F[7], f8 = cube.F[8];
+  const r6 = cube.R[6], r7 = cube.R[7], r8 = cube.R[8];
+  const b6 = cube.B[6], b7 = cube.B[7], b8 = cube.B[8];
+  const l6 = cube.L[6], l7 = cube.L[7], l8 = cube.L[8];
+  cube.R[6] = f6;
+  cube.R[7] = f7;
+  cube.R[8] = f8;
+  cube.B[6] = r6;
+  cube.B[7] = r7;
+  cube.B[8] = r8;
+  cube.L[6] = b6;
+  cube.L[7] = b7;
+  cube.L[8] = b8;
+  cube.F[6] = l6;
+  cube.F[7] = l7;
+  cube.F[8] = l8;
+}
+function R() {
+  rotateFaceCW(cube.R);
+  const u2 = cube.U[2], u5 = cube.U[5], u8 = cube.U[8];
+  const f2 = cube.F[2], f5 = cube.F[5], f8 = cube.F[8];
+  const d2 = cube.D[2], d5 = cube.D[5], d8 = cube.D[8];
+  const b6 = cube.B[6], b3 = cube.B[3], b0 = cube.B[0];
+  cube.B[6] = u2;
+  cube.B[3] = u5;
+  cube.B[0] = u8;
+  cube.D[2] = b6;
+  cube.D[5] = b3;
+  cube.D[8] = b0;
+  cube.F[2] = d2;
+  cube.F[5] = d5;
+  cube.F[8] = d8;
+  cube.U[2] = f2;
+  cube.U[5] = f5;
+  cube.U[8] = f8;
+}
+function L() {
+  rotateFaceCW(cube.L);
+  const u0 = cube.U[0], u3 = cube.U[3], u6 = cube.U[6];
+  const f0 = cube.F[0], f3 = cube.F[3], f6 = cube.F[6];
+  const d0 = cube.D[0], d3 = cube.D[3], d6 = cube.D[6];
+  const b8 = cube.B[8], b5 = cube.B[5], b2 = cube.B[2];
+  cube.F[0] = u0;
+  cube.F[3] = u3;
+  cube.F[6] = u6;
+  cube.D[0] = f0;
+  cube.D[3] = f3;
+  cube.D[6] = f6;
+  cube.B[8] = d0;
+  cube.B[5] = d3;
+  cube.B[2] = d6;
+  cube.U[0] = b8;
+  cube.U[3] = b5;
+  cube.U[6] = b2;
+}
+function F() {
+  rotateFaceCW(cube.F);
+  const u6 = cube.U[6], u7 = cube.U[7], u8 = cube.U[8];
+  const r0 = cube.R[0], r3 = cube.R[3], r6 = cube.R[6];
+  const d2 = cube.D[2], d1 = cube.D[1], d0 = cube.D[0];
+  const l8 = cube.L[8], l5 = cube.L[5], l2 = cube.L[2];
+  cube.R[0] = u6;
+  cube.R[3] = u7;
+  cube.R[6] = u8;
+  cube.D[2] = r0;
+  cube.D[1] = r3;
+  cube.D[0] = r6;
+  cube.L[8] = d2;
+  cube.L[5] = d1;
+  cube.L[2] = d0;
+  cube.U[6] = l8;
+  cube.U[7] = l5;
+  cube.U[8] = l2;
+}
+function B() {
+  rotateFaceCW(cube.B);
+  const u0 = cube.U[0], u1 = cube.U[1], u2 = cube.U[2];
+  const r2 = cube.R[2], r5 = cube.R[5], r8 = cube.R[8];
+  const d8 = cube.D[8], d7 = cube.D[7], d6 = cube.D[6];
+  const l0 = cube.L[0], l3 = cube.L[3], l6 = cube.L[6];
+  cube.U[0] = r2;
+  cube.U[1] = r5;
+  cube.U[2] = r8;
+  cube.R[2] = d8;
+  cube.R[5] = d7;
+  cube.R[8] = d6;
+  cube.D[6] = l0;
+  cube.D[7] = l3;
+  cube.D[8] = l6;
+  cube.L[0] = u2;
+  cube.L[3] = u1;
+  cube.L[6] = u0;
+}
+function isSolved() {
+  for (const face in cube) {
+    const first = cube[face][0];
+    for (let i = 1; i < 9; i++) {
+      if (cube[face][i] !== first) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+let _moveCount = 0;
+let _isFMC = false;
+function setFMC(value) {
+  _isFMC = Boolean(value);
+}
+function getMoveCount() {
+  return _moveCount;
+}
+function printScrambleMoves(scr, shouldReset = true) {
+  const displayedScramble = scr;
+  const moves = displayedScramble.split(" ");
+  const moveFunctions = {
+    "U": U,
+    "U'": () => {
+      U();
+      U();
+      U();
+    },
+    "U2": () => {
+      U();
+      U();
+    },
+    "D": D,
+    "D'": () => {
+      D();
+      D();
+      D();
+    },
+    "D2": () => {
+      D();
+      D();
+    },
+    "R": R,
+    "R'": () => {
+      R();
+      R();
+      R();
+    },
+    "R2": () => {
+      R();
+      R();
+    },
+    "L": L,
+    "L'": () => {
+      L();
+      L();
+      L();
+    },
+    "L2": () => {
+      L();
+      L();
+    },
+    "F": F,
+    "F'": () => {
+      F();
+      F();
+      F();
+    },
+    "F2": () => {
+      F();
+      F();
+    },
+    "B": B,
+    "B'": () => {
+      B();
+      B();
+      B();
+    },
+    "B2": () => {
+      B();
+      B();
+    },
+    "M": M,
+    "M'": () => {
+      M();
+      M();
+      M();
+    },
+    "M2": () => {
+      M();
+      M();
+    },
+    "E": E,
+    "E'": () => {
+      E();
+      E();
+      E();
+    },
+    "E2": () => {
+      E();
+      E();
+    },
+    "S": S,
+    "S'": () => {
+      S();
+      S();
+      S();
+    },
+    "S2": () => {
+      S();
+      S();
+    },
+    "Rw": () => {
+      R();
+      M();
+      M();
+      M();
+    },
+    "Rw'": () => {
+      R();
+      R();
+      R();
+      M();
+    },
+    "Rw2": () => {
+      R();
+      R();
+      M();
+      M();
+    },
+    "Lw": () => {
+      L();
+      M();
+    },
+    "Lw'": () => {
+      L();
+      L();
+      L();
+      M();
+      M();
+      M();
+    },
+    "Lw2": () => {
+      L();
+      L();
+      M();
+      M();
+    },
+    "Uw": () => {
+      U();
+      E();
+      E();
+      E();
+    },
+    "Uw'": () => {
+      U();
+      U();
+      U();
+      E();
+    },
+    "Uw2": () => {
+      U();
+      U();
+      E();
+      E();
+    },
+    "Dw": () => {
+      D();
+      E();
+    },
+    "Dw'": () => {
+      D();
+      D();
+      D();
+      E();
+      E();
+      E();
+    },
+    "Dw2": () => {
+      D();
+      D();
+      E();
+      E();
+    },
+    "Fw": () => {
+      F();
+      S();
+      S();
+      S();
+    },
+    "Fw'": () => {
+      S();
+      F();
+      F();
+      F();
+    },
+    "Fw2": () => {
+      F();
+      F();
+      S();
+      S();
+    },
+    "Bw": () => {
+      B();
+      S();
+    },
+    "Bw'": () => {
+      S();
+      S();
+      S();
+      B();
+      B();
+      B();
+    },
+    "Bw2": () => {
+      B();
+      B();
+      S();
+      S();
+    },
+    "y": y,
+    "y'": () => {
+      y();
+      y();
+      y();
+    },
+    "y2": () => {
+      y();
+      y();
+    },
+    "x": x,
+    "x'": () => {
+      x();
+      x();
+      x();
+    },
+    "x2": () => {
+      x();
+      x();
+    },
+    "z": z,
+    "z'": () => {
+      z();
+      z();
+      z();
+    },
+    "z2": () => {
+      z();
+      z();
+    }
+  };
+  if (shouldReset) resetCube();
+  _moveCount = 0;
+  moves.forEach((move) => {
+    if (_isFMC && ["M", "M'", "M2", "E", "E'", "E2", "S", "S'", "S2"].includes(move)) return;
+    const func = moveFunctions[move];
+    if (func) {
+      func();
+      if (!["y", "y'", "y2", "x", "x'", "x2", "z", "z'", "z2"].includes(move)) _moveCount++;
+    }
+  });
+}
+function injectCubeCSS() {
+  if (document.getElementById("cubisz-css")) return;
+  const link = document.createElement("link");
+  link.id = "cubisz-css";
+  link.rel = "stylesheet";
+  link.href = new URL("data:text/css;base64,LnBhZ2UtY2VudGVyLCAjY3ViZS13cmFwcGVyIHsNCiAgcG9zaXRpb246IHJlbGF0aXZlOyAgICAgICAgICAvKiByZW1vdmUgZnJvbSBkb2N1bWVudCBmbG93ICovDQogIGluc2V0OiAwOyAgICAgICAgICAgICAgICAgLyogZnVsbCB2aWV3cG9ydCAqLw0KICBkaXNwbGF5OiBncmlkOw0KICBwbGFjZS1pdGVtczogY2VudGVyOyAgICAgIC8qIHRydWUgY2VudGVyICovDQogIHBvaW50ZXItZXZlbnRzOiBub25lOyAgICAgLyogYWxsb3cgY2xpY2tzIG91dHNpZGUgY3ViZSAqLw0KfQ0KDQouZ3JpZC1jb250YWluZXIgew0KICBwb2ludGVyLWV2ZW50czogYXV0bzsgICAgIC8qIGN1YmUgaXMgY2xpY2thYmxlICovDQogIGRpc3BsYXk6IGdyaWQ7DQogIGdyaWQtdGVtcGxhdGUtY29sdW1uczogcmVwZWF0KDQsIG1heC1jb250ZW50KTsNCiAgZ3JpZC10ZW1wbGF0ZS1yb3dzOiByZXBlYXQoMywgbWF4LWNvbnRlbnQpOw0KICB3aWR0aDogZml0LWNvbnRlbnQ7DQogIGhlaWdodDogZml0LWNvbnRlbnQ7DQp9DQoNCg0KICAuZ3JpZCB7DQogICAgZGlzcGxheTogZ3JpZDsNCiAgICBncmlkLXRlbXBsYXRlLWNvbHVtbnM6IHJlcGVhdCgzLCA2MHB4KTsgLyogMyBjb2x1bW5zIG9mIDYwcHggZWFjaCAqLw0KICAgIGdhcDogNXB4OyAvKiBnYXAgYmV0d2VlbiB0aGUgc3F1YXJlcyAqLw0KICAgIGJvcmRlcjogMnB4IHNvbGlkIGJsYWNrOyAvKiBBZGQgYSBibGFjayBib3JkZXIgKi8NCiAgICBtYXJnaW46IC0ycHg7DQogICAgcGFkZGluZzogNXB4OyAvKiBPcHRpb25hbCBwYWRkaW5nIGluc2lkZSB0aGUgYm9yZGVyICovDQogICAgYmFja2dyb3VuZC1jb2xvcjogYmxhY2s7DQogIH0NCg0KICAuc3F1YXJlIHsNCiAgICB3aWR0aDogNThweDsgLyogd2lkdGggb2YgZWFjaCBzcXVhcmUgKi8NCiAgICBoZWlnaHQ6IDYwcHg7IC8qIGhlaWdodCBvZiBlYWNoIHNxdWFyZSAqLw0KICB9DQoNCiAgLndoaXRlLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogd2hpdGU7DQogIH0NCg0KICAub3JhbmdlLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogb3JhbmdlOw0KICB9DQoNCiAgLmdyZWVuLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogZ3JlZW47DQogIH0NCg0KICAucmVkLXNxdWFyZSB7DQogICAgYmFja2dyb3VuZC1jb2xvcjogcmVkOw0KICB9DQoNCiAgLmJsdWUtc3F1YXJlIHsNCiAgICBiYWNrZ3JvdW5kLWNvbG9yOiBibHVlOw0KICB9DQoNCiAgLnllbGxvdy1zcXVhcmUgew0KICAgIGJhY2tncm91bmQtY29sb3I6IHllbGxvdzsNCiAgfQ0KIA0KDQoNCiN3aGl0ZVNxdWFyZUdyaWQgIHsgZ3JpZC1jb2x1bW46IDI7IGdyaWQtcm93OiAxOyB9DQojb3JhbmdlU3F1YXJlR3JpZCB7IGdyaWQtY29sdW1uOiAxOyBncmlkLXJvdzogMjsgfQ0KI2dyZWVuU3F1YXJlR3JpZCAgeyBncmlkLWNvbHVtbjogMjsgZ3JpZC1yb3c6IDI7IH0NCiNyZWRTcXVhcmVHcmlkICAgIHsgZ3JpZC1jb2x1bW46IDM7IGdyaWQtcm93OiAyOyB9DQojYmx1ZVNxdWFyZUdyaWQgICB7IGdyaWQtY29sdW1uOiA0OyBncmlkLXJvdzogMjsgfQ0KI3llbGxvd1NxdWFyZUdyaWQgeyBncmlkLWNvbHVtbjogMjsgZ3JpZC1yb3c6IDM7IH0NCg0KI2N1c3RvbS1zY3JhbWJsZSwgI2N1c3RvbS1zb2x2ZSB7DQogIHdpZHRoOiAzMCU7DQp9DQoNCi8qID09PT09PT09PT09PT09PT09PT09PT09PT0gKi8NCi8qIDNEIE1PREUgKGRvZXMgTk9UIGFmZmVjdCAyRCkgKi8NCi8qID09PT09PT09PT09PT09PT09PT09PT09PT0gKi8NCg0KLnBhZ2UtY2VudGVyew0KICBwZXJzcGVjdGl2ZTogMTAwMHB4OyAvKiBuZWVkZWQgZm9yIDNEICovDQp9DQoNCi8qIHdoZW4gM0QgaXMgYWN0aXZlLCBraWxsIHRoZSBncmlkIGxheW91dCAqLw0KLmN1YmUzZCAuZ3JpZC1jb250YWluZXJ7DQogIGRpc3BsYXk6IGJsb2NrOw0KICBwb3NpdGlvbjogcmVsYXRpdmU7DQogIHRyYW5zZm9ybS1zdHlsZTogcHJlc2VydmUtM2Q7DQogIHdpZHRoOiAyMDBweDsNCiAgaGVpZ2h0OiAyMDBweDsNCg0KICB0cmFuc2Zvcm06IHJvdGF0ZVgoLTI1ZGVnKSByb3RhdGVZKC0zNWRlZyk7DQp9DQoNCg0KLyogYWxsIGZhY2VzIHN0YWNrIGluIHNhbWUgb3JpZ2luICovDQouY3ViZTNkIC5ncmlkew0KICBwb3NpdGlvbjogYWJzb2x1dGU7DQogIHRvcDogNTAlOw0KICBsZWZ0OiA1MCU7DQogIHRyYW5zZm9ybS1vcmlnaW46IGNlbnRlciBjZW50ZXI7DQogIHRyYW5zaXRpb246IHRyYW5zZm9ybSAwLjZzIGVhc2U7DQogIGJhY2tncm91bmQtY29sb3I6IGJsYWNrOw0KfQ0KDQovKiBSRUFMIGN1YmUgZGVwdGggKGRlcGVuZHMgb24gc3RpY2tlciBzaXplKSAqLw0KOnJvb3R7DQogIC0tY3ViZS1kZXB0aDogNDhweDsNCn0NCg0KLyogRlJPTlQgKGdyZWVuKSAqLw0KLmN1YmUzZCAjZ3JlZW5TcXVhcmVHcmlkew0KICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKSByb3RhdGVZKDBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBCQUNLIChibHVlKSAqLw0KLmN1YmUzZCAjYmx1ZVNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVkoMTgwZGVnKSB0cmFuc2xhdGVaKHZhcigtLWN1YmUtZGVwdGgpKTsNCn0NCg0KLyogUklHSFQgKHJlZCkgKi8NCi5jdWJlM2QgI3JlZFNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVkoOTBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBMRUZUIChvcmFuZ2UpICovDQouY3ViZTNkICNvcmFuZ2VTcXVhcmVHcmlkew0KICB0cmFuc2Zvcm06IHRyYW5zbGF0ZSgtNTAlLCAtNTAlKSByb3RhdGVZKC05MGRlZykgdHJhbnNsYXRlWih2YXIoLS1jdWJlLWRlcHRoKSk7DQp9DQoNCi8qIFRPUCAod2hpdGUpICovDQouY3ViZTNkICN3aGl0ZVNxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVgoOTBkZWcpIHRyYW5zbGF0ZVoodmFyKC0tY3ViZS1kZXB0aCkpOw0KfQ0KDQovKiBCT1RUT00gKHllbGxvdykgKi8NCi5jdWJlM2QgI3llbGxvd1NxdWFyZUdyaWR7DQogIHRyYW5zZm9ybTogdHJhbnNsYXRlKC01MCUsIC01MCUpIHJvdGF0ZVgoLTkwZGVnKSB0cmFuc2xhdGVaKHZhcigtLWN1YmUtZGVwdGgpKTsNCn0NCi8qIEZJWCB2ZXJ0aWNhbCBjZW50ZXJpbmcgT05MWSBpbiAzRCBtb2RlICovDQouY3ViZTNkLnBhZ2UtY2VudGVyew0KICBwb3NpdGlvbjogZml4ZWQ7DQogIGluc2V0OiAwOw0KICBkaXNwbGF5OiBmbGV4Ow0KICBhbGlnbi1pdGVtczogY2VudGVyOw0KICBqdXN0aWZ5LWNvbnRlbnQ6IGNlbnRlcjsNCn0NCg==", import.meta.url).href;
+  document.head.appendChild(link);
+}
+let facesToSquares = {};
+function mountRenderer(container) {
+  injectCubeCSS();
+  container.innerHTML = `
+    <div id="cube-net">
+      <div class="page-center">
+        <div class="grid-container">
+          <div id="whiteSquareGrid" class="grid"></div>
+          <div id="orangeSquareGrid" class="grid"></div>
+          <div id="greenSquareGrid" class="grid"></div>
+          <div id="redSquareGrid" class="grid"></div>
+          <div id="blueSquareGrid" class="grid"></div>
+          <div id="yellowSquareGrid" class="grid"></div>
+        </div>
+      </div>
+    </div>
+  `;
+  createGrid("whiteSquareGrid", "white-square");
+  createGrid("orangeSquareGrid", "orange-square");
+  createGrid("greenSquareGrid", "green-square");
+  createGrid("redSquareGrid", "red-square");
+  createGrid("blueSquareGrid", "blue-square");
+  createGrid("yellowSquareGrid", "yellow-square");
+  facesToSquares = {
+    U: document.querySelectorAll("#whiteSquareGrid .square"),
+    R: document.querySelectorAll("#redSquareGrid .square"),
+    F: document.querySelectorAll("#greenSquareGrid .square"),
+    D: document.querySelectorAll("#yellowSquareGrid .square"),
+    L: document.querySelectorAll("#orangeSquareGrid .square"),
+    B: document.querySelectorAll("#blueSquareGrid .square")
+  };
+  paint();
+}
+function createGrid(id, cls) {
+  const grid2 = document.getElementById(id);
+  for (let i = 0; i < 9; i++) {
+    const s = document.createElement("div");
+    s.className = `square ${cls}`;
+    grid2.appendChild(s);
+  }
+}
+function paint() {
+  const colorMap = { W: "white", R: "red", G: "green", Y: "yellow", O: "orange", B: "blue" };
+  for (const f in cube) {
+    const squares = facesToSquares[f];
+    for (let i = 0; i < 9; i++) {
+      squares[i].className = `square ${colorMap[cube[f][i]]}-square`;
+    }
+  }
+}
+function resize(size) {
+  const gap = Math.round(size * 0.08);
+  const padding = gap;
+  document.querySelectorAll(".grid").forEach((g) => {
+    g.style.gridTemplateColumns = `repeat(3, ${size}px)`;
+    g.style.gap = `${gap}px`;
+    g.style.padding = `${padding}px`;
+  });
+  document.querySelectorAll(".square").forEach((s) => {
+    s.style.width = `${size}px`;
+    s.style.height = `${size}px`;
+  });
+  const depth = size * 3 + gap * 2 + padding * 2;
+  document.documentElement.style.setProperty("--cube-depth", `${depth / 2}px`);
+}
+function set3D(enabled) {
+  const net = document.getElementById("cube-net");
+  net.classList.toggle("cube3d", enabled);
+}
+let scrambledState = null;
+function mountCube(div) {
+  mountRenderer(div);
+  paint();
+}
+function setSize(px) {
+  resize(px);
+}
+function setView(mode) {
+  set3D(mode === "3d");
+}
+function applyScramble(scr, skipPaint = false) {
+  printScrambleMoves(scr, true);
+  if (!skipPaint) paint();
+  scrambledState = cloneCubeState();
+}
+function applySolution(sol, skipPaint = false) {
+  restoreCubeState(scrambledState);
+  printScrambleMoves(sol, false);
+  if (!skipPaint) paint();
+}
+function getLastMoveCount() {
+  return getMoveCount();
+}
+function checkSolved() {
+  return isSolved();
+}
+const ONE_HOUR = 60 * 60;
+function formatCountdown(seconds2) {
+  const hrs = String(Math.floor(seconds2 / 3600)).padStart(2, "0");
+  const mins = String(Math.floor(seconds2 % 3600 / 60)).padStart(2, "0");
+  const secs = String(seconds2 % 60).padStart(2, "0");
+  return `${hrs}:${mins}:${secs}`;
+}
+function updateDisplay(countdownObj2, display = document.getElementById("timer")) {
+  if (!display) return;
+  display.textContent = formatCountdown(countdownObj2.remainingTime);
+}
+function startTimer2(countdownObj2, timerWarnings2) {
+  if (countdownObj2.intervalId !== null) {
+    stopTimer2(countdownObj2);
+    return;
+  }
+  countdownObj2.intervalId = setInterval(() => {
+    document.getElementById("countdown").textContent = "Stop attempt";
+    countdownObj2.remainingTime--;
+    if (countdownObj2.remainingTime === 5 * 60 && timerWarnings2["5"]) new Audio("./audio/5minutes.mp3").play();
+    if (countdownObj2.remainingTime === 10 * 60 && timerWarnings2["10"]) new Audio("./audio/10minutes.mp3").play();
+    if (countdownObj2.remainingTime === 15 * 60 && timerWarnings2["15"]) new Audio("./audio/15minutes.mp3").play();
+    if (countdownObj2.remainingTime === 20 * 60 && timerWarnings2["20"]) new Audio("./audio/20minutes.mp3").play();
+    if (countdownObj2.remainingTime === 25 * 60 && timerWarnings2["25"]) new Audio("./audio/25minutes.mp3").play();
+    if (countdownObj2.remainingTime === 30 * 60 && timerWarnings2["30"]) new Audio("./audio/30minutes.mp3").play();
+    if (countdownObj2.remainingTime === 35 * 60 && timerWarnings2["35"]) new Audio("./audio/35minutes.mp3").play();
+    if (countdownObj2.remainingTime === 40 * 60 && timerWarnings2["40"]) new Audio("./audio/40minutes.mp3").play();
+    if (countdownObj2.remainingTime === 45 * 60 && timerWarnings2["45"]) new Audio("./audio/45minutes.mp3").play();
+    if (countdownObj2.remainingTime === 50 * 60 && timerWarnings2["50"]) new Audio("./audio/50minutes.mp3").play();
+    if (countdownObj2.remainingTime === 55 * 60 && timerWarnings2["55"]) new Audio("./audio/55minutes.mp3").play();
+    updateDisplay(countdownObj2);
+    if (countdownObj2.remainingTime <= 0) {
+      stopTimer2(countdownObj2);
+    }
+  }, 1e3);
+}
+function stopTimer2(countdownObj2) {
+  document.getElementById("countdown").textContent = "Start attempt";
+  countdownObj2.remainingTime = ONE_HOUR;
+  updateDisplay(countdownObj2);
+  clearInterval(countdownObj2.intervalId);
+  countdownObj2.intervalId = null;
+}
+function handleFMC$1(display, currentScramble2, countdownObj2) {
+  document.getElementById("penaltyOkBtn").style.display = "none";
+  document.getElementById("penaltyPlus2Btn").style.display = "none";
+  document.getElementById("penaltyDnfBtn").style.display = "none";
+  document.getElementById("removeLastBtn").style.display = "block";
+  document.getElementById("submit-moves").style.display = "block";
+  document.getElementById("fmc-cube").style.display = "block";
+  document.getElementById("fmc-solution").style.display = "block";
+  document.getElementById("fmc-solution-test").style.display = "block";
+  document.getElementById("fmc-move-count").style.display = "block";
+  document.getElementById("fmc-form").style.display = "flex";
+  document.getElementById("countdown").style.display = "block";
+  document.getElementById("typing-container").style.display = "none";
+  document.getElementById("fmc-label-form").textContent = "Solution: ";
+  document.getElementById("open-mbld-modal").style.display = "none";
+  document.getElementById("openConfig").style.display = "block";
+  document.getElementById("timer").style.fontSize = "50px";
+  document.getElementById("touchOverlay").style.display = "none";
+  updateDisplay(countdownObj2, display);
+  mountCube(document.getElementById("fmc-cube"));
+  setSize(28);
+  setView("3d");
+  applyScramble(currentScramble2);
+  setFMC(true);
+}
+function handleMBLD$1(display, countdownObj2) {
   document.getElementById("penaltyOkBtn").style.display = "none";
   document.getElementById("penaltyPlus2Btn").style.display = "none";
   document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -16899,7 +17351,7 @@ function handleMBLD() {
   document.getElementById("fmc-label-form").textContent = "Solved / Total: ";
   document.getElementById("open-mbld-modal").style.display = "block";
   document.getElementById("openConfig").style.display = "block";
-  updateDisplay();
+  updateDisplay(countdownObj2, display);
 }
 function calculateMBLDPoints(resultStr) {
   if (typeof resultStr !== "string") {
@@ -16921,46 +17373,13 @@ function calculateMBLDPoints(resultStr) {
     result: `${solved} / ${total}`
   };
 }
-document.getElementById("fmc-form").addEventListener("submit", async (e) => {
-  if (eventObj.event !== "r3ni") return;
-  e.preventDefault();
-  if (document.getElementById("fmc-solution").value !== "") ;
-  else {
-    alert("Submit needs a result");
-    return;
-  }
-  const block = averageOfN(calculateMBLDPoints(document.getElementById("fmc-solution").value), currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
-  if (block) addAverageBlock(block);
-  renderHistory();
-  await displayScramble(eventObj.event, vis);
-  document.getElementById("fmc-solution").value = "";
-});
-document.getElementById("submit-moves").addEventListener("click", async () => {
-  if (eventObj.event !== "r3ni") return;
-  if (document.getElementById("fmc-solution").value !== "") ;
-  else {
-    alert("Submit needs a result");
-    return;
-  }
-  const result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
-  const block = averageOfN(result, currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
-  if (block) addAverageBlock(block);
-  renderHistory();
-  await displayScramble(eventObj.event, vis);
-  document.getElementById("fmc-solution").value = "";
-});
 function parseMBLDScramble(scrambleText) {
   return scrambleText.split(/\d+\)/g).map((s) => s.trim()).filter((s) => s.length > 0);
 }
-const modal$1 = document.getElementById("mbld-modal");
-const grid = document.getElementById("mbld-grid");
-const openBtn$1 = document.getElementById("open-mbld-modal");
-const closeBtn$1 = document.getElementById("mbld-close");
-const countInput = document.getElementById("mbld-count");
-async function renderMBLDGrid() {
-  grid.innerHTML = "";
-  const scrambles = parseMBLDScramble(currentScramble);
-  const limit = Math.min(Number(countInput.value), scrambles.length);
+async function renderMBLDGrid(grid2, countInput2, currentScramble2) {
+  grid2.innerHTML = "";
+  const scrambles = parseMBLDScramble(currentScramble2);
+  const limit = Math.min(Number(countInput2.value), scrambles.length);
   const images = await Promise.all(
     scrambles.slice(0, limit).map((s) => csTimer.getImage(s, "333"))
   );
@@ -16976,171 +17395,64 @@ async function renderMBLDGrid() {
     visualEl.innerHTML = images[i];
     visualEl.style.transformOrigin = "top)";
     visualEl.style.transform = "scale(0.5)";
-    grid.appendChild(indexEl);
-    grid.appendChild(scrambleEl);
-    grid.appendChild(visualEl);
+    grid2.appendChild(indexEl);
+    grid2.appendChild(scrambleEl);
+    grid2.appendChild(visualEl);
   }
 }
-openBtn$1.addEventListener("click", async () => {
-  if (eventObj.event !== "r3ni") return;
-  const cubeCount = Number(countInput.value);
-  if (cubeCount > 5) {
-    await displayScramble(eventObj.event, vis, cubeCount);
-  } else {
-    await displayScramble(eventObj.event, vis);
-  }
-  modal$1.style.display = "block";
-  parseMBLDScramble(currentScramble);
-  await renderMBLDGrid();
-});
-closeBtn$1.addEventListener("click", () => {
-  modal$1.style.display = "none";
-});
-countInput.addEventListener("input", async () => {
-  let value = Number(countInput.value);
-  if (value < 1) value = 1;
-  await displayScramble(eventObj.event, vis, value);
-  await renderMBLDGrid();
-});
-const TOTAL_MINUTES = 55;
-const STEP = 5;
-const STORAGE_KEY = "timerWarningConfig_v1";
-const timerWarnings = {};
-const openBtn2 = document.getElementById("openConfig");
-const modal2 = document.getElementById("modal2");
-const overlay$1 = document.getElementById("overlay");
-const warningContainer = document.getElementById("warningOptions");
-function saveToStorage() {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(timerWarnings));
-}
-function loadFromStorage() {
-  const saved = localStorage.getItem(STORAGE_KEY);
-  if (saved) {
-    const parsed = JSON.parse(saved);
-    Object.assign(timerWarnings, parsed);
-  }
-}
-function openModal() {
-  modal2.style.display = "block";
-  overlay$1.style.display = "block";
-}
-function closeModal() {
-  modal2.style.display = "none";
-  overlay$1.style.display = "none";
-}
-function generateOptions() {
-  warningContainer.innerHTML = "";
-  for (let min = TOTAL_MINUTES; min > 0; min -= STEP) {
-    const wrapper = document.createElement("div");
-    wrapper.className = "minute-option";
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.id = "warn_" + min;
-    checkbox.checked = timerWarnings[min] || false;
-    checkbox.addEventListener("change", () => {
-      timerWarnings[min] = checkbox.checked;
-      saveToStorage();
-    });
-    const label = document.createElement("label");
-    label.htmlFor = checkbox.id;
-    label.textContent = `${min} minutes left`;
-    wrapper.appendChild(checkbox);
-    wrapper.appendChild(label);
-    warningContainer.appendChild(wrapper);
-  }
-}
-function initializeDefaults() {
-  for (let min = TOTAL_MINUTES; min > 0; min -= STEP) {
-    if (timerWarnings[min] === void 0) {
-      timerWarnings[min] = false;
-    }
-  }
-}
-openBtn2.addEventListener("click", () => {
-  generateOptions();
-  openModal();
-});
-document.getElementById("saveConfig").addEventListener("click", () => {
-  saveToStorage();
-  closeModal();
-});
-document.getElementById("closeModal").addEventListener("click", closeModal);
-overlay$1.addEventListener("click", closeModal);
-loadFromStorage();
-initializeDefaults();
-const ONE_HOUR = 60 * 60;
-let remainingTime = ONE_HOUR;
-let intervalId = null;
-const display = document.getElementById("timer");
-const startBtn = document.getElementById("countdown");
-const stopBtn = document.getElementById("submit-moves");
-function formatTime$1(seconds2) {
-  const hrs = String(Math.floor(seconds2 / 3600)).padStart(2, "0");
-  const mins = String(Math.floor(seconds2 % 3600 / 60)).padStart(2, "0");
-  const secs = String(seconds2 % 60).padStart(2, "0");
-  return `${hrs}:${mins}:${secs}`;
-}
-function updateDisplay() {
-  display.textContent = formatTime$1(remainingTime);
-}
-function startTimer2() {
-  if (intervalId !== null) {
-    stopTimer2();
-    return;
-  }
-  intervalId = setInterval(() => {
-    document.getElementById("countdown").textContent = "Stop attempt";
-    remainingTime--;
-    if (remainingTime === 5 * 60 && timerWarnings["5"]) new Audio("./audio/5minutes.mp3").play();
-    if (remainingTime === 10 * 60 && timerWarnings["10"]) new Audio("./audio/10minutes.mp3").play();
-    if (remainingTime === 15 * 60 && timerWarnings["15"]) new Audio("./audio/15minutes.mp3").play();
-    if (remainingTime === 20 * 60 && timerWarnings["20"]) new Audio("./audio/20minutes.mp3").play();
-    if (remainingTime === 25 * 60 && timerWarnings["25"]) new Audio("./audio/25minutes.mp3").play();
-    if (remainingTime === 30 * 60 && timerWarnings["30"]) new Audio("./audio/30minutes.mp3").play();
-    if (remainingTime === 35 * 60 && timerWarnings["35"]) new Audio("./audio/35minutes.mp3").play();
-    if (remainingTime === 40 * 60 && timerWarnings["40"]) new Audio("./audio/40minutes.mp3").play();
-    if (remainingTime === 45 * 60 && timerWarnings["45"]) new Audio("./audio/45minutes.mp3").play();
-    if (remainingTime === 50 * 60 && timerWarnings["50"]) new Audio("./audio/50minutes.mp3").play();
-    if (remainingTime === 55 * 60 && timerWarnings["55"]) new Audio("./audio/55minutes.mp3").play();
-    updateDisplay();
-    if (remainingTime <= 0) {
-      stopTimer2();
-    }
-  }, 1e3);
-}
-function stopTimer2() {
-  document.getElementById("countdown").textContent = "Start attempt";
-  remainingTime = ONE_HOUR;
-  updateDisplay();
-  clearInterval(intervalId);
-  intervalId = null;
-}
-startBtn.addEventListener("click", startTimer2);
-stopBtn.addEventListener("click", stopTimer2);
-let solutionFlag = false;
-function handleFMC() {
-  document.getElementById("penaltyOkBtn").style.display = "none";
-  document.getElementById("penaltyPlus2Btn").style.display = "none";
-  document.getElementById("penaltyDnfBtn").style.display = "none";
+function showTimerLayout(vis2) {
+  document.getElementById("penaltyOkBtn").style.display = "block";
+  document.getElementById("penaltyPlus2Btn").style.display = "block";
+  document.getElementById("penaltyDnfBtn").style.display = "block";
   document.getElementById("removeLastBtn").style.display = "block";
-  document.getElementById("submit-moves").style.display = "block";
-  document.getElementById("fmc-cube").style.display = "block";
-  document.getElementById("fmc-solution").style.display = "block";
-  document.getElementById("fmc-solution-test").style.display = "block";
-  document.getElementById("fmc-move-count").style.display = "block";
-  document.getElementById("fmc-form").style.display = "flex";
-  document.getElementById("countdown").style.display = "block";
+  document.getElementById("submit-moves").style.display = "none";
+  document.getElementById("fmc-cube").style.display = "none";
+  document.getElementById("fmc-solution").style.display = "none";
+  document.getElementById("fmc-solution-test").style.display = "none";
+  document.getElementById("fmc-move-count").style.display = "none";
+  document.getElementById("fmc-form").style.display = "none";
+  document.getElementById("countdown").style.display = "none";
+  document.getElementById("touchOverlay").style.display = "block";
   document.getElementById("typing-container").style.display = "none";
-  document.getElementById("fmc-label-form").textContent = "Solution: ";
+  document.getElementById("timerins").style.marginTop = "0px";
   document.getElementById("open-mbld-modal").style.display = "none";
-  document.getElementById("openConfig").style.display = "block";
-  document.getElementById("timer").style.fontSize = "50px";
-  document.getElementById("touchOverlay").style.display = "none";
-  updateDisplay();
-  mountCube(document.getElementById("fmc-cube"));
-  setSize(28);
-  setView("3d");
-  applyScramble(currentScramble);
+  document.getElementById("openConfig").style.display = "none";
+  if (vis2 === document.querySelector("#scrambleVis")) {
+    document.getElementById("timer").style.fontSize = "140px";
+  } else {
+    document.getElementById("timer").style.fontSize = "72px";
+  }
+  document.getElementById("timer").textContent = "0.00";
+}
+function showTimeInsertion(event, timeInsertion2, timerSettObj2) {
+  if (event === "333fm" || event === "r3ni") {
+    timerSettObj2.timerFlag = true;
+    document.getElementById("typing-container").style.display = "none";
+    document.querySelector(".timerOpt").style.display = "none";
+  } else {
+    document.querySelector(".timerOpt").style.display = "block";
+    if (timeInsertion2 === "Typing") {
+      document.getElementById("typing-container").style.display = "block";
+      timerSettObj2.timerFlag = true;
+    } else {
+      timerSettObj2.timerFlag = false;
+    }
+  }
+}
+const eventObj = {
+  event: getCurrentSession().scrambleType || "333"
+};
+let vis = null;
+if (window.innerWidth > 768) {
+  vis = document.querySelector("#scrambleVis");
+} else {
+  vis = document.querySelector("#scrambleVis2");
+}
+showTimeInsertion(eventObj.event, timeInsertion, timerSettObj);
+const eventSelect$1 = document.getElementById("eventSelect");
+let solutionFlag = false;
+function handleFMC(display = document.getElementById("timer")) {
+  handleFMC$1(display, currentScramble, countdownObj);
   solutionFlag = false;
 }
 document.getElementById("fmc-solution").addEventListener("input", (e) => {
@@ -17183,15 +17495,619 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
   applyScramble(currentScramble);
   document.getElementById("fmc-solution").value = "";
 });
+function handleMBLD(display) {
+  handleMBLD$1(display, countdownObj);
+}
+async function submitMBLD() {
+  if (document.getElementById("fmc-solution").value === "") {
+    alert("Submit needs a result");
+    return;
+  }
+  const result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
+  const block = averageOfN(result, currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
+  if (block) addAverageBlock(block);
+  renderHistory();
+  await displayScramble(eventObj.event, vis);
+  document.getElementById("fmc-solution").value = "";
+}
+document.getElementById("fmc-form").addEventListener("submit", async (e) => {
+  if (eventObj.event !== "r3ni") return;
+  e.preventDefault();
+  await submitMBLD();
+});
+document.getElementById("submit-moves").addEventListener("click", async () => {
+  if (eventObj.event !== "r3ni") return;
+  await submitMBLD();
+});
+const modal$1 = document.getElementById("mbld-modal");
+const grid = document.getElementById("mbld-grid");
+const openBtn = document.getElementById("open-mbld-modal");
+const closeBtn = document.getElementById("mbld-close");
+const countInput = document.getElementById("mbld-count");
+openBtn.addEventListener("click", async () => {
+  if (eventObj.event !== "r3ni") return;
+  const cubeCount = Number(countInput.value);
+  if (cubeCount > 5) {
+    await displayScramble(eventObj.event, vis, cubeCount);
+  } else {
+    await displayScramble(eventObj.event, vis);
+  }
+  modal$1.style.display = "block";
+  await renderMBLDGrid(grid, countInput, currentScramble);
+});
+closeBtn.addEventListener("click", () => {
+  modal$1.style.display = "none";
+});
+countInput.addEventListener("input", async () => {
+  let value = Number(countInput.value);
+  if (value < 1) value = 1;
+  await displayScramble(eventObj.event, vis, value);
+  await renderMBLDGrid(grid, countInput, currentScramble);
+});
+const TOTAL_MINUTES = 55;
+const STEP = 5;
+const STORAGE_KEY = "timerWarningConfig_v1";
+const timerWarnings = {};
+const openBtn2 = document.getElementById("openConfig");
+const modal2 = document.getElementById("modal2");
+const overlay = document.getElementById("overlay");
+const warningContainer = document.getElementById("warningOptions");
+function saveToStorage() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(timerWarnings));
+}
+function loadFromStorage() {
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    const parsed = JSON.parse(saved);
+    Object.assign(timerWarnings, parsed);
+  }
+}
+function openModal() {
+  modal2.style.display = "block";
+  overlay.style.display = "block";
+}
+function closeModal() {
+  modal2.style.display = "none";
+  overlay.style.display = "none";
+}
+function generateOptions() {
+  warningContainer.innerHTML = "";
+  for (let min = TOTAL_MINUTES; min > 0; min -= STEP) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "minute-option";
+    const checkbox = document.createElement("input");
+    checkbox.type = "checkbox";
+    checkbox.id = "warn_" + min;
+    checkbox.checked = timerWarnings[min] || false;
+    checkbox.addEventListener("change", () => {
+      timerWarnings[min] = checkbox.checked;
+      saveToStorage();
+    });
+    const label = document.createElement("label");
+    label.htmlFor = checkbox.id;
+    label.textContent = `${min} minutes left`;
+    wrapper.appendChild(checkbox);
+    wrapper.appendChild(label);
+    warningContainer.appendChild(wrapper);
+  }
+}
+function initializeDefaults() {
+  for (let min = TOTAL_MINUTES; min > 0; min -= STEP) {
+    if (timerWarnings[min] === void 0) {
+      timerWarnings[min] = false;
+    }
+  }
+}
+openBtn2.addEventListener("click", () => {
+  generateOptions();
+  openModal();
+});
+document.getElementById("saveConfig").addEventListener("click", () => {
+  saveToStorage();
+  closeModal();
+});
+document.getElementById("closeModal").addEventListener("click", closeModal);
+overlay.addEventListener("click", closeModal);
+loadFromStorage();
+initializeDefaults();
+async function initEvent() {
+  const session2 = getCurrentSession();
+  eventObj.event = session2.scrambleType || "333";
+  eventSelect$1.value = eventObj.event;
+  await displayScramble(eventObj.event, vis);
+  const display = document.getElementById("timer");
+  if (eventObj.event === "333fm") handleFMC(display);
+  if (eventObj.event === "r3ni") handleMBLD(display);
+}
+const HOLD_DELAY_MS = 300;
+function resetTimerColor(setTimerDisplay2, getThemeVar2) {
+  setTimerDisplay2("color", `${getThemeVar2(`theme-text-${localStorage.getItem("times-color")}`, "--text-main")}`);
+}
+function beginHold(delayFlagType2, timerObj2, setTimerDisplay2) {
+  clearTimeout(timerObj2.holdTimeout);
+  if (delayFlagType2 === "None") {
+    timerObj2.timerPhase = PHASE.READY;
+    setTimerDisplay2("color", "limeGreen");
+    return;
+  }
+  timerObj2.timerPhase = PHASE.HOLDING;
+  setTimerDisplay2("color", "red");
+  timerObj2.holdTimeout = setTimeout(() => {
+    if (timerObj2.timerPhase !== PHASE.HOLDING) return;
+    timerObj2.timerPhase = PHASE.READY;
+    setTimerDisplay2("color", "limeGreen");
+  }, HOLD_DELAY_MS);
+}
+function cancelHold(timerObj2, setTimerDisplay2, getThemeVar2) {
+  if (timerObj2.timerPhase !== PHASE.HOLDING && timerObj2.timerPhase !== PHASE.READY) return;
+  clearTimeout(timerObj2.holdTimeout);
+  timerObj2.timerPhase = timerObj2.inspecting ? PHASE.INSPECTING : PHASE.IDLE;
+  resetTimerColor(setTimerDisplay2, getThemeVar2);
+}
+function inspection(inspecType, setTimerDisplay2, timerObj2) {
+  timerObj2.inspecting = true;
+  const start = performance.now();
+  let lastSecond = -1;
+  timerObj2.interval = setInterval(() => {
+    const elapsedMs = performance.now() - start;
+    const seconds2 = Math.floor(elapsedMs / 1e3);
+    const secondsWithDecimals = elapsedMs / 1e3;
+    timerObj2.inspection = parseFloat(secondsWithDecimals.toFixed(2));
+    if (inspecType === "WCA") {
+      if (seconds2 !== lastSecond) {
+        lastSecond = seconds2;
+        if (seconds2 === 8) new Audio("./audio/8seconds.mp3").play();
+        if (seconds2 === 12) new Audio("./audio/12seconds.mp3").play();
+        if (seconds2 === 17) clearInterval(timerObj2.interval);
+      }
+    }
+    setTimerDisplay2("time", seconds2);
+  }, 10);
+}
+function startTimer(setTimerDisplay2, getThemeVar2, timerObj2, formatTime2) {
+  setTimerDisplay2("color", `${getThemeVar2(`theme-text-${localStorage.getItem("times-color")}`, "--text-main")}`);
+  clearInterval(timerObj2.interval);
+  timerObj2.inspecting = false;
+  const startTime = performance.now();
+  timerObj2.startTime = startTime;
+  timerObj2.interval = setInterval(() => {
+    const displayMode = document.getElementById("timer-display")?.value;
+    if (displayMode === "Hide") {
+      setTimerDisplay2("time", "Solving");
+    } else {
+      setTimerDisplay2("time", formatTime2(performance.now() - startTime));
+    }
+  }, 10);
+}
+function stopTimer(setTimerDisplay2, getThemeVar2, timerObj2, formatTime2) {
+  clearInterval(timerObj2.interval);
+  setTimerDisplay2("time", formatTime2(performance.now() - timerObj2.startTime));
+  timerObj2.timerPhase = PHASE.IDLE;
+}
+function truncate2(n) {
+  return (Math.floor(n * 100) / 100).toFixed(2);
+}
+function formatTime(milisseconds) {
+  let seconds2 = milisseconds / 1e3;
+  let minutes = Math.floor(seconds2 / 60);
+  let hours = Math.floor(minutes / 60);
+  if (minutes < 1) {
+    return truncate2(seconds2);
+  } else if (minutes >= 1) {
+    seconds2 = seconds2 - 60 * minutes;
+    return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
+  } else if (minutes >= 60) {
+    minutes = minutes - 60 * hours;
+    return `${hours}: ${minutes < 10 ? "0" : ""}${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
+  }
+}
+const plus2CounterObj = { penalty: 0 };
+const startBtn = document.getElementById("countdown");
+const stopBtn = document.getElementById("submit-moves");
+startBtn.addEventListener("click", () => startTimer2(countdownObj, timerWarnings));
+stopBtn.addEventListener("click", () => stopTimer2(countdownObj));
+const timerDOMObj = {
+  scrDisplayFlag: false
+};
+function setTimerDisplay(colorOrTime, content) {
+  if (colorOrTime === "color") {
+    document.getElementById("timer").style.color = content;
+  } else if (colorOrTime === "time") {
+    document.getElementById("timer").textContent = content;
+  }
+}
+let seconds = 0;
+let interval = null;
+let running = false;
+function inspection2() {
+  if (!running) {
+    running = true;
+    setTimerDisplay("time", seconds);
+    interval = setInterval(() => {
+      seconds++;
+      setTimerDisplay("time", seconds);
+      if (seconds === 8) new Audio("./audio/8seconds.mp3").play();
+      if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
+      if (seconds === 17) {
+        running = false;
+        clearInterval(interval);
+        interval = null;
+        seconds = 0;
+        setTimerDisplay("time", "0.00");
+      }
+    }, 1e3);
+  } else {
+    running = false;
+    clearInterval(interval);
+    interval = null;
+    seconds = 0;
+    setTimerDisplay("time", "0.00");
+  }
+}
+function showOnlyTimerSafe() {
+  const timer = document.getElementById("timer");
+  const overlay2 = document.getElementById("touchOverlay");
+  if (!timer || !overlay2) return;
+  function hideRecursively(element) {
+    if (element === timer || element === overlay2) return;
+    if (element.contains(timer)) {
+      [...element.children].forEach(hideRecursively);
+    } else {
+      element.classList.add("focus-hidden");
+    }
+  }
+  hideRecursively(document.body);
+}
+function restoreUI() {
+  document.querySelectorAll(".focus-hidden").forEach((el) => {
+    el.classList.remove("focus-hidden");
+  });
+}
+function onPressStart() {
+  switch (timerObj.timerPhase) {
+    case PHASE.IDLE:
+      if (timerSettObj.inspectionType === "None") {
+        beginHold(delayFlagType, timerObj, setTimerDisplay);
+        return;
+      }
+      timerObj.timerPhase = PHASE.INSPECTING;
+      if (localStorage.getItem("inspectionStart") === "press-start") {
+        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
+      }
+      return;
+    case PHASE.INSPECTING:
+      beginHold(delayFlagType, timerObj, setTimerDisplay);
+      return;
+    case PHASE.RUNNING:
+      handleSplitOrStop();
+      return;
+  }
+}
+function onPressEnd() {
+  switch (timerObj.timerPhase) {
+    case PHASE.HOLDING:
+      cancelHold(timerObj, setTimerDisplay, getThemeVar);
+      return;
+    case PHASE.READY:
+      timerObj.timerPhase = PHASE.RUNNING;
+      startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
+      showOnlyTimerSafe();
+      return;
+    case PHASE.INSPECTING:
+      if (!timerObj.inspecting && localStorage.getItem("inspectionStart") === "press-end") {
+        inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
+      }
+      return;
+  }
+}
+function onPressLost() {
+  if (timerObj.timerPhase === PHASE.INSPECTING && !timerObj.inspecting) {
+    timerObj.timerPhase = PHASE.IDLE;
+  }
+  cancelHold(timerObj, setTimerDisplay, getThemeVar);
+}
+document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
+  const touchTarget = e.target;
+  if (touchTarget && touchTarget.closest && (touchTarget.closest("input") || touchTarget.closest("#typing-container"))) {
+    return;
+  }
+  e.preventDefault();
+  if (timerSettObj.timerFlag) return;
+  if (e.touches.length > e.changedTouches.length) return;
+  if (timerObj.timerPhase !== PHASE.RUNNING && timerDOMObj.scrDisplayFlag) {
+    document.querySelector(".panel-cube2").style.display = "none";
+    document.getElementById("scramble-button").style.justifySelf = "center";
+    document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
+    timerDOMObj.scrDisplayFlag = false;
+    return;
+  }
+  onPressStart();
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    clearInterval(timerObj.interval);
+    clearTimeout(timerObj.holdTimeout);
+    timerObj.inspecting = false;
+    timerObj.inspection = 0;
+    timerObj.timerPhase = PHASE.IDLE;
+    timerObj.solvePhases = [];
+    timerObj.currentSolvePhase = 0;
+    timerObj.lastSplitTime = 0;
+    document.getElementById("timer").textContent = "0.00";
+    resetTimerColor(setTimerDisplay, getThemeVar);
+    restoreUI();
+  }
+});
+document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
+  const touchTarget = e.target;
+  if (touchTarget && touchTarget.closest && (touchTarget.closest("input") || touchTarget.closest("#typing-container"))) {
+    return;
+  }
+  e.preventDefault();
+  if (e.touches.length > 0) return;
+  onPressEnd();
+});
+document.getElementById("touchOverlay").addEventListener("touchcancel", onPressLost);
+window.addEventListener("blur", onPressLost);
+document.addEventListener("visibilitychange", () => {
+  if (document.hidden) onPressLost();
+});
+document.getElementById("touchOverlay").addEventListener("touchstart", () => {
+  if (!timerSettObj.timerFlag) return;
+  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
+  inspection2();
+});
+document.getElementById("inspection-btn").addEventListener("click", () => {
+  if (!timerSettObj.timerFlag) return;
+  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
+  inspection2();
+});
+document.addEventListener("keydown", (e) => {
+  if (!timerSettObj.timerFlag) return;
+  if (e.code !== "Space" || e.repeat) return;
+  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
+  inspection2();
+});
+function isTyping() {
+  const el = document.activeElement;
+  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
+}
+document.addEventListener("keydown", (e) => {
+  if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
+  if (e.key === " ") {
+    e.preventDefault();
+  } else if (timerObj.timerPhase !== PHASE.RUNNING) {
+    return;
+  }
+  onPressStart();
+});
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    let timeInsertion2 = localStorage.getItem("timeInsertion") || "Timer";
+    if (timeInsertion2 === "Typing") {
+      timeInsertion2 = "Timer";
+      timerSettObj.timerFlag = false;
+    } else if (timeInsertion2 === "Timer") {
+      timeInsertion2 = "Typing";
+      timerSettObj.timerFlag = true;
+    }
+    localStorage.setItem("timeInsertion", timeInsertion2);
+    updateTypingUI();
+  }
+});
+function handleSplitOrStop() {
+  const now = performance.now();
+  const totalElapsed = now - timerObj.startTime;
+  const phaseTime = formatTime(totalElapsed - timerObj.lastSplitTime);
+  timerObj.lastSplitTime = totalElapsed;
+  timerObj.solvePhases.push(phaseTime);
+  timerObj.currentSolvePhase++;
+  if (timerObj.currentSolvePhase < timerObj.totalSolvePhases) {
+    return;
+  }
+  plus2CounterObj.penalty = 0;
+  document.getElementById("penaltyPlus2Btn").textContent = "+2";
+  stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
+  const finalTime = document.getElementById("timer").innerHTML;
+  const block = averageOfN(
+    finalTime,
+    currentScramble,
+    timerObj.inspection,
+    timerSettObj.inspectionType,
+    false,
+    false,
+    false,
+    timerObj.solvePhases
+  );
+  const session2 = getCurrentSession();
+  session2.classicStats = structuredClone(classicStats);
+  if (block) {
+    addAverageBlock(block);
+  }
+  timerObj.solvePhases = [];
+  timerObj.currentSolvePhase = 0;
+  timerObj.lastSplitTime = 0;
+  saveSessions();
+  renderHistory();
+  displayScramble(eventObj.event, vis);
+  restoreUI();
+}
+document.addEventListener("keyup", (e) => {
+  if (e.key !== " ") return;
+  e.preventDefault();
+  if (e.repeat) return;
+  onPressEnd();
+});
+const modal = document.getElementById("detailsModal");
+const modalBody = document.getElementById("modalBody");
+const closeModalBtn = document.getElementById("closeModalBtn");
+let modalBlocks = [];
+const modalPenaltyCounters = {};
+closeModalBtn.onclick = () => modal.classList.add("hidden");
+modal.onclick = (e) => {
+  if (e.target === modal) modal.classList.add("hidden");
+};
+modalBody.addEventListener("click", (e) => {
+  const button = e.target.closest("button[data-action]");
+  if (!button) return;
+  const blockIndex = Number(button.dataset.block);
+  const solveIndex = Number(button.dataset.solve);
+  if (button.dataset.action === "ok") setPenalty(blockIndex, solveIndex, null);
+  if (button.dataset.action === "plus2") setPenalty(blockIndex, solveIndex, 2, true);
+  if (button.dataset.action === "dnf") setPenalty(blockIndex, solveIndex, "DNF");
+  if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
+  if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
+});
+function openDetailsModal() {
+  const averages = getSessionAverages();
+  let html = `<h3 class="modal-title">Session averages</h3>`;
+  modalBlocks = averages;
+  averages.forEach((block, blockIndex) => {
+    let headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)}`;
+    if (block.mode === "bo3") {
+      const mo3Avg = computeAverage(block.solves, "mo3");
+      const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(mo3Avg.avg);
+      headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (mo3: ${wrapTimesValue(mo3Value)})`;
+    } else if (block.mode === "bo5") {
+      const ao5Avg = computeAverage(block.solves, "ao5");
+      const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
+      headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (ao5: ${wrapTimesValue(ao5Value)})`;
+    }
+    html += `
+            <div class="modal-average-card">
+                <div class="modal-average-header">
+                    <b>${headerText}</b>
+                </div>
+
+                <div class="modal-solves">
+        `;
+    block.solves.forEach((s, i) => {
+      const counterKey = `${blockIndex}-${i}`;
+      let counter = 0;
+      if (typeof s.penalty === "number" && s.penalty > 0) {
+        counter = s.penalty;
+      }
+      modalPenaltyCounters[counterKey] = counter;
+      const buttonText = `+${counter + 2}`;
+      const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
+      html += `
+                <div class="modal-solve-row">
+                    <div class="modal-solve-main">
+                        <span>#${i + 1}: ${formatStatValue(s)}</span>
+
+                        <div class="modal-solve-actions">
+                            <button data-action="ok" ${solveData}>OK</button>
+                            <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
+                            <button data-action="dnf" ${solveData}>DNF</button>
+                            <button data-action="remove" ${solveData}>✖</button>
+                        </div>
+                    </div>
+
+                    <div class="modal-scramble">
+                        Scramble: ${block.solves[i].scramble}
+                    </div>
+
+                    <div class="modal-scramble">
+                        Inspection: ${block.solves[i].inspection}
+                    </div>
+
+
+                    <div class="modal-scramble">
+                        Date: ${new Date(block.solves[i].createdAt)}
+                    </div>
+
+                    <div class="modal-scramble">
+                       Solution: <input
+                            type="text"
+                            id="solution-input-${blockIndex}-${i}"
+                            placeholder="Enter solution"
+                            value="${block.solves[i].solution || ""}"
+                        />
+                        <button data-action="solution" ${solveData}>
+                            Submit
+                        </button>
+                    </div>
+                    <div class="modal-scramble">
+                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || "-"} | Moves: ${block.solves[i].moves || "-"} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : "-"}</span>
+                    </div>
+                </div>
+            `;
+    });
+    html += `
+                </div>
+            </div>
+        `;
+  });
+  modalBody.innerHTML = html;
+  modal.classList.remove("hidden");
+}
+function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
+  let finalPenalty = penalty;
+  if (cycleMode) {
+    const counterKey = `${blockIndex}-${solveIndex}`;
+    let counter = modalPenaltyCounters[counterKey] || 0;
+    if (counter === 12) {
+      counter = 0;
+      finalPenalty = null;
+    } else {
+      counter += 2;
+      finalPenalty = counter;
+    }
+    modalPenaltyCounters[counterKey] = counter;
+    const buttonEl = document.getElementById(`plus2-${blockIndex}-${solveIndex}`);
+    if (buttonEl) {
+      buttonEl.textContent = `+${counter + 2}`;
+    }
+  }
+  penalty2(blockIndex, solveIndex, finalPenalty);
+  saveSessions();
+  renderHistory();
+  if (averageObj.mode === "classic") updateClassicStats(true);
+  const session2 = getCurrentSession();
+  session2.classicStats = structuredClone(classicStats);
+  if (!modal.classList.contains("hidden")) {
+    openDetailsModal();
+  }
+}
+function removeSolve(blockIndex, solveIndex) {
+  remove2(blockIndex, solveIndex);
+  if (averageObj.mode === "classic") updateClassicStats(true);
+  const session2 = getCurrentSession();
+  session2.classicStats = structuredClone(classicStats);
+  saveSessions();
+  renderHistory();
+  if (!modal.classList.contains("hidden")) {
+    openDetailsModal();
+  }
+}
+function submitSolution(blockIndex, solveIndex) {
+  const block = modalBlocks[blockIndex];
+  const solve = block.solves[solveIndex];
+  const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
+  const value = input.value;
+  applyScramble(solve.scramble, true);
+  applySolution(value, true);
+  const moveCount2 = getLastMoveCount();
+  const tps = moveCount2 / solve.time;
+  const isSolved2 = checkSolved();
+  const status = isSolved2 ? "Solved" : "DNF";
+  solve.solution = value;
+  solve.tps = tps;
+  solve.moves = moveCount2;
+  solve.status = status;
+  document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount2} | TPS: ${tps.toFixed(2)}`;
+  saveSessions();
+}
 let restoringSession = false;
 const categorySelect = document.getElementById("categorySelect");
-const eventSelect$1 = document.getElementById("eventSelect");
+const eventSelect = document.getElementById("eventSelect");
 const modeSelect = document.getElementById("modeSelect");
 const validCategories = scrdata.filter(
   ([name]) => !name.startsWith("===")
 );
 categorySelect.innerHTML = "";
-eventSelect$1.innerHTML = "";
+eventSelect.innerHTML = "";
 validCategories.forEach(([categoryName]) => {
   const option = document.createElement("option");
   option.value = categoryName;
@@ -17207,9 +18123,9 @@ function restoreSelectorsFromSession() {
   }
   categorySelect.dispatchEvent(new Event("change"));
   if (session2.scrambleType) {
-    eventSelect$1.value = session2.scrambleType;
+    eventSelect.value = session2.scrambleType;
   }
-  eventSelect$1.dispatchEvent(new Event("change"));
+  eventSelect.dispatchEvent(new Event("change"));
   if (session2.mode) {
     modeSelect.value = session2.mode;
   }
@@ -17220,7 +18136,7 @@ categorySelect.addEventListener("change", () => {
   if (!restoringSession) {
     saveSessions();
   }
-  eventSelect$1.innerHTML = "";
+  eventSelect.innerHTML = "";
   const category = validCategories.find(
     ([name]) => name === categorySelect.value
   );
@@ -17231,32 +18147,20 @@ categorySelect.addEventListener("change", () => {
     const option = document.createElement("option");
     option.value = code;
     option.textContent = label;
-    eventSelect$1.appendChild(option);
+    eventSelect.appendChild(option);
   });
   if (!restoringSession) {
-    eventSelect$1.dispatchEvent(new Event("change"));
+    eventSelect.dispatchEvent(new Event("change"));
   }
 });
 restoringSession = true;
 restoreSelectorsFromSession();
 restoringSession = false;
-eventSelect$1.addEventListener("change", async (e) => {
+eventSelect.addEventListener("change", async (e) => {
   const session2 = getCurrentSession();
-  session2.scrambleType = eventSelect$1.value;
-  eventObj.event = eventSelect$1.value;
-  if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
-    timerSettObj.timerFlag = true;
-    document.getElementById("typing-container").style.display = "none";
-    document.querySelector(".timerOpt").style.display = "none";
-  } else {
-    document.querySelector(".timerOpt").style.display = "block";
-    if (timeInsertion === "Typing") {
-      document.getElementById("typing-container").style.display = "block";
-      timerObj.timerFlag = true;
-    } else {
-      timerSettObj.timerFlag = false;
-    }
-  }
+  session2.scrambleType = eventSelect.value;
+  eventObj.event = eventSelect.value;
+  showTimeInsertion(eventObj.event, timeInsertion, timerSettObj);
   session2.scrambleType = eventObj.event;
   if (!restoringSession) {
     saveSessions();
@@ -17264,57 +18168,13 @@ eventSelect$1.addEventListener("change", async (e) => {
   if (!restoringSession) {
     syncModeWithEvent(eventObj.event);
   }
+  showTimerLayout(vis);
   if (["333ni", "444bld", "555bld"].includes(eventObj.event)) {
-    document.getElementById("penaltyOkBtn").style.display = "block";
-    document.getElementById("penaltyPlus2Btn").style.display = "block";
-    document.getElementById("penaltyDnfBtn").style.display = "block";
-    document.getElementById("removeLastBtn").style.display = "block";
-    document.getElementById("submit-moves").style.display = "none";
-    document.getElementById("fmc-cube").style.display = "none";
-    document.getElementById("fmc-solution").style.display = "none";
-    document.getElementById("fmc-solution-test").style.display = "none";
-    document.getElementById("fmc-move-count").style.display = "none";
-    document.getElementById("fmc-form").style.display = "none";
-    document.getElementById("countdown").style.display = "none";
-    document.getElementById("touchOverlay").style.display = "block";
-    document.getElementById("typing-container").style.display = "none";
-    document.getElementById("timerins").style.marginTop = "0px";
-    document.getElementById("touchOverlay").style.display = "none";
-    document.getElementById("open-mbld-modal").style.display = "none";
-    if (vis === document.querySelector("#scrambleVis")) {
-      document.getElementById("timer").style.fontSize = "140px";
-    } else {
-      document.getElementById("timer").style.fontSize = "72px";
-    }
-    document.getElementById("timer").textContent = "0.00";
     timerSettObj.previousInspectionType = timerSettObj.inspectionType;
     timerSettObj.inspectionType = "None";
     document.getElementById("inspection-type").value = "None";
     localStorage.setItem("inspectionType", "None");
   } else {
-    document.getElementById("penaltyOkBtn").style.display = "block";
-    document.getElementById("penaltyPlus2Btn").style.display = "block";
-    document.getElementById("penaltyDnfBtn").style.display = "block";
-    document.getElementById("removeLastBtn").style.display = "block";
-    document.getElementById("submit-moves").style.display = "none";
-    document.getElementById("fmc-cube").style.display = "none";
-    document.getElementById("fmc-solution").style.display = "none";
-    document.getElementById("fmc-solution-test").style.display = "none";
-    document.getElementById("fmc-move-count").style.display = "none";
-    document.getElementById("fmc-form").style.display = "none";
-    document.getElementById("countdown").style.display = "none";
-    document.getElementById("touchOverlay").style.display = "block";
-    document.getElementById("typing-container").style.display = "none";
-    document.getElementById("timerins").style.marginTop = "0px";
-    document.getElementById("touchOverlay").style.display = "none";
-    document.getElementById("open-mbld-modal").style.display = "none";
-    document.getElementById("openConfig").style.display = "none";
-    if (vis === document.querySelector("#scrambleVis")) {
-      document.getElementById("timer").style.fontSize = "140px";
-    } else {
-      document.getElementById("timer").style.fontSize = "72px";
-    }
-    document.getElementById("timer").textContent = "0.00";
     timerSettObj.inspectionType = timerSettObj.previousInspectionType;
     document.getElementById("inspection-type").value = timerSettObj.previousInspectionType;
     localStorage.setItem("inspectionType", timerSettObj.previousInspectionType);
@@ -17365,23 +18225,6 @@ function syncModeWithEvent(event) {
     saveSessions();
   }
 }
-const modal = document.getElementById("detailsModal");
-document.getElementById("modalBody");
-const closeModalBtn = document.getElementById("closeModalBtn");
-closeModalBtn.onclick = () => modal.classList.add("hidden");
-modal.onclick = (e) => {
-  if (e.target === modal) modal.classList.add("hidden");
-};
-const statsPage = document.getElementById("stats-page");
-const openStatsBtn = document.getElementById("open-stats-btn");
-const closeStatsBtn = document.getElementById("close-stats-btn");
-openStatsBtn.addEventListener("click", () => {
-  renderStatsPage();
-  statsPage.classList.add("open");
-});
-closeStatsBtn.addEventListener("click", () => {
-  statsPage.classList.remove("open");
-});
 document.addEventListener("sessionChanged", async () => {
   restoringSession = true;
   changedSession();
@@ -17392,8 +18235,8 @@ document.addEventListener("sessionChanged", async () => {
   }
   const ev = session2.scrambleType || "333";
   eventObj.event = ev;
-  eventSelect$1.value = ev;
-  eventSelect$1.dispatchEvent(new Event("change"));
+  eventSelect.value = ev;
+  eventSelect.dispatchEvent(new Event("change"));
   restoringSession = false;
   renderHistory();
   if (eventObj.event === "333fm") {
@@ -17403,29 +18246,7 @@ document.addEventListener("sessionChanged", async () => {
   } else if (eventObj.event === "r3ni") {
     handleMBLD();
   } else {
-    document.getElementById("penaltyOkBtn").style.display = "block";
-    document.getElementById("penaltyPlus2Btn").style.display = "block";
-    document.getElementById("penaltyDnfBtn").style.display = "block";
-    document.getElementById("removeLastBtn").style.display = "block";
-    document.getElementById("submit-moves").style.display = "none";
-    document.getElementById("fmc-cube").style.display = "none";
-    document.getElementById("fmc-solution").style.display = "none";
-    document.getElementById("fmc-solution-test").style.display = "none";
-    document.getElementById("fmc-move-count").style.display = "none";
-    document.getElementById("fmc-form").style.display = "none";
-    document.getElementById("countdown").style.display = "none";
-    document.getElementById("touchOverlay").style.display = "block";
-    document.getElementById("typing-container").style.display = "none";
-    document.getElementById("timerins").style.marginTop = "0px";
-    document.getElementById("open-mbld-modal").style.display = "none";
-    document.getElementById("openConfig").style.display = "none";
-    document.getElementById("touchOverlay").style.display = "block";
-    if (vis === document.querySelector("#scrambleVis")) {
-      document.getElementById("timer").style.fontSize = "140px";
-    } else {
-      document.getElementById("timer").style.fontSize = "72px";
-    }
-    document.getElementById("timer").textContent = "0.00";
+    showTimerLayout(vis);
   }
   await displayScramble(eventObj.event, vis);
 });
@@ -17452,10 +18273,9 @@ avgObj.clearBtn.onclick = () => {
   clearAverages();
   renderHistory();
 };
-avgObj.openSessionBtn.onclick = openDetailsModal;
-let plus2CounterObj = { penalty: 0 };
+avgObj.openSessionBtn.onclick = () => openDetailsModal();
 avgObj.penaltyOkBtn.onclick = () => {
-  applyPenaltyToLast(null);
+  applyPenaltyToLast(null, setPenalty);
   plus2CounterObj.penalty = 0;
   document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`;
   renderHistory();
@@ -17463,19 +18283,19 @@ avgObj.penaltyOkBtn.onclick = () => {
 avgObj.penaltyPlus2Btn.onclick = () => {
   if (plus2CounterObj.penalty === 12) {
     plus2CounterObj.penalty = 0;
-    applyPenaltyToLast(null);
+    applyPenaltyToLast(null, setPenalty);
   } else {
     plus2CounterObj.penalty += 2;
-    applyPenaltyToLast(plus2CounterObj.penalty);
+    applyPenaltyToLast(plus2CounterObj.penalty, setPenalty);
   }
   document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`;
   renderHistory();
 };
 avgObj.penaltyDnfBtn.onclick = () => {
-  applyPenaltyToLast("DNF");
+  applyPenaltyToLast("DNF", setPenalty);
   renderHistory();
 };
-avgObj.removeLastBtn.onclick = () => removeLastSolve();
+avgObj.removeLastBtn.onclick = () => removeLastSolve(removeSolve);
 renderHistory();
 document.getElementById("scramble-button").addEventListener("click", () => {
   if (timerDOMObj.scrDisplayFlag) {
@@ -17490,369 +18310,79 @@ document.getElementById("scramble-button").addEventListener("click", () => {
   document.getElementById("scramble-button").style.justifySelf = "left";
   document.getElementById("scramble-button").innerHTML = "close";
 });
-if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
-  timerSettObj.timerFlag = true;
-  document.getElementById("typing-container").style.display = "none";
-  document.querySelector(".timerOpt").style.display = "none";
-} else {
-  document.querySelector(".timerOpt").style.display = "block";
-  if (timeInsertion === "Typing") {
-    document.getElementById("typing-container").style.display = "block";
-    timerObj.timerFlag = true;
-  } else {
-    timerSettObj.timerFlag = false;
-  }
-}
-const eventSelect = document.getElementById("eventSelect");
-const session = getCurrentSession();
-eventObj.event = session.scrambleType || "333";
-eventSelect.value = eventObj.event;
-await displayScramble(eventObj.event, vis);
-if (eventObj.event === "333fm") handleFMC();
-if (eventObj.event === "r3ni") handleMBLD();
-function timerPhases(delayFlagType2) {
-  if (timerObj.timerPhase !== 1) {
-    timerObj.timerPhase++;
-  } else if (timerObj.timerPhase === 1) {
-    if (delayFlagType2 === "None") {
-      setTimerDisplay("color", "limeGreen");
-      timerObj.timerPhase++;
-    } else {
-      setTimerDisplay("color", "red");
-      timerObj.wcaInterval = setInterval(() => {
-        setTimerDisplay("color", "limeGreen");
-        timerObj.wcaDelayCount++;
-      }, 300);
-    }
-  }
-}
-function wcaDelayFlag() {
-  if (timerObj.wcaDelayCount >= 1) {
-    timerObj.timerPhase++;
-    timerObj.wcaDelayCount = 0;
-    clearInterval(timerObj.wcaInterval);
-  } else {
-    setTimerDisplay("color", `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, "--text-main")}`);
-    timerObj.wcaDelayCount = 0;
-    clearInterval(timerObj.wcaInterval);
-  }
-}
-let seconds = 0;
-let interval = null;
-let running = false;
-function inspection2() {
-  if (!running) {
-    running = true;
-    setTimerDisplay("time", seconds);
-    interval = setInterval(() => {
-      seconds++;
-      setTimerDisplay("time", seconds);
-      if (seconds === 8) new Audio("./audio/8seconds.mp3").play();
-      if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
-      if (seconds === 17) {
-        running = false;
-        clearInterval(interval);
-        interval = null;
-        seconds = 0;
-        if (lastTime) {
-          setTimerDisplay("time", lastTime);
-        } else {
-          setTimerDisplay("time", "0.00");
-        }
+let lastTime = null;
+function initTypingSubmission() {
+  updateTypingUI();
+  const addBtn = document.getElementById("typed-time-add");
+  const input = document.getElementById("typed-time");
+  if (addBtn && input) {
+    addBtn.addEventListener("click", () => {
+      const rawInput = input.value;
+      const normalized = normalizeTypedTime(rawInput);
+      if (!normalized) {
+        console.warn("[timeTyping] invalid input rejected");
+        input.style.border = "2px solid #e74c3c";
+        input.focus();
+        setTimeout(() => input.style.border = "", 1500);
+        return;
       }
-    }, 1e3);
-  } else {
-    running = false;
-    clearInterval(interval);
-    interval = null;
-    seconds = 0;
-    if (lastTime) {
-      setTimerDisplay("time", lastTime);
-    } else {
-      setTimerDisplay("time", "0.00");
-    }
-  }
-}
-function inspection(inspecType) {
-  timerObj.inspecting = true;
-  const start = performance.now();
-  let lastSecond = -1;
-  timerObj.interval = setInterval(() => {
-    const elapsedMs = performance.now() - start;
-    const seconds2 = Math.floor(elapsedMs / 1e3);
-    const secondsWithDecimals = elapsedMs / 1e3;
-    timerObj.inspection = parseFloat(secondsWithDecimals.toFixed(2));
-    if (inspecType === "WCA") {
-      if (seconds2 !== lastSecond) {
-        lastSecond = seconds2;
-        if (seconds2 === 8) new Audio("./audio/8seconds.mp3").play();
-        if (seconds2 === 12) new Audio("./audio/12seconds.mp3").play();
-        if (seconds2 === 17) clearInterval(timerObj.interval);
+      const seconds2 = parseTimeToSeconds(normalized);
+      if (!Number.isFinite(seconds2)) {
+        console.warn("[timeTyping] parsed value is not finite");
+        input.style.border = "2px solid #e74c3c";
+        input.focus();
+        setTimeout(() => input.style.border = "", 1500);
+        return;
       }
-    }
-    setTimerDisplay("time", seconds2);
-  }, 10);
-}
-function truncate2(n) {
-  return (Math.floor(n * 100) / 100).toFixed(2);
-}
-function formatTime(milisseconds) {
-  let seconds2 = milisseconds / 1e3;
-  let minutes = Math.floor(seconds2 / 60);
-  let hours = Math.floor(minutes / 60);
-  if (minutes < 1) {
-    return truncate2(seconds2);
-  } else if (minutes >= 1) {
-    seconds2 = seconds2 - 60 * minutes;
-    return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
-  } else if (minutes >= 60) {
-    minutes = minutes - 60 * hours;
-    return `${hours}: ${minutes < 10 ? "0" : ""}${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
-  }
-}
-function startTimer(param) {
-  setTimerDisplay("color", `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, "--text-main")}`);
-  clearInterval(timerObj.interval);
-  timerObj.inspecting = false;
-  const startTime = performance.now();
-  timerObj.startTime = startTime;
-  timerObj.interval = setInterval(() => {
-    const displayMode = document.getElementById("timer-display")?.value;
-    if (displayMode === "Hide") {
-      setTimerDisplay("time", "Solving");
-    } else {
-      setTimerDisplay("time", formatTime(performance.now() - startTime));
-    }
-  }, 10);
-}
-function stopTimer() {
-  clearInterval(timerObj.interval);
-  setTimerDisplay("time", formatTime(performance.now() - timerObj.startTime));
-  timerObj.timerPhase = 0;
-}
-const timerDOMObj = {
-  scrDisplayFlag: false
-};
-function setTimerDisplay(colorOrTime, content) {
-  if (colorOrTime === "color") {
-    document.getElementById("timer").style.color = content;
-  } else if (colorOrTime === "time") {
-    document.getElementById("timer").textContent = content;
-  }
-}
-function showOnlyTimerSafe() {
-  const timer = document.getElementById("timer");
-  const overlay2 = document.getElementById("touchOverlay");
-  if (!timer || !overlay2) return;
-  function hideRecursively(element) {
-    if (element === timer || element === overlay2) return;
-    if (element.contains(timer)) {
-      [...element.children].forEach(hideRecursively);
-    } else {
-      element.classList.add("focus-hidden");
-    }
-  }
-  hideRecursively(document.body);
-}
-function restoreUI() {
-  document.querySelectorAll(".focus-hidden").forEach((el) => {
-    el.classList.remove("focus-hidden");
-  });
-}
-document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
-  const touchTarget = e.target;
-  if (touchTarget && touchTarget.closest && (touchTarget.closest("input") || touchTarget.closest("#typing-container"))) {
-    return;
-  }
-  e.preventDefault();
-  if (e.repeat || timerSettObj.timerFlag) return;
-  if (timerObj.timerPhase === 2) {
-    handleSplitOrStop();
-    return;
-  }
-  if (timerDOMObj.scrDisplayFlag) {
-    document.querySelector(".panel-cube2").style.display = "none";
-    document.getElementById("scramble-button").style.justifySelf = "center";
-    document.getElementById("scramble-button").innerHTML = "Scramble visualizer";
-    timerDOMObj.scrDisplayFlag = false;
-    return;
-  }
-  if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None") {
-    timerObj.timerPhase = 1;
-  }
-  timerPhases(delayFlagType);
-  if (timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None" && localStorage.getItem("inspectionStart") === "press-start") {
-    inspection(timerSettObj.inspectionType);
-  }
-});
-document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape") {
-    clearInterval(timerObj.interval);
-    clearInterval(timerObj.wcaInterval);
-    timerObj.inspecting = false;
-    timerObj.inspection = 0;
-    timerObj.timerPhase = 0;
-    document.getElementById("timer").textContent = "0.00";
-    restoreUI();
-  }
-});
-document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
-  const touchTarget = e.target;
-  if (touchTarget && touchTarget.closest && (touchTarget.closest("input") || touchTarget.closest("#typing-container"))) {
-    return;
-  }
-  e.preventDefault();
-  if (e.repeat) return;
-  if (timerObj.timerPhase === 1) {
-    wcaDelayFlag();
-  }
-  if (timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None" && localStorage.getItem("inspectionStart") === "press-end") {
-    inspection(timerSettObj.inspectionType);
-  }
-  if (timerObj.timerPhase === 2) {
-    startTimer();
-    showOnlyTimerSafe();
-  }
-});
-document.getElementById("touchOverlay").addEventListener("touchstart", () => {
-  if (!timerSettObj.timerFlag) return;
-  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
-  inspection2();
-});
-document.getElementById("inspection-btn").addEventListener("click", () => {
-  if (!timerSettObj.timerFlag) return;
-  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
-  inspection2();
-});
-document.addEventListener("keydown", (e) => {
-  if (!timerSettObj.timerFlag) return;
-  if (e.code !== "Space" || e.repeat) return;
-  if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
-  inspection2();
-});
-function isTyping() {
-  const el = document.activeElement;
-  return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
-}
-document.addEventListener("keydown", (e) => {
-  if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
-  if (timerObj.timerPhase === 2) {
-    handleSplitOrStop();
-    return;
-  }
-  if (timerObj.timerPhase === 0 && timerSettObj.inspectionType === "None" && e.key === " ") {
-    e.preventDefault();
-    timerObj.timerPhase = 1;
-  }
-  if (e.key === " ") {
-    e.preventDefault();
-    timerPhases(delayFlagType);
-  }
-  if (timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None" && localStorage.getItem("inspectionStart") === "press-start" && e.key === " ") {
-    e.preventDefault();
-    inspection(timerSettObj.inspectionType);
-  }
-});
-document.addEventListener("keydown", (e) => {
-  if (e.key === "Tab") {
-    e.preventDefault();
-    let timeInsertion2 = localStorage.getItem("timeInsertion") || "Timer";
-    if (timeInsertion2 === "Typing") {
-      timeInsertion2 = "Timer";
-      timerSettObj.timerFlag = false;
-    } else if (timeInsertion2 === "Timer") {
-      timeInsertion2 = "Typing";
-      timerSettObj.timerFlag = true;
-    }
-    localStorage.setItem("timeInsertion", timeInsertion2);
-    updateTypingUI();
-  }
-});
-function handleSplitOrStop() {
-  console.log("Before:", timerObj.currentSolvePhase);
-  const now = performance.now();
-  const totalElapsed = now - timerObj.startTime;
-  const phaseTime = formatTime(totalElapsed - timerObj.lastSplitTime);
-  timerObj.lastSplitTime = totalElapsed;
-  timerObj.solvePhases.push(phaseTime);
-  timerObj.currentSolvePhase++;
-  console.log("Phase:", timerObj.currentSolvePhase, phaseTime);
-  if (timerObj.currentSolvePhase < timerObj.totalSolvePhases) {
-    return;
-  }
-  plus2CounterObj.penalty = 0;
-  document.getElementById("penaltyPlus2Btn").textContent = "+2";
-  stopTimer();
-  const finalTime = document.getElementById("timer").innerHTML;
-  const block = averageOfN(
-    finalTime,
-    currentScramble,
-    timerObj.inspection,
-    timerSettObj.inspectionType,
-    false,
-    false,
-    false,
-    timerObj.solvePhases
-  );
-  const session2 = getCurrentSession();
-  session2.classicStats = structuredClone(classicStats);
-  if (block) {
-    addAverageBlock(block);
-  }
-  timerObj.solvePhases = [];
-  timerObj.currentSolvePhase = 0;
-  timerObj.lastSplitTime = 0;
-  saveSessions();
-  renderHistory();
-  displayScramble(eventObj.event, vis);
-  restoreUI();
-}
-document.addEventListener("keyup", (e) => {
-  if (e.key !== " ") return;
-  e.preventDefault();
-  if (e.repeat) return;
-  if (timerObj.timerPhase === 1) {
-    wcaDelayFlag();
-  }
-  if (timerObj.timerPhase === 1 && !timerObj.inspecting && timerSettObj.inspectionType !== "None" && localStorage.getItem("inspectionStart") === "press-end") {
-    inspection(timerSettObj.inspectionType);
-  }
-  if (timerObj.timerPhase === 2 && timerObj.currentSolvePhase === 0) {
-    startTimer();
-    showOnlyTimerSafe();
-  }
-});
-function bindVisibilityToggle(selectId, targetClass) {
-  const select = document.getElementById(selectId);
-  const targets = document.querySelectorAll(`.${targetClass}`);
-  if (!select || targets.length === 0) return;
-  const storageKey = `visibility-${selectId}`;
-  const savedValue = localStorage.getItem(storageKey);
-  if (savedValue) {
-    select.value = savedValue;
-  }
-  function apply() {
-    const isShown = select.value === "show";
-    targets.forEach((el) => {
-      el.style.display = isShown ? "" : "none";
+      lastTime = formatSecondsToTime(seconds2);
+      document.getElementById("timer").textContent = lastTime;
+      const block = averageOfN(seconds2, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
+      if (block) addAverageBlock(block);
+      renderHistory();
+      displayScramble(eventObj.event, vis);
+      saveSessions();
+      input.value = "";
     });
-    localStorage.setItem(storageKey, select.value);
+    input.addEventListener("keydown", (ev) => {
+      if (ev.key === "Enter") {
+        ev.preventDefault();
+        addBtn.click();
+      }
+    });
   }
-  select.addEventListener("change", apply);
-  apply();
 }
-bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
-bindVisibilityToggle("toggle-statistics", "right-sidebar");
-bindVisibilityToggle("toggle-session-history", "left-sidebar");
-bindVisibilityToggle("toggle-scramble-text", "scramble-container");
-bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
-bindVisibilityToggle("toggle-average-preview", "main-footer");
-const overlay = document.getElementById("settingsOverlay");
-const openBtn = document.getElementById("settingsBtn");
-const closeBtn = document.getElementById("closeSettings");
-openBtn.addEventListener("click", () => {
-  overlay.classList.add("open");
-});
-closeBtn.addEventListener("click", () => {
-  overlay.classList.remove("open");
-});
+if (document.readyState === "loading") {
+  document.addEventListener("DOMContentLoaded", initTypingSubmission);
+} else {
+  initTypingSubmission();
+}
+function normalizeTypedTime(raw) {
+  raw = raw.trim().replace(",", ".");
+  if (!raw) return null;
+  if (raw.includes(":") || raw.includes(".")) {
+    return raw;
+  }
+  if (!/^\d+$/.test(raw)) {
+    return null;
+  }
+  const digits = raw;
+  if (digits.length === 1) {
+    const result2 = `0.0${digits}`;
+    return result2;
+  }
+  if (digits.length === 2) {
+    const result2 = `0.${digits}`;
+    return result2;
+  }
+  const hundredths = digits.slice(-2);
+  const rest = digits.slice(0, -2);
+  if (rest.length <= 2) {
+    const result2 = `${rest}.${hundredths}`;
+    return result2;
+  }
+  const seconds2 = rest.slice(-2);
+  const minutes = rest.slice(0, -2);
+  const result = `${minutes}:${seconds2}.${hundredths}`;
+  return result;
+}
+await initEvent();

@@ -1,1 +1,0 @@
-import{n,e as o}from"./comlink-C67WP39w.js";var r=typeof globalThis.Worker>"u"&&typeof globalThis.WorkerNavigator>"u";async function a(){const{parentPort:e}=globalThis.process.getBuiltinModule("node:worker_threads");return n(e)}function s(e){r?(async()=>o(e,await a()))():o(e)}export{s as e,a as n};
