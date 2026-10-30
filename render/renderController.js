@@ -1,10 +1,8 @@
-import { averageObj, parseTimeToSeconds, classicStats } from "../average/avgController.js";
-import { formatSecondsToTime, computeAverage, formatDisplayTime } from "../average/avgController.js";
+import { averageObj, classicStats } from "../average/avgController.js";
 import { getSessionAverages } from "../session/sessionController.js";
-import { getStatistcs, getStatisticsByDate } from "../stats/statsController.js";
-import { timerSettObj } from "../settings/timerSetObj.js";
+import { getStatistics, getStatisticsByDate } from "../stats/statsController.js";
 import { getCurrentSession } from "../session/sessionController.js";
-import { formatStatValue as formatStatValueWith } from "./renderHelpers.js";
+import { formatStatValue as formatStatValueWith, wrapTimesValue } from "./renderHelpers.js";
 import { renderAvgStats } from "./renderBufferAvgStats.js";
 import { renderCurrentAverage } from "./renderAvgBuffer.js";
 import { renderHistoryList } from "./renderHistoryList.js";
@@ -17,7 +15,7 @@ function formatStatValue(value) {
 
 function renderHistory() {
     const averages = getSessionAverages();
-    const stats = getStatistcs();
+    const stats = getStatistics();
     const todayStats = getStatisticsByDate("day")
 
     const currentContainer = document.getElementById("currentAverageValue");
@@ -80,6 +78,7 @@ export {
     renderStats, 
     renderAvgStats,
     renderHistory,
-    formatStatValue
+    formatStatValue,
+    wrapTimesValue
 };
 

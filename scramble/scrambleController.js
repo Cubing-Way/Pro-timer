@@ -1,5 +1,4 @@
 import { csTimer } from "../main/cstimer.js";
-import { scrdata } from "./scrData.js";
 import { setVisualizerScale } from "./scrVisualiser.js";
 import { getScrambleConfig, autoFitText, formatMegaminx } from "./scrHelpers.js";
 

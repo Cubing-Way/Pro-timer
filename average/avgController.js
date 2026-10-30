@@ -1,8 +1,7 @@
 import { 
     parseTimeToSeconds, 
-    formatSecondsToTime, 
-    formatSolveTime,
-    formatDisplayTime 
+    formatSecondsToTime,
+    formatDisplayTime
 } from "./avgHelper.js";
 
 import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
@@ -104,7 +103,6 @@ function averageOfN(
 export {
     parseTimeToSeconds,
     formatSecondsToTime,
-    formatSolveTime,
     computeAverage,
     formatDisplayTime,
     updateClassicStats,

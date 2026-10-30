@@ -1,49 +1,8 @@
 import { parseTimeToSeconds, formatSecondsToTime } from "../average/avgController.js";
 
-function getAveragesSource(session, averageObj, classicStats) {
-  if (averageObj.mode === "classic") {
-    return {
-      ao5: classicStats.history.ao5,
-      mo3: classicStats.history.mo3,
-      ao12: classicStats.history.ao12,
-      ao100: classicStats.history.ao100
-    };
-  }
-
-  return null; // normal mode uses session.averages
-}
-
 function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
   return offsetMinutes * 60 * 1000;
-}
-
-function startOfDayLocal(ts = Date.now()) {
-  const offset = getUserOffsetMs(ts);
-
-  const d = new Date(ts - offset); // shift to "local-like UTC"
-  d.setUTCHours(0, 0, 0, 0);
-
-  return d.getTime() + offset; // shift back
-}
-
-function endOfDayLocal(ts = Date.now()) {
-  const offset = getUserOffsetMs(ts);
-
-  const d = new Date(ts - offset);
-  d.setUTCHours(23, 59, 59, 999);
-
-  return d.getTime() + offset;
-}
-
-function daysAgoLocal(n) {
-  const now = Date.now();
-  const offset = getUserOffsetMs(now);
-
-  const d = new Date(now - offset);
-  d.setUTCDate(d.getUTCDate() - n);
-
-  return d.getTime() + offset;
 }
 
 // ===============================
@@ -220,82 +179,6 @@ function filterAveragesByRange(session, range) {
     });
 }
 
-function getGraphData(session, averageObj) {
-  const solves = getAllSolvesFromSession(session, averageObj);
-
-  const labels = [];
-  const times = [];
-
-  solves.forEach((solve, i) => {
-    labels.push(i + 1);
-
-    if (solve.penalty === "DNF") {
-      times.push(null);
-    } else if (solve.penalty === "+2") {
-      times.push(solve.time + 2);
-    } else {
-      times.push(solve.time);
-    }
-  });
-
-  return { labels, times };
-}
-
-function getAverageGraphData(session, averageObj, classicStats) {
-  const labels = [];
-  const averages = [];
-
-  if (averageObj.mode === "classic") {
-    const history = classicStats.history.ao5;
-
-    history.forEach((avg, i) => {
-      labels.push(i + 1);
-
-      if (avg.avg === "DNF") {
-        averages.push(null);
-      } else {
-        averages.push(avg.avg);
-      }
-    });
-
-  } else {
-    session.averages.forEach((avg, i) => {
-      labels.push(i + 1);
-
-      if (avg.average === "DNF") {
-        averages.push(null);
-      } else {
-        averages.push(parseTimeToSeconds(avg.average));
-      }
-    });
-  }
-
-  return { labels, averages };
-}
-
-
-function getPreviousRange(range) {
-  const now = Date.now();
-  const { start, end } = getRangeTimestamps(range);
-
-  if (!start) return { start: null, end: null };
-
-  const duration = end - start;
-
-  return {
-    start: start - duration,
-    end: start
-  };
-}
-
-function filterSolvesCustomRange(solves, start, end) {
-  if (!start) return solves;
-  return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
-}
-// ===============================
-// RENDER PAGE (UNCHANGED)
-// ===============================
-
 function getAveragesInRange(session, start, end) {
   return session.averages
     .filter(avg => {
@@ -357,25 +240,6 @@ function getSigmaGraphData(averagesArr) {
   return { labels, sigmas };
 }
 
-function getSubXDistribution(solves, threshold) {
-  let subX = 0;
-  let aboveX = 0;
-
-  solves.forEach(solve => {
-    let time = null;
-
-    if (solve.penalty === "DNF") return; // ignore DNFs
-    if (solve.penalty === "+2") time = solve.time + 2;
-    else time = solve.time;
-
-    if (time <= threshold) subX++;
-    else aboveX++;
-  });
-
-  return { subX, aboveX };
-}
-
-
 function getTimeDistribution(solves, thresholds) {
   // Example thresholds: [10, 12, 14]
 
@@ -411,14 +275,7 @@ function getDistributionLabels(thresholds) {
   const labels = [];
 
   for (let i = 0; i < thresholds.length; i++) {
-    const current = formatSecondsToTime(thresholds[i]);
-
-    if (i === 0) {
-      labels.push(`Sub ${current}`);
-    } else {
-      const prev = formatSecondsToTime(thresholds[i - 1]);
-      labels.push(`Sub ${current}`);
-    }
+    labels.push(`Sub ${formatSecondsToTime(thresholds[i])}`);
   }
 
   labels.push(`> ${formatSecondsToTime(thresholds[thresholds.length - 1])}`);
@@ -438,18 +295,6 @@ function filterEmptyBuckets(labels, data) {
   });
 
   return { labels: filteredLabels, data: filteredData };
-}
-
-function normalizeThresholds(thresholds) {
-  return thresholds
-    .map(t => {
-      if (typeof t === "string") {
-        return parseTimeToSeconds(t); // "1:30" → 90
-      }
-      return t; // already number
-    })
-    .filter(t => !isNaN(t))
-    .sort((a, b) => a - b); // VERY IMPORTANT for buckets
 }
 
 function generateSmartThresholds() {
@@ -498,28 +343,18 @@ function buildAvgMaps(classicStats) {
 }
 
 export {
-  getAveragesSource,
   getUserOffsetMs,
-  startOfDayLocal,
-  endOfDayLocal,
-  daysAgoLocal,
   getAllSolvesFromSession,
   getStatisticsFromSolves,
   getRangeTimestamps,
   filterSolvesByRange,
   filterAveragesByRange,
-  getGraphData,
-  getAverageGraphData,
-  getPreviousRange,
-  filterSolvesCustomRange,
   getAveragesInRange,
   getLastRangeWithData,
   getSigmaGraphData,
-  getSubXDistribution,
   getTimeDistribution,
   getDistributionLabels,
   filterEmptyBuckets,
-  normalizeThresholds,
   generateSmartThresholds,
   buildAvgMaps
 };

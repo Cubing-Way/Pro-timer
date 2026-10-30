@@ -1,6 +1,6 @@
 import { currentScramble, displayScramble } from "../scramble/scrambleController.js";
 import { eventObj, vis, timerWarnings } from "../event/eventController.js";
-import { timerSettObj } from "../settings/timerSetObj.js";
+import { timerSettObj } from "../settings/settingsState.js";
 import { delayFlagType } from "../settings/settingsController.js";
 import { timerObj, countdownObj } from "./timerState.js";
 import { timerPhases } from "./timerPhases.js";
@@ -8,7 +8,7 @@ import { inspection } from "./inspection.js";
 import { wcaDelayFlag } from "./timerPhases.js";
 import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
-import { averageOfN, averageObj, classicStats } from "../average/avgController.js";
+import { averageOfN, classicStats } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { addAverageBlock } from "../session/sessionController.js";
 import { saveSessions, getCurrentSession} from "../session/sessionController.js";
@@ -21,7 +21,6 @@ import { startTimer2, stopTimer2 } from "./countdownTimer.js";
 // ===============================
 // Countdown Timer Elements
 // ===============================
-const display = document.getElementById("timer");
 const startBtn = document.getElementById("countdown");
 const stopBtn = document.getElementById("submit-moves");
 
@@ -274,7 +273,6 @@ document.addEventListener("keydown", (e) => {
 });
 
 function handleSplitOrStop() {
-    console.log("Before:", timerObj.currentSolvePhase);
 
     const now = performance.now();
     const totalElapsed = (now - timerObj.startTime);
@@ -288,7 +286,6 @@ function handleSplitOrStop() {
     timerObj.solvePhases.push(phaseTime);
     timerObj.currentSolvePhase++;
 
-    console.log("Phase:", timerObj.currentSolvePhase, phaseTime);
 
     // If NOT last phase → keep running
     if (timerObj.currentSolvePhase < timerObj.totalSolvePhases) {

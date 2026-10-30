@@ -1,7 +1,7 @@
 import Chart from "chart.js/auto";
 import { getCurrentSession } from "../session/sessionController.js";
 import { averageObj, parseTimeToSeconds, classicStats } from "../average/avgController.js";
-import { formatSecondsToTime, formatDisplayTime, computeAverage } from "../average/avgController.js";
+import { formatSecondsToTime, formatDisplayTime } from "../average/avgController.js";
 import {
   getAllSolvesFromSession,
   getStatisticsFromSolves,
@@ -42,7 +42,7 @@ closeStatsBtn.addEventListener("click", () => {
 // ===============================
 // PUBLIC API
 // ===============================
-function getStatistcs() {
+function getStatistics() {
   const session = getCurrentSession();
   const allSolves = getAllSolvesFromSession(session, averageObj);
   return getStatisticsFromSolves(allSolves, session, averageObj, classicStats);
@@ -148,7 +148,6 @@ const distributionLabels = getDistributionLabels(thresholds);
     existingChart.destroy(); // prevents duplicate charts
   }
 
-  const sessionData = getCurrentSession();
 const labels = [];
 const times = [];
 
@@ -255,11 +254,7 @@ const comparisonLabels = Array.from(
 );
 
 const comparisonCtx = document.getElementById("comparisonChart");
-console.log("Current range:", start, end);
-console.log("Previous range:", prevRange);
 
-console.log("Current avgs:", currentAvgs);
-console.log("Previous avgs:", previousAvgs);
 new Chart(comparisonCtx, {
   type: "bar",
   data: {
@@ -353,13 +348,6 @@ new Chart(sigmaCtx, {
     }
   }
 });
-
-const existingSubX = Chart.getChart("subXChart");
-if (existingSubX) {
-  existingSubX.destroy();
-}
-
-const subXCtx = document.getElementById("subXChart");
 
 const existingDist = Chart.getChart("distributionChart");
 if (existingDist) {
@@ -512,4 +500,4 @@ const sortedSolves = [...filteredSolves].sort(
 }
 
 
-export { getStatistcs, getStatisticsByDate, renderStatsPage };
+export { getStatistics, getStatisticsByDate, renderStatsPage };

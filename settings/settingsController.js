@@ -1,4 +1,4 @@
-import { timerSettObj } from "./timerSetObj.js";
+import { timerSettObj } from "./settingsState.js";
 import { timerObj } from "../timer/timerState.js";
 import { bindVisibilityToggle } from "./layout.js";
 
@@ -261,7 +261,6 @@ phaseInput.addEventListener("input", (e) => {
 
     timerObj.totalSolvePhases = value;
 
-    console.log("Total solve phases set to:", value);
 
     // Optional: persist
     localStorage.setItem("totalSolvePhases", value);

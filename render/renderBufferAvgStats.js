@@ -53,7 +53,6 @@ return `
 
     if (type === "saved") {
         if (!block) return "";
-console.log(block);
         return `                
             Best: ${formatStatValue(parseTimeToSeconds(block.best))}
             <br>

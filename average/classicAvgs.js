@@ -112,57 +112,11 @@ const updateRolling = (n, modeName) => {
         }
     };
 
-    // Normal incremental update
-    if (!recomputeBest) {
-
-        updateBest("mo3", mo3);
-        updateBest("ao5", ao5);
-        updateBest("ao12", ao12);
-        updateBest("ao100", ao100);
-
-    } else {
-
-        // Reset best stats
-        classicStats.best.mo3 = null;
-        classicStats.best.ao5 = null;
-        classicStats.best.ao12 = null;
-        classicStats.best.ao100 = null;
-
-    const recomputeBestAvg = (n, modeName) => {
-        if (solves.length < n) return null;
-
-        let best = null;
-        let bestBlock = null;
-
-        for (let i = n; i <= solves.length; i++) {
-
-            const window = solves.slice(i - n, i);
-
-            const result = computeAverage(window, modeName);
-
-            if (result.dnf) continue;
-
-            if (best === null || result.avg < best) {
-                best = result.avg;
-
-                bestBlock = {
-                    avg: result.avg,
-                    solves: window,
-                    lastSolve: window[window.length - 1] // 🔥 THIS is the key
-                };
-            }
-        }
-
-        return bestBlock;
-    };
-
-        classicStats.best.mo3 = recomputeBestAvg(3, "mo3");
-        classicStats.best.ao5 = recomputeBestAvg(5, "ao5");
-        classicStats.best.ao12 = recomputeBestAvg(12, "ao12");
-        classicStats.best.ao100 = recomputeBestAvg(100, "ao100");
-    }
-
-    console.log("solves length:", solves.length);
+    // Normal incremental update (recomputeBest already returned above)
+    updateBest("mo3", mo3);
+    updateBest("ao5", ao5);
+    updateBest("ao12", ao12);
+    updateBest("ao100", ao100);
 }
 
 export { updateClassicStats };

@@ -122,7 +122,7 @@ function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSess
     saveSessions();
 }
 
-function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats) {
+function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats, setPenalty) {
     const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;
 
@@ -130,18 +130,18 @@ function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassi
         averageObj.solvesArray[target.solveIndex].penalty = penalty;
         updateClassicStats(true);
     } else {
-        window.setPenalty(target.blockIndex, target.solveIndex, penalty);
+        setPenalty(target.blockIndex, target.solveIndex, penalty);
     }
 }
 
-function removeLastSolve(averageObj, getCurrentSession) {
+function removeLastSolve(averageObj, getCurrentSession, removeSolve) {
     const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;
 
     if (target.type === "current") {
-        window.removeSolve(-1, target.solveIndex, true);
+        removeSolve(-1, target.solveIndex);
     } else {
-        window.removeSolve(target.blockIndex, target.solveIndex, true);
+        removeSolve(target.blockIndex, target.solveIndex);
     }
 }
 

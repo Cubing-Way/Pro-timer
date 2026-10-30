@@ -1,16 +1,17 @@
 import { getCurrentSession, addAverageBlock } from "../session/sessionController.js";
 import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
-import { timerSettObj } from "../settings/timerSetObj.js";
+import { timerSettObj } from "../settings/settingsState.js";
 import { timeInsertion } from "../settings/settingsController.js";
 import { timerObj, countdownObj } from "../timer/timerState.js";
 import { averageOfN } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { applyScramble, applySolution, getLastMoveCount, checkSolved } from "../cubisz/api.js";
 import { handleFMC as handleFMCWith } from "./FMC.js";
-import { handleMBLD as handleMBLDWith, calculateMBLDPoints, parseMBLDScramble, renderMBLDGrid } from "./MBLD.js";
+import { handleMBLD as handleMBLDWith, calculateMBLDPoints, renderMBLDGrid } from "./MBLD.js";
+import { showTimerLayout, showTimeInsertion } from "./eventLayout.js";
 
 const eventObj = {
-    event: getCurrentSession().scrambleType || "333", 
+    event: getCurrentSession().scrambleType || "333",
 };
 
 let vis = null;
@@ -19,21 +20,8 @@ let vis = null;
     } else {
         vis = document.querySelector("#scrambleVis2");
     }
-    
 
-    if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
-        timerSettObj.timerFlag = true;
-        document.getElementById("typing-container").style.display = "none";
-        document.querySelector(".timerOpt").style.display = "none";
-    } else {
-        document.querySelector(".timerOpt").style.display = "block";
-        if (timeInsertion === "Typing") {
-            document.getElementById("typing-container").style.display = "block";
-            timerObj.timerFlag = true;
-        } else {
-            timerSettObj.timerFlag = false;
-        }
-    }
+showTimeInsertion(eventObj.event, timeInsertion, timerSettObj);
 
 const eventSelect = document.getElementById("eventSelect");
 
@@ -105,39 +93,31 @@ function handleMBLD(display) {
 }
 
 
-document.getElementById("fmc-form").addEventListener("submit", async (e) => {
-  if (eventObj.event !== "r3ni") return;
-  e.preventDefault();
-  if (document.getElementById("fmc-solution").value !== "") {
-  } else {
+// Pressing Enter in the result field and the Submit result button do the same
+async function submitMBLD() {
+  if (document.getElementById("fmc-solution").value === "") {
     alert("Submit needs a result");
     return;
   }
 
-  const block = averageOfN(calculateMBLDPoints((document.getElementById("fmc-solution").value)), currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
-  if (block) addAverageBlock(block);
-  renderHistory();
-  await displayScramble(eventObj.event, vis);
-  document.getElementById("fmc-solution").value = "";
-});
-
-
-document.getElementById("submit-moves").addEventListener("click", async () => {
-  if (eventObj.event !== "r3ni") return;
-  if (document.getElementById("fmc-solution").value !== "") {
-  } else {
-    alert("Submit needs a result");
-    return;
-  }
-
-  const result = calculateMBLDPoints((document.getElementById("fmc-solution").value));
-
+  const result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
 
   const block = averageOfN(result, currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
   if (block) addAverageBlock(block);
   renderHistory();
   await displayScramble(eventObj.event, vis);
   document.getElementById("fmc-solution").value = "";
+}
+
+document.getElementById("fmc-form").addEventListener("submit", async (e) => {
+  if (eventObj.event !== "r3ni") return;
+  e.preventDefault();
+  await submitMBLD();
+});
+
+document.getElementById("submit-moves").addEventListener("click", async () => {
+  if (eventObj.event !== "r3ni") return;
+  await submitMBLD();
 });
 
 const modal = document.getElementById("mbld-modal");
@@ -159,8 +139,6 @@ openBtn.addEventListener("click", async () => {
   }
 
   modal.style.display = "block";
-
-  const scrambles = parseMBLDScramble(currentScramble);
 
   await renderMBLDGrid(grid, countInput, currentScramble);
 });
@@ -294,4 +272,4 @@ async function initEvent() {
 }
 
 
-export { eventObj, vis, handleFMC, handleMBLD, timerWarnings, initEvent };
+export { eventObj, vis, handleFMC, handleMBLD, showTimerLayout, showTimeInsertion, timerWarnings, initEvent };

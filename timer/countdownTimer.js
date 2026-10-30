@@ -12,7 +12,7 @@ const ONE_HOUR = 60 * 60; // 3600 seconds
 // ===============================
 // Helpers
 // ===============================
-function formatTime(seconds) {
+function formatCountdown(seconds) {
     const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
     const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
     const secs = String(seconds % 60).padStart(2, "0");
@@ -21,7 +21,7 @@ function formatTime(seconds) {
 
 function updateDisplay(countdownObj, display = document.getElementById("timer")) {
     if (!display) return;
-    display.textContent = formatTime(countdownObj.remainingTime);
+    display.textContent = formatCountdown(countdownObj.remainingTime);
 }
 
 // ===============================

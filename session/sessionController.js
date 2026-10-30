@@ -1,5 +1,5 @@
 import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
-import { sessionsObj } from "./sessionObj.js";
+import { sessionsObj } from "./sessionState.js";
 import * as solve from "./solve.js";
 
 // ===============================
@@ -13,7 +13,6 @@ averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
 if (modeSel) modeSel.value = averageObj.mode;
 
-console.log(session);
 
 // ===============================
 // Helpers
@@ -155,39 +154,6 @@ sessionsObj.selectEl.onchange = () => {
 renderSessionSelect();
 changedSession();
 
-function toggleMode() {
-    const session = getCurrentSession();
-    const event = session.scrambleType || "333";
-
-    // Define mode cycles for each event/category
-    let availableModes = ["ao5", "mo3"]; // default
-
-    if (event === "333bf") {
-        availableModes = ["bo5", "ao5", "mo3"];
-    } else if (event === "444bf" || event === "555bf") {
-        availableModes = ["bo3", "ao5", "mo3"];
-    } else if (["666", "777"].includes(event)) {
-        availableModes = ["mo3", "ao5"];
-    }
-
-    // Find current mode index and cycle to next
-    const currentIndex = availableModes.indexOf(averageObj.mode);
-    const nextIndex = (currentIndex + 1) % availableModes.length;
-    averageObj.mode = availableModes[nextIndex];
-
-    session.mode = averageObj.mode;   // ✅ STORE IN SESSION
-
-    saveSessions();
-
-    const sel = document.getElementById("modeSelect");
-    if (sel) sel.value = averageObj.mode;
-
-    // Reset current average buffer
-    averageObj.solvesArray = [];
-    averageObj.scramblesArray = [];
-    averageObj.solveCounter = 0;
-}
-
 function clearAverages() {
     if (!confirm("Delete all averages in this session?")) return;
 
@@ -196,7 +162,6 @@ function clearAverages() {
     // Clear everything first
     session.averages = [];
     averageObj.solvesArray = [];
-    averageObj.scramblesArray = [];
     averageObj.solveCounter = 0;
 
     if(averageObj.mode === "classic") updateClassicStats(true);
@@ -242,10 +207,6 @@ function getSessionAverages() {
     return solve.getSessionAverages(getCurrentSession);
 }
 
-function getLastSolveTarget() {
-    return solve.getLastSolveTarget(averageObj, getCurrentSession);
-}
-
 function penalty2(blockIndex, solveIndex, penalty) {
     solve.penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
 }
@@ -254,12 +215,13 @@ function remove2(blockIndex, solveIndex) {
     solve.remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions);
 }
 
-function applyPenaltyToLast(penalty) {
-    solve.applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats);
+// setPenalty and removeSolve come from the modal controller (they also refresh the history and the modal)
+function applyPenaltyToLast(penalty, setPenalty) {
+    solve.applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats, setPenalty);
 }
 
-function removeLastSolve() {
-    solve.removeLastSolve(averageObj, getCurrentSession);
+function removeLastSolve(removeSolve) {
+    solve.removeLastSolve(averageObj, getCurrentSession, removeSolve);
 }
 
 // ===============================
@@ -271,12 +233,10 @@ export {
     saveSessions,
     sessionsObj,
     renderSessionSelect,
-    toggleMode,
     clearAverages,
     changedSession,
     addAverageBlock,
     getSessionAverages,
-    getLastSolveTarget,
     penalty2,
     remove2,
     applyPenaltyToLast,

@@ -1,10 +1,10 @@
-import { eventObj, vis } from "../event/eventController.js";
+import { eventObj, vis, showTimerLayout, showTimeInsertion } from "../event/eventController.js";
 import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session/sessionController.js";
-import { averageObj, classicStats } from "../average/avgController.js";
+import { averageObj } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
-import { openDetailsModal } from "../modal/modalController.js";
-import { timerSettObj } from "../settings/timerSetObj.js";
+import { openDetailsModal, setPenalty, removeSolve } from "../modal/modalController.js";
+import { timerSettObj } from "../settings/settingsState.js";
 import { timerDOMObj } from "../timer/timerController.js";
 import { applyPenaltyToLast, removeLastSolve } from "../session/sessionController.js";
 import { handleFMC } from "../event/eventController.js";
@@ -117,19 +117,7 @@ eventSelect.addEventListener("change", async (e) => {
     session.scrambleType = eventSelect.value;
     eventObj.event = eventSelect.value;
 
-    if (eventObj.event === "333fm" || eventObj.event === "r3ni") {
-        timerSettObj.timerFlag = true;
-        document.getElementById("typing-container").style.display = "none";
-        document.querySelector(".timerOpt").style.display = "none";
-    } else {
-        document.querySelector(".timerOpt").style.display = "block";
-        if (timeInsertion === "Typing") {
-            document.getElementById("typing-container").style.display = "block";
-            timerObj.timerFlag = true;
-        } else {
-            timerSettObj.timerFlag = false;
-        }
-    }
+    showTimeInsertion(eventObj.event, timeInsertion, timerSettObj);
 
     session.scrambleType = eventObj.event;
 
@@ -141,62 +129,16 @@ eventSelect.addEventListener("change", async (e) => {
         syncModeWithEvent(eventObj.event);
     }
 
+    // Fewest Moves and Multi-Blind switch to their own layout after the scramble below
+    showTimerLayout(vis);
+
     // Auto-set inspection to None for BLD events, restore for non-BLD
     if (["333ni", "444bld", "555bld"].includes(eventObj.event)) { //no longer includes bf, check scrData.js
-        document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus2Btn").style.display = "block";
-        document.getElementById("penaltyDnfBtn").style.display = "block";
-        document.getElementById("removeLastBtn").style.display = "block";
-        document.getElementById("submit-moves").style.display = "none";
-        document.getElementById("fmc-cube").style.display = "none";
-        document.getElementById("fmc-solution").style.display = "none";
-        document.getElementById("fmc-solution-test").style.display = "none";
-        document.getElementById("fmc-move-count").style.display = "none";
-        document.getElementById("fmc-form").style.display = "none";
-        document.getElementById("countdown").style.display = "none";
-        document.getElementById("touchOverlay").style.display = "block";
-        document.getElementById("typing-container").style.display = "none";
-        document.getElementById("timerins").style.marginTop = "0px";
-        document.getElementById("touchOverlay").style.display = "none";
-        document.getElementById("open-mbld-modal").style.display = "none";
-        
-        if (vis === document.querySelector("#scrambleVis")) {
-            document.getElementById("timer").style.fontSize = "140px";
-        } else {
-            document.getElementById("timer").style.fontSize = "72px";
-        }
-
-        document.getElementById("timer").textContent = "0.00";
-
         timerSettObj.previousInspectionType = timerSettObj.inspectionType;
         timerSettObj.inspectionType = "None";
         document.getElementById("inspection-type").value = "None";
         localStorage.setItem("inspectionType", "None");
     } else {
-        document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus2Btn").style.display = "block";
-        document.getElementById("penaltyDnfBtn").style.display = "block";
-        document.getElementById("removeLastBtn").style.display = "block";
-        document.getElementById("submit-moves").style.display = "none";
-        document.getElementById("fmc-cube").style.display = "none";
-        document.getElementById("fmc-solution").style.display = "none";
-        document.getElementById("fmc-solution-test").style.display = "none";
-        document.getElementById("fmc-move-count").style.display = "none";
-        document.getElementById("fmc-form").style.display = "none";
-        document.getElementById("countdown").style.display = "none";
-        document.getElementById("touchOverlay").style.display = "block";
-        document.getElementById("typing-container").style.display = "none";
-        document.getElementById("timerins").style.marginTop = "0px";
-        document.getElementById("touchOverlay").style.display = "none";
-        document.getElementById("open-mbld-modal").style.display = "none";
-        document.getElementById("openConfig").style.display = "none";
-        if (vis === document.querySelector("#scrambleVis")) {
-            document.getElementById("timer").style.fontSize = "140px";
-        } else {
-            document.getElementById("timer").style.fontSize = "72px";
-        }
-        
-        document.getElementById("timer").textContent = "0.00";
         timerSettObj.inspectionType = timerSettObj.previousInspectionType;
         document.getElementById("inspection-type").value = timerSettObj.previousInspectionType;
         localStorage.setItem("inspectionType", timerSettObj.previousInspectionType);
@@ -208,7 +150,6 @@ eventSelect.addEventListener("change", async (e) => {
 });
 
 const modeSelectEl = document.getElementById("modeSelect");
-let modeFlag = false;
 if (modeSelectEl) {
     modeSelectEl.addEventListener("change", (ev) => {
         const val = ev.target.value;
@@ -216,7 +157,6 @@ if (modeSelectEl) {
         averageObj.mode = val;
         session.mode = val;
         saveSessions();
-        modeFlag = true;
         const block = averageOfN(
             document.getElementById("timer").innerHTML, 
             currentScramble, 
@@ -231,7 +171,6 @@ if (modeSelectEl) {
         }
         renderHistory();
     });
-    modeFlag = false;
 }
 
 function getDefaultModeForEvent(event) {
@@ -295,30 +234,7 @@ document.addEventListener("sessionChanged", async () => {
     } else if (eventObj.event === "r3ni"){
         handleMBLD();
     } else {
-        document.getElementById("penaltyOkBtn").style.display = "block";
-        document.getElementById("penaltyPlus2Btn").style.display = "block";
-        document.getElementById("penaltyDnfBtn").style.display = "block";
-        document.getElementById("removeLastBtn").style.display = "block";
-        document.getElementById("submit-moves").style.display = "none";
-        document.getElementById("fmc-cube").style.display = "none";
-        document.getElementById("fmc-solution").style.display = "none";
-        document.getElementById("fmc-solution-test").style.display = "none";
-        document.getElementById("fmc-move-count").style.display = "none";
-        document.getElementById("fmc-form").style.display = "none";
-        document.getElementById("countdown").style.display = "none";
-        document.getElementById("touchOverlay").style.display = "block";
-        document.getElementById("typing-container").style.display = "none";
-        document.getElementById("timerins").style.marginTop = "0px";
-        document.getElementById("open-mbld-modal").style.display = "none";
-        document.getElementById("openConfig").style.display = "none";
-        document.getElementById("touchOverlay").style.display = "block";
-        if (vis === document.querySelector("#scrambleVis")) {
-            document.getElementById("timer").style.fontSize = "140px";
-        } else {
-            document.getElementById("timer").style.fontSize = "72px";
-        }
-        
-        document.getElementById("timer").textContent = "0.00";
+        showTimerLayout(vis);
     }
 
     await displayScramble(eventObj.event, vis);
@@ -354,7 +270,7 @@ avgObj.clearBtn.onclick = () => {
 avgObj.openSessionBtn.onclick = () => openDetailsModal();
 
 avgObj.penaltyOkBtn.onclick = () => {
-    applyPenaltyToLast(null);
+    applyPenaltyToLast(null, setPenalty);
     plus2CounterObj.penalty = 0;
     document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`
     renderHistory();
@@ -365,10 +281,10 @@ avgObj.penaltyOkBtn.onclick = () => {
 avgObj.penaltyPlus2Btn.onclick = () => {
     if (plus2CounterObj.penalty === 12) {
         plus2CounterObj.penalty = 0;
-        applyPenaltyToLast(null);
+        applyPenaltyToLast(null, setPenalty);
     } else {
         plus2CounterObj.penalty += 2;
-        applyPenaltyToLast(plus2CounterObj.penalty);
+        applyPenaltyToLast(plus2CounterObj.penalty, setPenalty);
     }
 
     document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`
@@ -377,11 +293,11 @@ avgObj.penaltyPlus2Btn.onclick = () => {
 };
 
 avgObj.penaltyDnfBtn.onclick = () => {
-    applyPenaltyToLast("DNF");
+    applyPenaltyToLast("DNF", setPenalty);
     renderHistory();
 }
 
-avgObj.removeLastBtn.onclick = () => removeLastSolve();
+avgObj.removeLastBtn.onclick = () => removeLastSolve(removeSolve);
 
 renderHistory();
 

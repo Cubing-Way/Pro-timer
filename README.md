@@ -50,7 +50,7 @@ The site lands in `dist/`. `npm run deploy` builds it and publishes `dist/` to t
 - `stats/`: the statistics page and its charts
 - `settings/`, `topbar/`, `modal/`, `timeTyping/`: settings, top bar, pop-ups and typed-in times
 
-Each folder has a `…Controller.js`. It holds the folder's state and page wiring (listeners, startup code), and it is what other folders import. The other files only export functions: when one needs state, its controller passes it in. State shared between folders lives in `…State.js` files (`timerState.js`, `avgState.js`, `topbarState.js`, plus `timerSetObj.js` and `sessionObj.js`). `main/mainController.js` loads the controllers, then shows the first scramble.
+Each folder has a `…Controller.js`. It holds the folder's state and page wiring (listeners, startup code), and it is what other folders import. The other files only export functions: when one needs state, its controller passes it in. State shared between folders lives in `…State.js` files (`avgState.js`, `sessionState.js`, `settingsState.js`, `timerState.js`, `topbarState.js`). `main/mainController.js` loads the controllers, then shows the first scramble.
 
 ## License
 
