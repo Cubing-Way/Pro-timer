@@ -1,27 +1,31 @@
 import { computeAverage } from "./avgComput.js";
 
+// Updates classic mode's rolling mo3, ao5, ao12 and ao100; recomputeBest rebuilds them all from every solve instead
 function updateClassicStats(recomputeBest, averageObj, classicStats) {
+// Full rebuild: after a penalty, a removed solve, a session change or switching to classic
 if (recomputeBest) {
   const solves = averageObj.solvesArray;
 
-  // 🔥 reset history
+  // Start the history over
   classicStats.history.mo3 = [];
   classicStats.history.ao5 = [];
   classicStats.history.ao12 = [];
   classicStats.history.ao100 = [];
 
-  // 🔥 reset best
+  // Start the bests over
   classicStats.best.mo3 = null;
   classicStats.best.ao5 = null;
   classicStats.best.ao12 = null;
   classicStats.best.ao100 = null;
 
+  // Slides a window of n solves over all of them, saving each average and keeping the best
   const rebuild = (n, key, modeName) => {
     for (let i = n; i <= solves.length; i++) {
 
       const window = solves.slice(i - n, i);
       const result = computeAverage(window, modeName);
 
+      // One history entry: the average, its solves, and when its last solve was done
       const entry = {
         avg: result.dnf ? "DNF" : result.avg,
         solves: window,
@@ -49,16 +53,19 @@ if (recomputeBest) {
   rebuild(12, "ao12", "ao12");
   rebuild(100, "ao100", "ao100");
 
-  // 🔥 set current from rebuilt history
+  // The current averages are the last ones of the rebuilt history
   classicStats.current.mo3 = classicStats.history.mo3.at(-1) ?? null;
   classicStats.current.ao5 = classicStats.history.ao5.at(-1) ?? null;
   classicStats.current.ao12 = classicStats.history.ao12.at(-1) ?? null;
   classicStats.current.ao100 = classicStats.history.ao100.at(-1) ?? null;
 
-  return; // 🚨 important: skip normal logic
+  // The rebuild already did everything the update below does
+  return;
 }
+    // After one new solve: only the averages ending at it are new
     const solves = averageObj.solvesArray;
 
+// Average of the last n solves (null if there aren't n yet), added to the history once
 const updateRolling = (n, modeName) => {
     if (solves.length < n) return null;
 
@@ -69,13 +76,13 @@ const updateRolling = (n, modeName) => {
         avg: result.dnf ? "DNF" : result.avg,
         best: result.best,
         worst: result.worst,
-        sigma: result.sigma, // 🔥 ADD THIS
+        sigma: result.sigma,
         solves: window,
         lastSolve: window[window.length - 1],
         createdAt: window[window.length - 1].createdAt
     };
 
-    // 🔥 PUSH INTO HISTORY (avoid duplicates)
+    // Add it to the history, unless the last entry already ends at the same solve
     const historyArr = classicStats.history[modeName];
 
     const lastEntry = historyArr[historyArr.length - 1];
@@ -101,6 +108,7 @@ const updateRolling = (n, modeName) => {
     classicStats.current.ao12 = ao12;
     classicStats.current.ao100 = ao100;
 
+    // Keeps a new average as the best of its size if it beats the old best (DNFs never do)
     const updateBest = (key, value) => {
         if (!value || value.avg == null || value.avg === "DNF") return;
 

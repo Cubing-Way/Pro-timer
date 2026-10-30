@@ -8,7 +8,9 @@ import {
 
 import { updateDisplay } from "../timer/countdownTimer.js";
 
+// Fewest Moves layout: solution form, cubisz cube with the scramble applied, countdown on the timer
 function handleFMC(display, currentScramble, countdownObj) {
+    // Only the remove button among the penalties; submit, countdown and timer warnings appear
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -29,9 +31,11 @@ function handleFMC(display, currentScramble, countdownObj) {
     document.getElementById("openConfig").style.display = "block";
 
 
+    // Smaller timer showing the 1-hour countdown; no touch timing, so the form can be used
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("touchOverlay").style.display = "none";
     updateDisplay(countdownObj, display);
+    // Draw a 3D cubisz cube with the scramble applied, in FMC mode
     mountCube(document.getElementById("fmc-cube"));
     setSize(28);
     setView("3d");

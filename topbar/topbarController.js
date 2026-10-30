@@ -17,6 +17,7 @@ import { addAverageBlock } from "../session/sessionController.js";
 import { handleMBLD } from "../event/eventController.js";
 import { plus2CounterObj } from "./topbarState.js";
 
+// True while the selects are set from a saved session, so those changes aren't saved back or re-run
 let restoringSession = false;
 
 const categorySelect = document.getElementById("categorySelect");
@@ -24,10 +25,7 @@ const eventSelect = document.getElementById("eventSelect");
 const modeSelect = document.getElementById("modeSelect");
 
 
-// ===== Populate eventSelect from csTimer scrdata =====
-
-
-// ===== Populate category select =====
+// Category select, filled from csTimer's scramble list (scramble/scrData.js)
 
 // Remove divider categories like ===WCA===
 const validCategories = scrdata.filter(
@@ -46,10 +44,11 @@ validCategories.forEach(([categoryName]) => {
   categorySelect.appendChild(option);
 });
 
+// Sets the category, event and average mode selects to the current session's, running their change handlers
 function restoreSelectorsFromSession() {
     const session = getCurrentSession();
 
-    // ---------- Restore Category ----------
+    // Category: the session's, or the first one
     if (session.category) {
         categorySelect.value = session.category;
     } else {
@@ -59,7 +58,7 @@ function restoreSelectorsFromSession() {
     // Trigger category change to rebuild event list
     categorySelect.dispatchEvent(new Event("change"));
 
-    // ---------- Restore Event ----------
+    // Event: the session's, if it has one
     if (session.scrambleType) {
         eventSelect.value = session.scrambleType;
     }
@@ -67,6 +66,7 @@ function restoreSelectorsFromSession() {
     // Trigger event logic
     eventSelect.dispatchEvent(new Event("change"));
 
+    // Average mode: the session's, if it has one
     if (session.mode) {
         modeSelect.value = session.mode;
     }
@@ -74,6 +74,7 @@ function restoreSelectorsFromSession() {
 
 }
 
+// New category: save it in the session and list its events
 categorySelect.addEventListener("change", () => {
   const session = getCurrentSession();
   session.category = categorySelect.value;
@@ -89,8 +90,10 @@ categorySelect.addEventListener("change", () => {
 
   if (!category) return;
 
+  // Each category is [name, [[label, code, length], …]]
   const [, scrambles] = category;
 
+  // One option per scramble type, skipping csTimer's "blank" placeholders
   scrambles.forEach(([label, code]) => {
     if (code === "blank") return;
 
@@ -100,7 +103,7 @@ categorySelect.addEventListener("change", () => {
     eventSelect.appendChild(option);
   });
 
-      // Trigger event logic
+  // Picking a category by hand also picks its first event
 if (!restoringSession) {
     eventSelect.dispatchEvent(new Event("change"));
 }
@@ -108,16 +111,18 @@ if (!restoringSession) {
 
 
 
-// 👇 FORCE INITIAL LOAD
+// Set the selects from the saved session once on load
 restoringSession = true;
 restoreSelectorsFromSession();
 restoringSession = false;
 
+// New event: save it, set the layout, inspection and average mode for it, then show a scramble
 eventSelect.addEventListener("change", async (e) => {
     const session = getCurrentSession();
     session.scrambleType = eventSelect.value;
     eventObj.event = eventSelect.value;
 
+    // Timer or typing box, depending on the event and the Time insertion setting
     showTimeInsertion(eventObj.event, timeInsertion, timerSettObj);
 
     session.scrambleType = eventObj.event;
@@ -126,6 +131,7 @@ eventSelect.addEventListener("change", async (e) => {
         saveSessions();
     }
 
+    // A restored session keeps its own average mode
     if (!restoringSession) {
         syncModeWithEvent(eventObj.event);
     }
@@ -144,6 +150,7 @@ eventSelect.addEventListener("change", async (e) => {
     if (eventObj.event === "r3ni") handleMBLD();
 });
 
+// New average mode: save it and recount the solves in progress with it
 const modeSelectEl = document.getElementById("modeSelect");
 if (modeSelectEl) {
     modeSelectEl.addEventListener("change", (ev) => {
@@ -152,15 +159,17 @@ if (modeSelectEl) {
         averageObj.mode = val;
         session.mode = val;
         saveSessions();
+        // modeFlag (true) adds no solve: it only checks whether the solves in progress now complete an average
         const block = averageOfN(
-            document.getElementById("timer").innerHTML, 
-            currentScramble, 
-            timerObj.inspection, 
-            timerSettObj.inspectionType, 
-            false, 
+            document.getElementById("timer").innerHTML,
+            currentScramble,
+            timerObj.inspection,
+            timerSettObj.inspectionType,
+            false,
             true
         );
-        
+
+        // e.g. 3 solves done in ao5 make a full mo3 after switching
         if (block) {
             addAverageBlock(block);
         }
@@ -168,26 +177,28 @@ if (modeSelectEl) {
     });
 }
 
+// The average mode the WCA uses for an event
 function getDefaultModeForEvent(event) {
     // BLD events: specific modes
     if (event === "333ni") return "bo5"; // 3x3 blindfolded: best of 5
     if (event === "444bld") return "bo3"; // 4x4 blindfolded: best of 3
     if (event === "555bld") return "bo3"; // 5x5 blindfolded: best of 3
-    if (event === "r3ni") return "bo3";
-    
+    if (event === "r3ni") return "bo3"; // Multi-Blind: best of 3
+
     // Other events that force mo3
     if (["666wca", "777wca"].includes(event)) return "mo3";
 
     if (event === "333fm") return "fmc3"; // FMC: average of 3 attempts
-    
+
     // Default to ao5
     return "ao5";
 }
 
+// Switches the average mode (and its select) to the event's WCA mode, and saves it
 function syncModeWithEvent(event) {
     const session = getCurrentSession();
     const desiredMode = getDefaultModeForEvent(event);
-    
+
     if (averageObj.mode !== desiredMode) {
 
         averageObj.mode = desiredMode;
@@ -201,8 +212,9 @@ function syncModeWithEvent(event) {
 
 }
 
+// Another session was picked (session/sessionController.js fires "sessionChanged")
 document.addEventListener("sessionChanged", () => {
-    // 🔥 FIRST restore buffer
+    // Load the new session's solves in progress first, without saving the select changes back
     restoringSession = true;
 
     changedSession();
@@ -223,6 +235,7 @@ document.addEventListener("sessionChanged", () => {
     renderHistory();
 });
 
+// Top bar and penalty bar buttons
 const avgObj = {
     modeSelect: document.getElementById("modeSelect"),
     clearBtn: document.getElementById("clearBtn"),
@@ -233,25 +246,30 @@ const avgObj = {
     removeLastBtn: document.getElementById("removeLastBtn")
 };
 
+// Take the focus off a clicked button, so the space bar starts the timer instead of clicking it again
 document.querySelectorAll("button").forEach(btn => {
     btn.addEventListener("click", () => {
         btn.blur();
     });
 });
 
+// Same for selects, so the space bar doesn't open them
 document.querySelectorAll("select").forEach(select => {
     select.addEventListener("change", () => {
         select.blur();
     });
 });
 
+// Clear: delete the session's averages (after asking) and redraw
 avgObj.clearBtn.onclick = () => {
     clearAverages();
     renderHistory();
 }
 
+// Open Session: the session's averages in the details pop-up
 avgObj.openSessionBtn.onclick = () => openDetailsModal();
 
+// OK: remove the last solve's penalty and reset the +2 button
 avgObj.penaltyOkBtn.onclick = () => {
     applyPenaltyToLast(null, setPenalty);
     plus2CounterObj.penalty = 0;
@@ -261,6 +279,7 @@ avgObj.penaltyOkBtn.onclick = () => {
 
 
 
+// +2: each click adds 2 more seconds to the last solve (+2, +4 … +12), then goes back to no penalty
 avgObj.penaltyPlus2Btn.onclick = () => {
     if (plus2CounterObj.penalty === 12) {
         plus2CounterObj.penalty = 0;
@@ -270,21 +289,26 @@ avgObj.penaltyPlus2Btn.onclick = () => {
         applyPenaltyToLast(plus2CounterObj.penalty, setPenalty);
     }
 
+    // The button shows what the next click gives
     document.getElementById("penaltyPlus2Btn").textContent = `+${plus2CounterObj.penalty + 2}`
 
     renderHistory();
 };
 
+// DNF: mark the last solve as did not finish
 avgObj.penaltyDnfBtn.onclick = () => {
     applyPenaltyToLast("DNF", setPenalty);
     renderHistory();
 }
 
+// X: delete the last solve
 avgObj.removeLastBtn.onclick = () => removeLastSolve(removeSolve);
 
+// First draw of the history, footer and sidebars
 renderHistory();
 
 
+// Phone "Scramble visualizer" button: opens the scramble picture, then closes it
 document.getElementById("scramble-button").addEventListener("click", () => {
     if (timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";

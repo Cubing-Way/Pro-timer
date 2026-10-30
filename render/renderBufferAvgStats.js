@@ -1,9 +1,11 @@
 import { computeAverage, parseTimeToSeconds } from "../average/avgController.js";
 import { wrapTimesValue } from "./renderHelpers.js";
 
+// HTML of the footer's right panel: best, worst and σ of the current average (plus bpAo5 / wpAo5 with 4 of 5 ao5 solves)
 function renderAvgStats({ type, solves, mode, block }, averageObj, classicStats, formatStatValue) {
     // type: "live" | "saved" | null
 
+// Classic mode: the best rolling average of each size
 if (averageObj.mode === "classic") {
 
 return `
@@ -17,6 +19,7 @@ return `
 `;
 }
 
+    // Live: computed from the solves so far
     if (type === "live") {
         if (!solves || solves.length === 0) return "";
 
@@ -28,6 +31,7 @@ return `
         const bpAo5 = avgObj.bpAo5;
         const wpA05 = avgObj.wpA05;
 
+        // One solve left in an ao5: also the best and worst possible result
         if (solves.length === 4 && mode === "ao5") {
             return `                
                 Best: ${formatStatValue(best)}
@@ -51,6 +55,7 @@ return `
         `;
     }
 
+    // Saved: the block's stored numbers (formatted strings, parsed back to seconds), then its result (the best single for bo3 / bo5)
     if (type === "saved") {
         if (!block) return "";
         return `                

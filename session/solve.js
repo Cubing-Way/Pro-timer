@@ -1,11 +1,13 @@
-// solves.js
+// Changes to the solves of a session; the session controller passes in the state and save function
 import { computeAverage, formatSecondsToTime } from "../average/avgController.js";
 
+// Gives an old session an averages list if it has none
 function ensureSessionShape(getCurrentSession) {
     const session = getCurrentSession();
     if (!session.averages) session.averages = [];
 }
 
+// Saves a finished average at the start of the list (newest first)
 function addAverageBlock(block, getCurrentSession, saveSessions) {
     ensureSessionShape(getCurrentSession);
     const session = getCurrentSession();
@@ -13,11 +15,13 @@ function addAverageBlock(block, getCurrentSession, saveSessions) {
     saveSessions();
 }
 
+// The session's finished averages, newest first
 function getSessionAverages(getCurrentSession) {
     const session = getCurrentSession();
     return session.averages || [];
 }
 
+// Where the most recent solve is: { type: "current", solveIndex } or { type: "saved", blockIndex, solveIndex }, or null
 function getLastSolveTarget(averageObj, getCurrentSession) {
     // 1) Current in-progress solves always win
     if (averageObj.solvesArray.length > 0) {
@@ -43,6 +47,7 @@ function getLastSolveTarget(averageObj, getCurrentSession) {
     };
 }
 
+// Sets the penalty of a solve in a saved average, then recomputes and saves that average
 function penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions) {
     const averages = getSessionAverages(getCurrentSession);
     const block = averages[blockIndex];
@@ -59,13 +64,12 @@ function penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessio
     saveSessions();
 }
 
+// Removes a solve: from the average in progress (blockIndex -1), or from a saved average, which then reopens or goes away
 function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions) {
     const averages = getSessionAverages(getCurrentSession);
     const modal = document.getElementById("detailsModal");
 
-    // =========================
-    // CURRENT (no dialog)
-    // =========================
+    // Solve of the average in progress: just remove it (no dialog)
     if (blockIndex === -1) {
         if (solveIndex < 0 || solveIndex >= averageObj.solvesArray.length) return;
 
@@ -79,9 +83,7 @@ function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSess
 
     const block = averages[blockIndex];
 
-    // =========================
-    // Special case: newest block and current buffer empty
-    // =========================
+    // Newest average and nothing in progress: reopen it without the solve, no question asked
     if (blockIndex === 0 && averageObj.solvesArray.length === 0) {
         const newSolves = block.solves.filter((_, i) => i !== solveIndex);
 
@@ -95,15 +97,14 @@ function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSess
         return;
     }
 
+    // Older average: ask whether to reopen it or delete it whole
     const choice = confirm(
         "This solve belongs to a finished average.\n\n" +
         "OK = Replace this solve (reopen average)\n" +
         "Cancel = Delete the whole average"
     );
 
-    // =========================
-    // REPLACE (reopen)
-    // =========================
+    // Reopen: its other solves become the average in progress, waiting for a replacement solve
     if (choice) {
         const newSolves = block.solves.filter((_, i) => i !== solveIndex);
 
@@ -117,19 +118,19 @@ function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSess
         return;
     }
 
-    // =========================
-    // DELETE AVERAGE
-    // =========================
+    // Delete the whole average, after a second confirmation
     if (!confirm("Delete the entire average? This cannot be undone.")) return;
 
     averages.splice(blockIndex, 1);
     saveSessions();
 }
 
+// Sets the penalty of the most recent solve (penalty buttons under the timer)
 function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats, setPenalty) {
     const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;
 
+    // In progress: change it directly and rebuild the rolling averages; saved: go through the modal's setPenalty
     if (target.type === "current") {
         averageObj.solvesArray[target.solveIndex].penalty = penalty;
         updateClassicStats(true);
@@ -138,6 +139,7 @@ function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassi
     }
 }
 
+// Removes the most recent solve (X button under the timer), through the modal's removeSolve
 function removeLastSolve(averageObj, getCurrentSession, removeSolve) {
     const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;

@@ -1,14 +1,13 @@
 import { computeAverage } from "../average/avgController.js";
 import { wrapTimesValue } from "./renderHelpers.js";
 
+// HTML of the left sidebar: past averages with their solves, or the solves in progress in classic mode
 function renderHistoryList(averages, currentType, averageObj, formatStatValue) {
 
 
     let html = "";
 
-    // =========================
-    // CLASSIC MODE → render solves
-    // =========================
+    // Classic mode: every solve in progress, newest first, numbered from the oldest
     if (averageObj.mode === "classic") {
 
         averageObj.solvesArray
@@ -26,12 +25,14 @@ function renderHistoryList(averages, currentType, averageObj, formatStatValue) {
         return html;
     }
 
+    // Block modes: one entry per finished average, newest first
     for (let i = 0; i < averages.length; i++) {
         const block = averages[i];
 
         // Skip the one currently shown as current
         if (currentType === "saved" && i === 0) continue;
 
+        // Title under the solves: mode and result (fmc3 is shown as ao3)
         let titleText = `${block.mode === "fmc3" ? "ao3" : block.mode}: ${wrapTimesValue(block.average)}`;
 
         // For bo3, show secondary mo3 average
@@ -53,6 +54,7 @@ function renderHistoryList(averages, currentType, averageObj, formatStatValue) {
                 <div class="history-solves">
         `;
 
+        // One line per solve, numbered within its average
         block.solves.forEach((s, idx) => {
             html += `
                 <div class="history-solve">

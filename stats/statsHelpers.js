@@ -5,14 +5,14 @@ function pickBest(values, solves) {
   return isPointsSolves(solves) ? Math.max(...values) : Math.min(...values);
 }
 
+// Milliseconds between UTC and local time (getTimezoneOffset), so ranges start at local midnight
 function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
   return offsetMinutes * 60 * 1000;
 }
 
-// ===============================
-// COLLECT SOLVES
-// ===============================
+// Collecting solves
+// Every solve of a session: the finished averages' solves, then the ones in progress
 function getAllSolvesFromSession(session, averageObj) {
   const all = [];
 
@@ -25,20 +25,20 @@ function getAllSolvesFromSession(session, averageObj) {
     }
   });
 
-  // From current rolling buffer
+  // From the average in progress
   averageObj.solvesArray.forEach(s => all.push(s));
 
   return all;
 }
 
-// ===============================
-// PURE STATS ENGINE
-// ===============================
+// Stats from a list of solves
+// Best single, mean, σ, solve count and best average: { bestTime, mean, sigma, bestAvg, solveCounter }
 function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
   let allSolvesArr = [];
   let ao5Arr = [];
   let solveCounter = 0;
 
+  // Classic mode: today's best rolling ao5 counts as an average too
   if (averageObj.mode === "classic") {
     const { start, end } = getRangeTimestamps("day");
 
@@ -56,7 +56,7 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
       ao5Arr.push(bestToday.avg);
     }
   }
-  // ao5 array
+  // Every finished average that isn't a DNF (any mode, despite the name ao5Arr)
 
   session.averages.forEach(avg => {
     if (avg.mode !== "classic") {
@@ -64,7 +64,7 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
     }
   });
 
-  // process solves
+  // Each solve's final value; DNFs only count towards the number of solves
   solves.forEach(solve => {
 
     if (solve.penalty == null) {
@@ -80,6 +80,7 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
     }
   });
 
+  // No successful solve: nothing to compute
   if (allSolvesArr.length === 0) {
     return {
       bestTime: null,
@@ -90,6 +91,7 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
     };
   }
 
+  // Best average, best single, mean and σ of the successful solves
   const validAvgs = ao5Arr.filter(v => v != null && !isNaN(v));
   const bestAvg = validAvgs.length ? pickBest(validAvgs, solves) : null;
   const bestTime = pickBest(allSolvesArr, solves);
@@ -100,13 +102,13 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
   return { bestTime, mean, sigma, bestAvg, solveCounter };
 }
 
-// ===============================
-// FILTER BY DATE
-// ===============================
+// Date ranges
 
+// Start and end (ms) of the current day, week (from Sunday), month, semester or year in local time; start is null for all time
 function getRangeTimestamps(range) {
   const now = Date.now();
   const offset = getUserOffsetMs(now);
+  // Local time moved into the UTC fields, so the setUTC calls below work in local time
   const localNow = new Date(now - offset);
 
   let start = null;
@@ -158,6 +160,7 @@ function getRangeTimestamps(range) {
   return { start, end };
 }
 
+// Solves done in the current range
 function filterSolvesByRange(solves, range) {
   const { start, end } = getRangeTimestamps(range);
 
@@ -166,6 +169,7 @@ function filterSolvesByRange(solves, range) {
   return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
 }
 
+// Averages whose last solve is in the current range, oldest first
 function filterAveragesByRange(session, range) {
   const { start, end } = getRangeTimestamps(range);
 
@@ -185,6 +189,7 @@ function filterAveragesByRange(session, range) {
     });
 }
 
+// Results (seconds, null for DNF) of the averages finished between start and end, oldest first
 function getAveragesInRange(session, start, end) {
   return session.averages
     .filter(avg => {
@@ -201,6 +206,7 @@ function getAveragesInRange(session, start, end) {
     });
 }
 
+// The closest earlier range of the same length that has averages (up to 10 back), for the comparison chart
 function getLastRangeWithData(session, range, maxLookback = 10) {
   let { start, end } = getRangeTimestamps(range);
 
@@ -230,6 +236,7 @@ function getLastRangeWithData(session, range, maxLookback = 10) {
   return { start: null, end: null }; // nothing found
 }
 
+// Labels (1, 2, 3…) and σ of each average for the σ chart; DNF averages leave a gap
 function getSigmaGraphData(averagesArr) {
   const labels = [];
   const sigmas = [];
@@ -247,6 +254,7 @@ function getSigmaGraphData(averagesArr) {
   return { labels, sigmas };
 }
 
+// Counts the solves at or under each threshold, plus one bucket above the last; DNFs are skipped
 function getTimeDistribution(solves, thresholds) {
   // Example thresholds: [10, 12, 14]
 
@@ -259,7 +267,7 @@ function getTimeDistribution(solves, thresholds) {
     if (typeof solve.penalty === "number") time = solve.time + solve.penalty;
     else time = solve.time;
 
-    // find correct bucket
+    // The first threshold the time fits under
     let placed = false;
 
     for (let i = 0; i < thresholds.length; i++) {
@@ -278,6 +286,7 @@ function getTimeDistribution(solves, thresholds) {
   return buckets;
 }
 
+// Bucket labels: "Sub 10.00" for each threshold, then "> last"
 function getDistributionLabels(thresholds) {
   const labels = [];
 
@@ -290,6 +299,7 @@ function getDistributionLabels(thresholds) {
   return labels;
 }
 
+// Drops the buckets with no solves
 function filterEmptyBuckets(labels, data) {
   const filteredLabels = [];
   const filteredData = [];
@@ -304,9 +314,11 @@ function filterEmptyBuckets(labels, data) {
   return { labels: filteredLabels, data: filteredData };
 }
 
+// Bucket limits from 0.5 s up to 10 h, finer for fast times and coarser for slow ones
 function generateSmartThresholds() {
   const thresholds = [];
 
+  // Adds every step from start (not included) to end
   function addRange(start, end, step) {
     for (let t = start + step; t <= end; t += step) {
       thresholds.push(t);
@@ -332,6 +344,7 @@ function generateSmartThresholds() {
   return thresholds;
 }
 
+// Classic mode's rolling averages keyed by the time of their last solve, to look up a solve's mo3 / ao5 / ao12 / ao100
 function buildAvgMaps(classicStats) {
   const maps = {
     mo3: new Map(),

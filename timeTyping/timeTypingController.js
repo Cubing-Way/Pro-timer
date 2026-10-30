@@ -8,8 +8,10 @@ import { addAverageBlock } from "../session/sessionController.js";
 import { updateTypingUI } from "../settings/settingsController.js";
 import { saveSessions } from "../session/sessionController.js";
 
+// Last typed time, as shown on the timer
 let lastTime = null;
 
+// Shows or hides the typing box for the current setting, and wires the Add button and the Enter key
 function initTypingSubmission() {
     updateTypingUI();
     const addBtn = document.getElementById("typed-time-add");
@@ -17,10 +19,12 @@ function initTypingSubmission() {
 
 
     if (addBtn && input) {
+        // Add: check the typed time, save it as a solve, then get ready for the next one
         addBtn.addEventListener("click", () => {
             const rawInput = input.value;
             const normalized = normalizeTypedTime(rawInput);
 
+            // Not a time: flash the box red for 1.5 s
             if (!normalized) {
                 console.warn("[timeTyping] invalid input rejected");
                 input.style.border = '2px solid #e74c3c';
@@ -31,6 +35,7 @@ function initTypingSubmission() {
 
             const seconds = parseTimeToSeconds(normalized);
 
+            // Had a "." or ":" but isn't a number (e.g. "ab.c")
             if (!Number.isFinite(seconds)) {
                 console.warn("[timeTyping] parsed value is not finite");
                 input.style.border = '2px solid #e74c3c';
@@ -39,6 +44,7 @@ function initTypingSubmission() {
                 return;
             }
 
+            // Show the time on the timer, in the same format as a timed solve
             lastTime = formatSecondsToTime(seconds);
             document.getElementById("timer").textContent = lastTime;
 
@@ -55,6 +61,7 @@ function initTypingSubmission() {
             input.value = "";
         });
 
+        // Enter in the box works like the Add button
         input.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter") {
                 ev.preventDefault();
@@ -64,13 +71,16 @@ function initTypingSubmission() {
     }
 }
 
+// Run once the page is parsed (it already is when modules run, so this normally calls it right away)
 if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", initTypingSubmission);
 } else {
     initTypingSubmission();
 }
 
+// Turns what was typed into a time string: digits only are split into minutes, seconds and hundredths ("1234" → "12.34", "12345" → "1:23.45")
 function normalizeTypedTime(raw) {
+    // A comma counts as the decimal point
     raw = raw.trim().replace(',', '.');
 
     if (!raw) return null;
@@ -99,15 +109,17 @@ function normalizeTypedTime(raw) {
         return result;
     }
 
-    // 3+ digits
+    // 3+ digits: the last two are hundredths
     const hundredths = digits.slice(-2);
     const rest = digits.slice(0, -2);
 
+    // 3 or 4 digits: seconds.hundredths
     if (rest.length <= 2) {
         const result = `${rest}.${hundredths}`;
         return result;
     }
 
+    // 5+ digits: minutes:seconds.hundredths
     const seconds = rest.slice(-2);
     const minutes = rest.slice(0, -2);
     const result = `${minutes}:${seconds}.${hundredths}`;

@@ -11,7 +11,9 @@ function bestAndWorst(times, higherIsBetter) {
     };
 }
 
+// Average of some solves in a mode: { dnf, avg, best, worst, sigma } in seconds (moves for FMC, points for Multi-Blind)
 function computeAverage(solves, mode) {
+    // Each solve's final value: time plus penalty, Infinity for a DNF
     const times = solves.map(s => {
         if (s.penalty === "DNF") return Infinity;
         if (typeof s.penalty === "number") return s.time + s.penalty;
@@ -24,9 +26,7 @@ function computeAverage(solves, mode) {
     let best = null;
     let worst = null;
 
-    // =========================
-    // BO3 (Best of 3)
-    // =========================
+    // BO3 (best of 3): the result is the best attempt, avg is the mean of the successful ones
     if (mode === "bo3") {
         // Best of 3 only needs one success: it's a DNF when every attempt is
         const dnfs = times.filter(t => t === Infinity).length;
@@ -36,7 +36,7 @@ function computeAverage(solves, mode) {
 
         ({ best, worst } = bestAndWorst(times, higherIsBetter));
 
-        // For BO3, avg is the mean of all 3 solves
+        // Mean and σ of the successful attempts
         const validTimes = times.filter(t => t !== Infinity);
         const avg = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
         const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - avg, 2), 0) / validTimes.length;
@@ -51,17 +51,13 @@ function computeAverage(solves, mode) {
         };
     }
 
-    // =========================
-    // BO5 (Best of 5)
-    // =========================
+    // BO5 (best of 5, 3x3 Blindfolded): the result is the best single, avg is the ao5 of the same solves
     if (mode === "bo5") {
-        // BO5 (BLD format)
-        // Best single is the result, but we also compute Ao5 stats
 
         const sorted = [...times].sort((a, b) => a - b);
         ({ best, worst } = bestAndWorst(times, higherIsBetter));
 
-        // ---- Ao5 for the same 5 solves ----
+        // Ao5: drop the best and worst, average the middle 3
         const trimmed = sorted.slice(1, 4);
 
         let avg = null;
@@ -71,7 +67,7 @@ function computeAverage(solves, mode) {
             avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
         }
 
-        // sigma still uses all 5
+        // σ of all the successful solves
         const validTimes = times.filter(t => t !== Infinity);
         const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
         const varianceAll = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
@@ -79,20 +75,22 @@ function computeAverage(solves, mode) {
 
         return {
             dnf: false,
-            avg,      // ← now Ao5
-            best,     // ← BLD result
+            avg,      // the ao5
+            best,     // the BLD result
             worst,
             sigma
         };
 
     }
 
+    // AO5 (average of 5): drop the best and worst, average the middle 3; two DNFs make it a DNF
     if (mode === "ao5") {
         const dnfs = times.filter(t => t === Infinity).length;
         if (dnfs >= 2) {
             return { dnf: true };
         }
 
+        // Fastest first, so a DNF (Infinity) is always last
         const sorted = [...times].sort((a, b) => a - b);
 
         best = sorted[0];
@@ -101,20 +99,15 @@ function computeAverage(solves, mode) {
         // Trim for average only
         const trimmed = sorted.slice(1, 4);
 
-        // =========================
-        // Average (WCA style)
-        // =========================
+        // Average (WCA style): a DNF among the middle 3 can't happen with one DNF, but stays safe
         let avg = null;
         if (trimmed.includes(Infinity)) {
             avg = "DNF";
         } else {
-            avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;  
+            avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
         }
 
-        // =========================
-        // σ using ALL 5 solves
-        // =========================
-
+        // σ of all the successful solves
         const validTimes = times.filter(t => t !== Infinity);
 
         const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
@@ -123,6 +116,7 @@ function computeAverage(solves, mode) {
 
         const sigma = Math.sqrt(varianceAll);
 
+        // 4 solves done: best and worst possible ao5 depending on the 5th solve
         if (sorted.length === 4) {
             const bpAo5 = (sorted[0] + sorted [1] + sorted[2]) / 3;
             const wpA05 = (sorted[3] + sorted[2] + sorted [1]) / 3;
@@ -146,11 +140,10 @@ function computeAverage(solves, mode) {
         };
     }
 
-// =========================
-// FMC Ao3 (WCA rules)
-// =========================
+// FMC ao3 (WCA rules): mean of the 3 move counts; two DNFs make it a DNF
 
 if (mode === "fmc3") {
+    // Move counts, with the same penalty handling as times
     const values = solves.map(s => {
         if (s.penalty === "DNF") return Infinity;
         if (typeof s.penalty === "number") return s.time + s.penalty;
@@ -171,7 +164,7 @@ if (mode === "fmc3") {
     const best = Math.min(...valid);
     const worst = Math.max(...valid);
 
-    // ✅ sigma over move counts
+    // σ over move counts
     const meanAll = valid.reduce((a, b) => a + b, 0) / valid.length;
     const variance = valid.reduce((sum, v) => sum + Math.pow(v - meanAll, 2), 0) / valid.length;
     const sigma = Math.sqrt(variance);
@@ -185,9 +178,7 @@ if (mode === "fmc3") {
     };
 }
 
-// =========================
-// GENERIC AON (ao5, ao12, ao100, etc)
-// =========================
+// Other averages of N (ao12, ao100, used by classic mode): drop the best and worst 5% each, average the rest
 if (mode.startsWith("ao")) {
 
     const N = times.length;
@@ -197,6 +188,7 @@ if (mode.startsWith("ao")) {
 
     const sorted = [...times].sort((a, b) => a - b);
 
+    // How many to drop on each side (rounded down, so ao12 drops none)
     let trimCount = Math.floor(N * 0.05);
     if (N === 5) trimCount = 1;
 
@@ -209,6 +201,7 @@ if (mode.startsWith("ao")) {
         avg = trimmed.reduce((a, b) => a + b, 0) / trimmed.length;
     }
 
+    // σ of all the successful solves
     const validTimes = times.filter(t => t !== Infinity);
     const meanAll = validTimes.reduce((a, b) => a + b, 0) / validTimes.length;
     const variance = validTimes.reduce((sum, t) => sum + Math.pow(t - meanAll, 2), 0) / validTimes.length;
@@ -222,9 +215,7 @@ if (mode.startsWith("ao")) {
         sigma
     };
 }
-    // =========================
-    // MO3 (Mean of 3)
-    // =========================
+    // MO3 (mean of 3, and anything else): plain mean; any DNF makes it a DNF
     const dnfs = times.filter(t => t === Infinity).length;
     if (dnfs >= 1) {
         return { dnf: true };

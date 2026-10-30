@@ -1,3 +1,5 @@
+// Scramble types from csTimer, grouped like its menu: [category, [[label, csTimer type, length], …]]
+// Length 0 means csTimer's default; categories named ===…=== are dividers and "blank" types are placeholders, both skipped by the top bar
 export const scrdata = [
 	['WCA', [
 		['3x3x3', "333", 0],

@@ -1,8 +1,10 @@
+// Runs the inspection count on the timer: whole seconds on screen, the exact time in timerObj.inspection
 function inspection(inspecType, setTimerDisplay, timerObj) {
 
     timerObj.inspecting = true;
 
     const start = performance.now(); // real high-res time
+    // Last whole second handled, so each sound plays only once
     let lastSecond = -1;
 
     timerObj.interval = setInterval(() => {
@@ -13,6 +15,7 @@ function inspection(inspecType, setTimerDisplay, timerObj) {
         // Store the float value in timerObj.inspection
         timerObj.inspection = parseFloat(secondsWithDecimals.toFixed(2));
 
+        // WCA inspection: "8 seconds" and "12 seconds" calls, and the count stops at 17 (DNF)
         if (inspecType === "WCA") {
             if (seconds !== lastSecond) {
                 lastSecond = seconds;
@@ -24,7 +27,7 @@ function inspection(inspecType, setTimerDisplay, timerObj) {
         }
 
         setTimerDisplay('time', seconds);
-    }, 10); // interval frequency does NOT matter anymore
+    }, 10); // the time comes from performance.now(), so how often this runs doesn't change it
 }
 
 export { inspection };

@@ -2,21 +2,25 @@ import { csTimer } from "../main/cstimer.js";
 import { setVisualizerScale } from "./scrVisualiser.js";
 import { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx } from "./scrHelpers.js";
 
+// The scramble on screen; the next solve is saved with it
 let currentScramble = "";
 let currentScrambleEvent = ""; // event code currentScramble was made for
 
+// Gets a new scramble for an event from csTimer and shows its text and picture; length overrides the default (Multi-Blind cube count)
 async function displayScramble(event = "333", vis, length) {
 
+    // csTimer type and default length from scramble/scrData.js
     const config = getScrambleConfig(event);
     if (!config) return;
 
     const [type, rawLength] = config;
 
-    const finalLength = length ?? rawLength; // 🔥 override if provided
+    const finalLength = length ?? rawLength; // override if provided
 
     let scramble = await csTimer.getScramble(type, finalLength);
 
 
+    // Picture of the scrambled puzzle
     const svg = await csTimer.getImage(scramble, type);
 
     currentScramble = scramble;
@@ -28,6 +32,7 @@ async function displayScramble(event = "333", vis, length) {
 
     const textEl = document.getElementById("scrambleDisplay");
 
+    // Megaminx scrambles get one line per row of moves
     if (type === "mgmp") {
         textEl.textContent = formatMegaminx(scramble);
     } else {
@@ -39,11 +44,10 @@ async function displayScramble(event = "333", vis, length) {
 
 
 
-// =========================
-// Visualizer size per event
-// =========================
+// Scales and places the picture for the event's puzzle: setVisualizerScale(scale, right offset, bottom offset)
 function adjustVisualizerSize(event, vis) {
     const category = document.getElementById("categorySelect").value;
+    // WCA category: size by event
     if (category === "WCA") {
       if (
             ["333", "333ni", "333oh", "333fm"].includes(event)
@@ -73,19 +77,20 @@ function adjustVisualizerSize(event, vis) {
         else if (event === "clkwca") {
             setVisualizerScale(0.5, 60, 15, vis);
         } else if (event === "sqrs") {
-            setVisualizerScale(0.4, 105, 55, vis);  
+            setVisualizerScale(0.4, 105, 55, vis);
         } else if (event === "r3ni") {
             setVisualizerScale(0.45, 105, 140, vis);
         }
     }
 
+    // Other categories: size by puzzle
     if (
         [
         "3x3x3",
-        "3x3x3 CFOP", 
-        "3x3x3 Roux", 
-        "3x3x3 Mehta", 
-        "Crazy Puzzle", 
+        "3x3x3 CFOP",
+        "3x3x3 Roux",
+        "3x3x3 Mehta",
+        "Crazy Puzzle",
         "Helicopter Cube",
         "Redi Cube",
         "3x3x3 subsets"

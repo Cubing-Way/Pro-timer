@@ -1,6 +1,6 @@
-// Layout for the events timed with the timer: everything but Fewest Moves
-// (handleFMC in FMC.js) and Multi-Blind (handleMBLD in MBLD.js)
+// Layout for every event timed with the timer (Fewest Moves and Multi-Blind have handleFMC and handleMBLD instead)
 function showTimerLayout(vis) {
+    // Penalty buttons on, Fewest Moves / Multi-Blind controls off, touch timing on
     document.getElementById("penaltyOkBtn").style.display = "block";
     document.getElementById("penaltyPlus2Btn").style.display = "block";
     document.getElementById("penaltyDnfBtn").style.display = "block";
@@ -18,6 +18,7 @@ function showTimerLayout(vis) {
     document.getElementById("open-mbld-modal").style.display = "none";
     document.getElementById("openConfig").style.display = "none";
 
+    // Full-size timer again (Fewest Moves and Multi-Blind shrink it): big on desktop, smaller on phones
     if (vis === document.querySelector("#scrambleVis")) {
         document.getElementById("timer").style.fontSize = "140px";
     } else {
@@ -35,12 +36,13 @@ function showTimeInsertion(event, timeInsertion, timerSettObj) {
     // The timer options don't apply to Fewest Moves and Multi-Blind
     document.querySelector(".timerOpt").style.display = timerSettObj.untimedEvent ? "none" : "block";
     document.getElementById("typing-container").style.display = typing ? "block" : "none";
+    // Timer off for untimed events and in Typing mode
     timerSettObj.timerFlag = timerSettObj.untimedEvent || typing;
 }
 
 // BLD events get no inspection; the other events use the inspection type saved in the settings
 function setEventInspection(event, timerSettObj) {
-    if (["333ni", "444bld", "555bld"].includes(event)) { //no longer includes bf, check scrData.js
+    if (["333ni", "444bld", "555bld"].includes(event)) { // Multi-Blind (r3ni) isn't here: it has no timer
         timerSettObj.inspectionType = "None";
     } else {
         timerSettObj.inspectionType = localStorage.getItem("inspectionType") || "WCA";

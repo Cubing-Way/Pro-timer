@@ -1,5 +1,6 @@
 import { wrapTimesValue } from "./renderHelpers.js";
 
+// HTML of a right sidebar panel ("All time" or "Today"): best single, best average, mean, σ and solve count
 function renderStats(stats, formatStatValue) {
     return `
         Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : wrapTimesValue("-")}

@@ -16,13 +16,21 @@ This project includes code derived from csTimer
 licensed under GPLv3.
 */
 
+// Entry point: importing a controller runs its startup code (listeners, saved settings, first render)
 
+// Keyboard and touch timing
 import  "../timer/timerController.js";
+// Saved settings and colors, applied before anything is drawn
 import "../settings/settingsController.js";
+// Category, event, average mode and penalty buttons
 import "../topbar/topbarController.js";
+// Statistics page
 import "../stats/statsController.js";
+// Details pop-up
 import "../modal/modalController.js";
+// Typed-in times
 import "../timeTyping/timeTypingController.js";
+// Event layout and scrambles
 import { initEvent } from "../event/eventController.js";
 
 // The top bar fills the category and event selects, so the first scramble comes after it

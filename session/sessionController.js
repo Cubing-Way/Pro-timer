@@ -2,37 +2,35 @@ import { averageObj, classicStats, updateClassicStats } from "../average/avgCont
 import { sessionsObj } from "./sessionState.js";
 import * as solve from "./solve.js";
 
-// ===============================
-// Init
-// ===============================
+// Startup: use the saved session's average mode
 
 
-// Now it's safe:
+// getCurrentSession is a function declaration, so it can be called before the line that defines it
 const session = getCurrentSession();
 averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
 if (modeSel) modeSel.value = averageObj.mode;
 
 
-// ===============================
-// Helpers
-// ===============================
+// Saving and reading sessions
 
+// Copies the average in progress into the current session and saves every session to localStorage
 function saveSessions() {
 
     const session = sessionsObj.sessions[sessionsObj.currentSession];
 
-    // 🔥 Push global averageObj INTO session
+    // The solves of the average in progress are kept as the session's "buffer"
     session.buffer = {
         mode: averageObj.mode,
         solveCounter: averageObj.solveCounter,
         solvesArray: averageObj.solvesArray
-    };    
+    };
 
     localStorage.setItem("sessions", JSON.stringify(sessionsObj.sessions));
     localStorage.setItem("currentSession", sessionsObj.currentSession);
 }
 
+// The session in use, created empty if it doesn't exist yet
 function getCurrentSession() {
     if (!sessionsObj.sessions[sessionsObj.currentSession]) {
         sessionsObj.sessions[sessionsObj.currentSession] = { averages: [] };
@@ -40,10 +38,9 @@ function getCurrentSession() {
     return sessionsObj.sessions[sessionsObj.currentSession];
 }
 
-// ===============================
-// UI
-// ===============================
+// Session select
 
+// Fills the select: one option per session, a divider, then New, Rename and Delete
 function renderSessionSelect() {
     const select = sessionsObj.selectEl;
     select.innerHTML = "";
@@ -69,10 +66,9 @@ function renderSessionSelect() {
     select.appendChild(new Option("🗑 Delete current...", "__delete__"));
 }
 
-// ===============================
-// Actions
-// ===============================
+// Session actions
 
+// Saves the old session (unless skipSave), makes name the current one, and tells the top bar with "sessionChanged"
 function switchSession(name, skipSave = false) {
     if (!skipSave) {
         saveSessions();
@@ -86,10 +82,11 @@ function switchSession(name, skipSave = false) {
     localStorage.setItem("currentSession", sessionsObj.currentSession);
 }
 
+// A pick in the session select: an action option, or another session
 sessionsObj.selectEl.onchange = () => {
     const val = sessionsObj.selectEl.value;
 
-    // ---- New ----
+    // New: ask for a name; an empty or taken name cancels
     if (val === "__new__") {
         const name = prompt("New session name:");
         if (!name || sessionsObj.sessions[name]) {
@@ -101,7 +98,7 @@ sessionsObj.selectEl.onchange = () => {
         return;
     }
 
-    // ---- Rename ----
+    // Rename: ask for the new name; empty, unchanged or taken cancels
     if (val === "__rename__") {
         const oldName = sessionsObj.currentSession;
         const newName = prompt("Rename session:", oldName);
@@ -120,7 +117,7 @@ sessionsObj.selectEl.onchange = () => {
         return;
     }
 
-    // ---- Delete ----
+    // Delete: never the last session, and only after asking
     if (val === "__delete__") {
         if (Object.keys(sessionsObj.sessions).length === 1) {
             alert("You must have at least one session.");
@@ -133,31 +130,31 @@ sessionsObj.selectEl.onchange = () => {
             return;
         }
 
-        // 🔥 SAVE BEFORE deleting
+        // Save first, so the other sessions' latest state is stored
         saveSessions();
 
         const old = sessionsObj.currentSession;
         delete sessionsObj.sessions[old];
 
+        // Move to the first session left
         const first = Object.keys(sessionsObj.sessions)[0];
 
-        // 🔥 Skip saving because we already deleted old session
+        // Skip saving because we already deleted old session
         switchSession(first, true);
 
         return;
     }
 
-    // ---- Normal switch ----
+    // Normal switch: another session was picked
     switchSession(val);
 };
 
-// ===============================
-// Init
-// ===============================
+// Startup: fill the select and load the current session's state
 
 renderSessionSelect();
 changedSession();
 
+// Clear button: deletes the session's averages and the solves in progress, after asking
 function clearAverages() {
     if (!confirm("Delete all averages in this session?")) return;
 
@@ -168,15 +165,18 @@ function clearAverages() {
     averageObj.solvesArray = [];
     averageObj.solveCounter = 0;
 
+    // Classic mode: rebuild (now empty) rolling averages, and store them in the session
     if(averageObj.mode === "classic") updateClassicStats(true);
     session.classicStats = structuredClone(classicStats);
 
-    saveSessions(); // 🔥 now buffer is empty too
+    saveSessions(); // also saves the now empty buffer
 }
 
+// Loads the current session's average in progress and classic stats into the shared state
 function changedSession() {
     const session = getCurrentSession();
 
+    // A session that has never been saved has no buffer yet
     if (!session.buffer) {
         session.buffer = {
             mode: session.mode || "ao5",
@@ -185,6 +185,7 @@ function changedSession() {
         };
     }
 
+    // Copies, so changes don't touch the session until the next save
     if (session.classicStats) {
         classicStats.current = structuredClone(session.classicStats.current);
         classicStats.best = structuredClone(session.classicStats.best);
@@ -207,22 +208,24 @@ function changedSession() {
     if (sel) sel.value = averageObj.mode;
 }
 
-// ===============================
 // Solves (solve.js gets the session state from here)
-// ===============================
 
+// Saves a finished average at the top of the session
 function addAverageBlock(block) {
     solve.addAverageBlock(block, getCurrentSession, saveSessions);
 }
 
+// The session's finished averages, newest first
 function getSessionAverages() {
     return solve.getSessionAverages(getCurrentSession);
 }
 
+// Sets the penalty of a solve in a saved average and recomputes the average
 function penalty2(blockIndex, solveIndex, penalty) {
     solve.penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
 }
 
+// Removes a solve (blockIndex -1: from the average in progress)
 function remove2(blockIndex, solveIndex) {
     solve.remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions);
 }
@@ -232,13 +235,10 @@ function applyPenaltyToLast(penalty, setPenalty) {
     solve.applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats, setPenalty);
 }
 
+// Removes the most recent solve
 function removeLastSolve(removeSolve) {
     solve.removeLastSolve(averageObj, getCurrentSession, removeSolve);
 }
-
-// ===============================
-// Exports
-// ===============================
 
 export {
     getCurrentSession,

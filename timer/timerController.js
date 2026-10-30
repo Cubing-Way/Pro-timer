@@ -17,23 +17,19 @@ import { plus2CounterObj } from "../topbar/topbarState.js";
 import { startTimer2, stopTimer2 } from "./countdownTimer.js";
 
 
-// ===============================
-// Countdown Timer Elements
-// ===============================
+// Fewest Moves / Multi-Blind countdown: "Start attempt" starts (or stops) it, submitting a result stops it
 const startBtn = document.getElementById("countdown");
 const stopBtn = document.getElementById("submit-moves");
 
 startBtn.addEventListener("click", () => startTimer2(countdownObj, timerWarnings));
 stopBtn.addEventListener("click", () => stopTimer2(countdownObj));
 
+// Whether the phone scramble picture is open (topbar/topbarController.js toggles it)
 const timerDOMObj = {
     scrDisplayFlag: false
 };
 
-// ===============================
-// Timer display helper
-// ===============================
-
+// Changes the timer's color ("color") or text ("time"); passed to the other timer files so they don't touch the DOM
 function setTimerDisplay(colorOrTime, content) {
     if (colorOrTime === "color") {
         document.getElementById("timer").style.color = content;
@@ -42,22 +38,23 @@ function setTimerDisplay(colorOrTime, content) {
     }
 }
 
-// ===============================
-// Inspection for typed-in times
-// ===============================
+// Inspection for typed-in times: a plain seconds count, separate from the solve timer
 
+// Seconds counted, the count's setInterval id, and whether it's running
 let seconds = 0;
 let interval = null;
 let running = false;
 
+// Starts the typed-time inspection count, or stops and resets it if it's running
 function inspection2() {
         if (!running) {
-        // START
+        // Start: show 0, then count one second at a time
         running = true;
         setTimerDisplay('time', seconds);
         interval = setInterval(() => {
             seconds++;
                         setTimerDisplay('time', seconds);
+                // WCA calls at 8 and 12 seconds; at 17 the count stops on its own
                 if (seconds === 8)  new Audio("./audio/8seconds.mp3").play();
                 if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
                 if (seconds === 17) {
@@ -71,7 +68,7 @@ function inspection2() {
                 }
         }, 1000);
     } else {
-        // STOP
+        // Stop: reset the count and the display
         running = false;
         clearInterval(interval);
         interval = null;
@@ -83,16 +80,16 @@ function inspection2() {
     }
 }
 
-// ===============================
-// Keyboard handling
-// ===============================
+// Focus mode while solving: hide everything but the timer and the touch overlay
 
+// Adds .focus-hidden to every element that isn't the timer, the overlay, or one of their ancestors
 function showOnlyTimerSafe() {
   const timer = document.getElementById("timer");
   const overlay = document.getElementById("touchOverlay"); // the invisible div
 
   if (!timer || !overlay) return;
 
+  // Walks down the page: ancestors of the timer are kept and searched, everything else is hidden
   function hideRecursively(element) {
     // Skip the timer and the overlay
     if (element === timer || element === overlay) return;
@@ -105,28 +102,29 @@ function showOnlyTimerSafe() {
       element.classList.add("focus-hidden");
     }
   }
-     
+
   hideRecursively(document.body);
 }
 
+// Shows everything again after the solve
 function restoreUI() {
   document.querySelectorAll(".focus-hidden").forEach(el => {
     el.classList.remove("focus-hidden");
   });
 }
 
-// ===============================
 // Phase transitions (shared by keyboard and touch)
-// ===============================
 
 // Space down / first finger down
 function onPressStart() {
     switch (timerObj.timerPhase) {
         case PHASE.IDLE:
+            // No inspection: go straight to the hold
             if (timerSettObj.inspectionType === "None") {
                 beginHold(delayFlagType, timerObj, setTimerDisplay);
                 return;
             }
+            // "Press start" begins inspection now, "Press end" waits for the release
             timerObj.timerPhase = PHASE.INSPECTING;
             if (localStorage.getItem("inspectionStart") === "press-start") {
                 inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
@@ -146,14 +144,17 @@ function onPressStart() {
 function onPressEnd() {
     switch (timerObj.timerPhase) {
         case PHASE.HOLDING:
+            // Let go too early: no start
             cancelHold(timerObj, setTimerDisplay, getThemeVar);
             return;
         case PHASE.READY:
+            // Green and released: the solve starts
             timerObj.timerPhase = PHASE.RUNNING;
             startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
             showOnlyTimerSafe();
             return;
         case PHASE.INSPECTING:
+            // "Press end": the release of the first press begins inspection
             if (!timerObj.inspecting && localStorage.getItem("inspectionStart") === "press-end") {
                 inspection(timerSettObj.inspectionType, setTimerDisplay, timerObj);
             }
@@ -169,17 +170,21 @@ function onPressLost() {
     cancelHold(timerObj, setTimerDisplay, getThemeVar);
 }
 
+// Phone: a finger on the main area is a press
 document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     // If the touch originated inside an input or the typing UI, ignore it
     const touchTarget = e.target;
     if (touchTarget && touchTarget.closest && (touchTarget.closest('input') || touchTarget.closest('#typing-container'))) {
         return;
     }
+    // Stops the browser from scrolling or zooming
     e.preventDefault();
+    // Timer off (Typing mode, Fewest Moves, Multi-Blind)
     if (timerSettObj.timerFlag) return;
     // Only the first finger down counts as a press
     if (e.touches.length > e.changedTouches.length) return;
 
+    // A tap while the phone scramble picture is open only closes it
     if (timerObj.timerPhase !== PHASE.RUNNING && timerDOMObj.scrDisplayFlag) {
         document.querySelector(".panel-cube2").style.display = "none";
         document.getElementById("scramble-button").style.justifySelf = "center";
@@ -191,6 +196,7 @@ document.getElementById("touchOverlay").addEventListener("touchstart", (e) => {
     onPressStart();
 });
 
+// Escape cancels everything: inspection, hold or running solve, nothing is saved
 document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") {
         clearInterval(timerObj.interval);
@@ -207,6 +213,7 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
+// Phone: lifting the fingers is a release
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     // If the touch ended inside an input or the typing UI, ignore it
     const touchTarget = e.target;
@@ -220,18 +227,21 @@ document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     onPressEnd();
 });
 
+// Cases where the release never arrives
 document.getElementById("touchOverlay").addEventListener("touchcancel", onPressLost);
 window.addEventListener("blur", onPressLost);
 document.addEventListener("visibilitychange", () => {
     if (document.hidden) onPressLost();
 });
 
+// Typing mode on a phone: a tap starts or stops the typed-time inspection (untimed events have none)
 document.getElementById("touchOverlay").addEventListener("touchstart", () => {
     if (!timerSettObj.timerFlag) return;
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
     inspection2();
 });
 
+// Typing mode: the "Inspection (space)" button does the same
 document.getElementById("inspection-btn").addEventListener("click", () => {
     if (!timerSettObj.timerFlag) return;
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
@@ -239,6 +249,7 @@ document.getElementById("inspection-btn").addEventListener("click", () => {
 });
 
 
+// Typing mode: and so does the space bar
 document.addEventListener("keydown", (e) => {
     if (!timerSettObj.timerFlag) return;
     if (e.code !== "Space" || e.repeat) return;
@@ -246,6 +257,7 @@ document.addEventListener("keydown", (e) => {
     inspection2();
 });
 
+// True when the focus is in a text field, so keys go to it and not to the timer
 function isTyping() {
   const el = document.activeElement;
   return (
@@ -255,6 +267,7 @@ function isTyping() {
   );
 }
 
+// Keyboard: key down is a press
 document.addEventListener("keydown", (e) => {
     // A select left focused (closed without a change) would open or change with this key: the timer takes it
     if (document.activeElement.tagName === "SELECT" && (e.key === " " || timerObj.timerPhase === PHASE.RUNNING)) {
@@ -262,6 +275,7 @@ document.addEventListener("keydown", (e) => {
         document.activeElement.blur();
     }
 
+    // Held-down key repeats, timer off, or typing in a field
     if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
 
     // Any key but Tab (the Timer/Typing switch) splits/stops a running timer, only space drives the other phases
@@ -283,12 +297,13 @@ document.addEventListener("keydown", (e) => {
     setTimeInsertion(timeInsertion === "Typing" ? "Timer" : "Typing");
 });
 
+// A press while running: ends the current phase, and on the last phase stops and saves the solve
 function handleSplitOrStop() {
 
     const now = performance.now();
     const totalElapsed = (now - timerObj.startTime);
 
-    // 🔥 Calculate phase duration (difference from last split)
+    // Calculate phase duration (difference from last split)
     const phaseTime = formatTime(totalElapsed - timerObj.lastSplitTime);
 
     // Save for next split
@@ -303,13 +318,15 @@ function handleSplitOrStop() {
         return;
     }
 
-    // 🔥 Last phase → stop
-    plus2CounterObj.penalty = 0; // ✅ correct reset
+    // Last phase: reset the +2 button for the new solve, then stop
+    plus2CounterObj.penalty = 0;
     document.getElementById("penaltyPlus2Btn").textContent = "+2";
     stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
 
+    // The time as shown ("12.34" or "1: 02.50"), parsed again by averageOfN
     const finalTime = document.getElementById("timer").innerHTML;
 
+    // Add the solve; a block comes back when it completes an average
     const block = averageOfN(
         finalTime,
         currentScramble,
@@ -321,6 +338,7 @@ function handleSplitOrStop() {
         timerObj.solvePhases
     );
 
+    // Keep the session's copy of the classic rolling averages up to date
     const session = getCurrentSession();
     session.classicStats = structuredClone(classicStats);
 
@@ -333,12 +351,14 @@ function handleSplitOrStop() {
     timerObj.currentSolvePhase = 0;
     timerObj.lastSplitTime = 0;
 
+    // Save, redraw, new scramble, and show the page again
     saveSessions();
     renderHistory();
     displayScramble(eventObj.event, vis);
     restoreUI();
 }
 
+// Keyboard: space up is a release
 document.addEventListener("keyup", (e) => {
     // Only intercept Space key so typing in inputs isn't blocked
     if (e.key !== " ") return;

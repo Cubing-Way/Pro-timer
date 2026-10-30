@@ -2,6 +2,7 @@ import { PHASE } from "./timerState.js";
 
 const HOLD_DELAY_MS = 300; // WCA: hold 0.3s before the timer may start
 
+// Puts the timer back in the "Main text" color
 function resetTimerColor(setTimerDisplay, getThemeVar) {
     setTimerDisplay('color', `${getThemeVar(`theme-text-${localStorage.getItem("times-color")}`, '--text-main')}`);
 }
@@ -21,6 +22,7 @@ function beginHold(delayFlagType, timerObj, setTimerDisplay) {
     timerObj.timerPhase = PHASE.HOLDING;
     setTimerDisplay('color', 'red');
     timerObj.holdTimeout = setTimeout(() => {
+        // Released in the meantime: cancelHold already changed the phase
         if (timerObj.timerPhase !== PHASE.HOLDING) return;
         timerObj.timerPhase = PHASE.READY;
         setTimerDisplay('color', 'limeGreen');

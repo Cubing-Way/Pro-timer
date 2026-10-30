@@ -141,6 +141,156 @@ Some elements are hidden in the CSS and shown by the code: the event buttons and
 - `build.minify: false`: the built code stays readable.
 - `plugins: [htmlIncludes()]`: puts the HTML pieces together (see [The page](#the-page-html)).
 
+## Code
+
+Plain JavaScript modules, no framework. Each folder's controller runs its setup code (listeners, saved settings, first draw) the first time it's imported. Folders share state through the `…State.js` objects, and functions that need state get it passed in by their controller.
+
+### Startup
+
+1. `index.html` links `main/style.css`, then loads `main/mainController.js` as a module.
+2. `mainController.js` imports every controller. A module's code runs once, after the modules it imports, so things happen in dependency order:
+   - `session/sessionState.js` reads all sessions from localStorage, and `session/sessionController.js` loads the current one's average in progress (`changedSession`) and fills the session select.
+   - `settings/settingsController.js` applies the saved colors, layout switches and timer settings.
+   - `event/eventController.js` picks where scramble pictures go (`vis`: the desktop corner, or the phone pop-up when the window is 768px wide or less) and shows the timer or the typing box.
+   - `topbar/topbarController.js` fills the category select, sets the category, event and mode selects to the session's (running their change handlers), wires the penalty buttons and draws the history (`renderHistory`).
+3. Last, `mainController.js` awaits `initEvent()`, which shows the first scramble and, for Fewest Moves or Multi-Blind, their layout.
+
+### The path of one solve
+
+1. **Press** (space down, or a finger on `#touchOverlay`): `onPressStart` in `timer/timerController.js`. From idle it starts inspection (or waits for the release, with "Press end"); during inspection it starts the hold.
+2. **Hold**: `beginHold` (`timer/timerPhases.js`) turns the timer red, and green after 0.3 s (right away with the delay flag off).
+3. **Release** while green: `onPressEnd` starts the timer (`startTimer`, `timer/timer.js`) and hides everything but the timer (`showOnlyTimerSafe`).
+4. **Press while running** (any key but Tab): `handleSplitOrStop` ends the current timer phase. On the last phase it stops the timer and reads the final time from the display.
+5. `averageOfN` (`average/avgController.js`) works out the inspection penalty and adds the solve to `averageObj.solvesArray`. In classic mode it updates the rolling averages; otherwise, once there are enough solves for the mode, it returns a finished average block.
+6. `addAverageBlock` (`session/`) puts the block at the start of `session.averages`, and `saveSessions` writes everything to localStorage.
+7. `renderHistory` (`render/renderController.js`) redraws the footer, the history list and both stats panels.
+8. `displayScramble` (`scramble/scrambleController.js`) asks csTimer's worker for the next scramble and its picture, and `restoreUI` shows the page again.
+
+Typed-in times (`timeTyping/`), Fewest Moves and Multi-Blind (`event/eventController.js`) skip the timer and call `averageOfN` from step 5 with the typed time, the move count or the points.
+
+### Data
+
+A **solve**, as saved in `averageObj.solvesArray` and in average blocks:
+
+| Field | Meaning |
+| --- | --- |
+| `time` | Seconds; the move count for Fewest Moves, the points for Multi-Blind |
+| `penalty` | `null`, a number of seconds added (2, 4 … 12), or `"DNF"` |
+| `result` | Multi-Blind only: `"4 / 5"` |
+| `scramble`, `event` | The scramble and the event code it was made for |
+| `inspection` | Seconds of inspection used (0 for typed times, FMC and Multi-Blind) |
+| `createdAt` | When it was saved (ms since 1970), used by the date filters |
+| `solution` | Fewest Moves solution, or one typed in the details pop-up |
+| `solvePhases` | Time of each timer phase |
+| `moves`, `tps`, `status` | Set when a solution is checked in the details pop-up |
+
+An **average block** (one finished average): `mode`, `average`, `best`, `worst`, `sigma` (already formatted as text, like `"12.34"` or `"DNF"`) and `solves`.
+
+A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks, newest first), `buffer` (the average in progress: `mode`, `solveCounter`, `solvesArray`), `classicStats` (classic mode's rolling averages), and the `category`, `scrambleType` (event) and `mode` it was last used with.
+
+**localStorage keys**: `sessions` and `currentSession`; the settings `main-background`, `secondary-background`, `tertiary-background`, `buttons-background`, `text-color`, `times-color`, `inspectionType`, `inspectionStart`, `delayFlagType`, `timerDisplay`, `timeInsertion`, `totalSolvePhases`; one `visibility-<select id>` per layout switch; and `timerWarningConfig_v1` for the timer warnings.
+
+### `main/`
+
+- **`mainController.js`**: the entry point. Imports every controller, then `await initEvent()`.
+- **`cstimer.js`**: runs csTimer's scrambler (`public/cstimer_module.js`) in a web worker, so making scrambles never freezes the page. `call(type, args)` sends `[id, type, args]` to the worker and keeps the promise's `resolve` in `callbacks[id]`; when the worker answers `[id, type, result]`, `onmessage` resolves that promise. It exports `csTimer` with `getScramble(type, length)`, `getImage(scramble, type)` (an SVG picture), `setSeed(seed)` and `setGlobal(key, value)`.
+
+### `timer/`
+
+- **`timerState.js`**: `PHASE` (the timer's phases) and `timerObj` (the current phase, interval and timeout ids, inspection time, timer phases of the solve in progress). `countdownObj` holds the 1-hour countdown for Fewest Moves and Multi-Blind.
+- **`timerController.js`**: all keyboard and touch handling. What a press and a release do in each phase:
+
+  | Phase | Press | Release |
+  | --- | --- | --- |
+  | idle | → inspecting (inspection starts now with "Press start"); with inspection off, straight to the hold | |
+  | inspecting | `beginHold` → holding | starts inspection, with "Press end" |
+  | holding | | `cancelHold` → back to inspecting or idle |
+  | ready | | → running, `startTimer` |
+  | running | `handleSplitOrStop` | |
+
+  `onPressLost` cancels a hold when the release can't come (touch cancelled, tab hidden, window blurred). Escape cancels everything. Tab switches between Timer and Typing (`setTimeInsertion`). `setTimerDisplay(colorOrTime, content)` is the only function that writes on the timer; the other timer files get it passed in. `inspection2` is a separate seconds count used for inspection in Typing mode.
+- **`timerPhases.js`**: `beginHold` (red, then green after `HOLD_DELAY_MS`), `cancelHold`, `resetTimerColor`.
+- **`timer.js`**: `startTimer` updates the display every 10 ms from `performance.now()` (or shows "Solving" with "Hide while solving"); `stopTimer` writes the final time and goes back to idle.
+- **`inspection.js`**: `inspection(type, setTimerDisplay, timerObj)` counts inspection and stores the exact time in `timerObj.inspection`; WCA inspection plays the 8 and 12 second calls and stops at 17.
+- **`timeFormatting.js`**: `formatTime(ms)` for the running timer ("12.34", "1: 02.34", "1: 02: 03.45"), truncated like the WCA does.
+- **`countdownTimer.js`**: `startTimer2` (start or stop the countdown, playing the ticked warnings from `public/audio/`), `stopTimer2` (reset to one hour), `updateDisplay`.
+
+### `average/`
+
+- **`avgState.js`**: `averageObj` (the mode and the solves of the average in progress) and `classicStats` (classic mode's `current`, `best` and `history` mo3, ao5, ao12 and ao100).
+- **`avgController.js`**: `averageOfN(time, scramble, inspection, inspectionType, isFMC, modeFlag, isMBLD, solvePhases)`. It turns the input into a value (seconds, moves or points), applies the penalties (WCA inspection: 15 s is +2, 17 s is DNF; an unsolved FMC cube or 0 points or less is DNF), saves the solve, and returns a finished block when the mode has enough solves (5 for ao5 and bo5, 3 otherwise), removing those solves from the buffer. With `modeFlag` it adds no solve and only re-checks the buffer after a mode change. It also re-exports the helpers below.
+- **`avgComput.js`**: `computeAverage(solves, mode)` returns `{ dnf, avg, best, worst, sigma }`. A DNF counts as `Infinity`, so it sorts last.
+
+  | Mode | Result | It's a DNF when |
+  | --- | --- | --- |
+  | ao5 | Drop best and worst, mean of the middle 3 (with 4 solves done it also gives the best and worst possible ao5) | 2 or more DNFs |
+  | mo3 | Mean of 3 | any DNF |
+  | bo3 | Best single; `avg` is the mean of the successful attempts | all 3 are DNF |
+  | bo5 | Best single; `avg` is the ao5 of the same solves | all 5 are DNF (the best is then a DNF) |
+  | fmc3 (ao3) | Mean of 3 move counts | 2 or more DNFs |
+  | ao12, ao100 | Drop the best and worst 5% (rounded down), mean of the rest | 2 or more DNFs |
+
+  For Multi-Blind, more points is better, so `bestAndWorst` flips the comparison.
+- **`classicAvgs.js`**: `updateClassicStats(recomputeBest, averageObj, classicStats)`. After a new solve, it adds the rolling averages ending at that solve and updates the bests; with `recomputeBest` it rebuilds the whole history by sliding a window over every solve (after a penalty, a removed solve, a session change or switching to classic).
+- **`avgHelper.js`**: `parseTimeToSeconds` ("1:02.50" → 62.5), `formatSecondsToTime` (62.5 → "1:02.50", Infinity → "DNF"), `formatDisplayTime` (a solve with its penalty: "14.34 (+2)"), `isPointsSolves` (true for Multi-Blind solves).
+
+### `session/`
+
+- **`sessionState.js`**: `sessionsObj`: every session by name (from localStorage), the current session's name and the session select.
+- **`sessionController.js`**: `getCurrentSession`, `saveSessions` (copies the average in progress into the session's `buffer`, then saves all sessions), `renderSessionSelect`, and the select's New, Rename and Delete actions. `switchSession` saves, changes session and fires a `sessionChanged` event, which the top bar answers by loading the new session (`changedSession` copies its buffer and classic stats into the shared state) and setting its selects. `clearAverages` empties the session after asking. The other functions pass the session state to `solve.js`.
+- **`solve.js`**: `addAverageBlock`, `getSessionAverages`, `getLastSolveTarget` (the most recent solve: in the buffer, else in the newest block), `penalty2` (change a saved solve's penalty and recompute its block), `remove2` (remove a solve; a solve from a finished average either reopens that average or deletes it), `applyPenaltyToLast` and `removeLastSolve` (the buttons under the timer).
+
+### `scramble/`
+
+- **`scrData.js`**: `scrdata`, csTimer's list of scramble types by category: `[category, [[label, type, length], …]]`.
+- **`scrambleController.js`**: `displayScramble(event, vis, length)` gets a scramble and its SVG picture from the worker, saves it as `currentScramble` (the next solve is saved with it), writes the text (Megaminx one row per line) and sizes the picture with `adjustVisualizerSize` (a scale and position per puzzle).
+- **`scrHelpers.js`**: `getScrambleConfig(code)` (type and length from `scrdata`), `isCubiszEvent` (3x3 events, the only ones cubisz can check), `autoFitText` (shrinks the scramble text until it fits), `formatMegaminx`.
+- **`scrVisualiser.js`**: `setVisualizerScale(scale, right, bottom, vis)` scales and places the desktop or phone picture.
+
+### `event/`
+
+- **`eventController.js`**: `eventObj.event` (the current event code) and `vis`. Fewest Moves: typing a solution applies it to the cube live, "Test solution" shows the move count and whether it solves the cube, "Submit solution" saves the move count as the result. Multi-Blind: `submitMBLD` turns "solved/total" into points and saves it; "View Scrambles" opens the list of scrambles for the chosen number of cubes. Timer warnings: `timerWarnings` (minutes left → on or off), saved in localStorage. `initEvent()` shows the first scramble.
+- **`eventLayout.js`**: `showTimerLayout` (the layout of every timed event), `showTimeInsertion` (timer or typing box; Fewest Moves and Multi-Blind are untimed), `setEventInspection` (no inspection for blindfolded events).
+- **`FMC.js`**: `handleFMC` switches to the Fewest Moves layout and mounts the cubisz cube with the scramble applied.
+- **`MBLD.js`**: `handleMBLD` (Multi-Blind layout), `calculateMBLDPoints("4/5")` → `{ points: 3, result: "4 / 5" }` (throws on bad input), `parseMBLDScramble` (one scramble per cube), `renderMBLDGrid` (number, scramble and picture per cube).
+
+### `render/`
+
+- **`renderController.js`**: `renderHistory()`, called after every change. It decides what the footer shows (the average in progress if it has solves, else the newest saved one) and redraws the four areas below. `formatStatValue(value)` is the helper with the current session filled in.
+- **`renderAvgBuffer.js`**: `renderCurrentAverage`, the footer's left panel (the current average's solves, or the current rolling averages in classic mode).
+- **`renderBufferAvgStats.js`**: `renderAvgStats`, the footer's right panel (best, worst, σ; best and worst possible ao5 with 4 of 5 solves; the best rolling averages in classic mode).
+- **`renderHistoryList.js`**: `renderHistoryList`, the left sidebar (past averages with their solves, or every solve in classic mode).
+- **`statistics.js`**: `renderStats`, one right sidebar panel (best single, best average, mean, σ, solves).
+- **`renderHelpers.js`**: `wrapTimesValue` (puts a value in the "Main text" color), `formatStatValue` (a solve or number as text: time with penalty and phases, moves, points, "DNF" or "-").
+
+### `stats/`
+
+- **`statsController.js`**: `getStatistics()` and `getStatisticsByDate(range)` (the sidebar's "All time" and "Today"), and `renderStatsPage()`, which fills the statistics page for the chosen period: the overview cards, four Chart.js charts (solve times; averages compared with the closest earlier period that has averages; σ per average; how many solves fall under each time) and the averages table (one row per average, or per solve with its rolling averages in classic mode).
+- **`statsHelpers.js`**: `getAllSolvesFromSession`, `getStatisticsFromSolves` (best single, mean, σ, best average, solve count), the date ranges (`getRangeTimestamps` for the current day, week, month, semester or year in local time; `filterSolvesByRange`, `filterAveragesByRange`, `getAveragesInRange`, `getLastRangeWithData`), and the chart data (`getSigmaGraphData`, `generateSmartThresholds`, `getTimeDistribution`, `getDistributionLabels`, `filterEmptyBuckets`, `buildAvgMaps`).
+
+### `settings/`
+
+- **`settingsController.js`**: opens and closes the panel, connects the Layout switches (`bindVisibilityToggle`), and loads, applies and saves every setting. Colors use `getThemeVar` (see [Styles](#styles-css)); if a text color has the same base color as its background (red text on a red background), it switches to black or white instead. `setTimeInsertion` switches Timer / Typing and `updateTypingUI` shows or hides the typing box. `delayFlagType` and `timeInsertion` are exported, so the other folders always read the current value.
+- **`settingsState.js`**: `timerSettObj`: `inspectionType`, `timerFlag` (true when the timer is off) and `untimedEvent` (Fewest Moves or Multi-Blind).
+- **`layout.js`**: `bindVisibilityToggle(selectId, targetClass)` shows or hides every element with a class from a Display / None select, and remembers the choice.
+
+### `topbar/`
+
+- **`topbarController.js`**: fills the category select from `scrdata` and the event select from the chosen category. Changing the event saves it in the session, sets the layout, the inspection type and the WCA average mode for it (`getDefaultModeForEvent`: bo5 for 3BLD, bo3 for 4BLD, 5BLD and Multi-Blind, mo3 for 6x6 and 7x7, ao3 for FMC, ao5 otherwise), stops a running countdown and shows a new scramble. Changing the mode saves it and re-checks the average in progress. It also handles the `sessionChanged` event, the Clear, Open Session and penalty buttons (+2 steps through +2 … +12), the phone scramble button, and takes the focus off clicked buttons and selects so the space bar keeps driving the timer.
+- **`topbarState.js`**: `plus2CounterObj`, the +2 button's current step.
+
+### `modal/`
+
+- **`modalController.js`**: `openDetailsModal()` builds the pop-up with every saved average, its solves, their penalty buttons, scrambles, inspection, date and, for 3x3, a solution box. `setPenalty` and `removeSolve` change a saved solve, recount, save, redraw and rebuild the pop-up. `submitSolution` checks a typed solution on cubisz and saves its move count, TPS and status.
+
+### `timeTyping/`
+
+- **`timeTypingController.js`**: the Add button and the Enter key save a typed time. `normalizeTypedTime` accepts "12.34", "1:02.50" or digits only ("1234" → 12.34, "10234" → 1:02.34); anything else flashes the box red.
+
+### `cubisz/` and `public/`
+
+The app only uses cubisz through `cubisz/api.js`: `mountCube(element)`, `setSize`, `setView("3d")`, `setFMC(true)`, `applyScramble(scramble, skipPaint)`, `applySolution(moves, skipPaint)` (both repaint the cube unless `skipPaint` is true), `getLastMoveCount()` and `checkSolved()`. `public/cstimer_module.js` is csTimer's scrambler, answering the worker messages `scramble`, `image`, `seed` and `set`.
+
 ## License
 
 Copyright (C) 2026 Caio Almeida Martins

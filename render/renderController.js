@@ -9,12 +9,15 @@ import { renderHistoryList } from "./renderHistoryList.js";
 import { renderStats } from "./statistics.js";
 
 
+// formatStatValue with the current session filled in
 function formatStatValue(value) {
     return formatStatValueWith(value, getCurrentSession);
 }
 
+// Redraws everything that shows solves (footer panels, history list, both stats panels); called after every change
 function renderHistory() {
     const averages = getSessionAverages();
+    // Session stats over all time and over today (stats/statsController.js)
     const stats = getStatistics();
     const todayStats = getStatisticsByDate("day")
 
@@ -24,7 +27,7 @@ function renderHistory() {
     const statisticsContainer = document.getElementById("stats");
     const todayStatsContainer = document.getElementById("today-stats");
 
-    // Decide what is CURRENT
+    // What the footer shows: the average in progress if it has solves, else the newest saved one
     let currentType = null; // "live" | "saved"
     let currentBlock = null;
 
@@ -36,7 +39,7 @@ function renderHistory() {
     }
 
 
-    // Render CURRENT preview
+    // Footer, left: the current average's solves
     if (currentContainer) {
         currentContainer.innerHTML = renderCurrentAverage
         (
@@ -48,7 +51,7 @@ function renderHistory() {
         );
     }
 
-    // Render DONE / LIVE STATS panel
+    // Footer, right: the current average's stats
     if (doneContainer) {
         doneContainer.innerHTML = renderAvgStats({
             type: currentType,
@@ -59,12 +62,12 @@ function renderHistory() {
     }
 
 
-    // Render HISTORY list
+    // Left sidebar: the other averages
     if (historyContainer) {
         historyContainer.innerHTML = renderHistoryList(averages, currentType, averageObj, formatStatValue);
     }
 
-    // Render SESSION stats
+    // Right sidebar: all-time and today's stats
     if (statisticsContainer) {
         statisticsContainer.innerHTML = renderStats(stats, formatStatValue);
         todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue)

@@ -19,13 +19,12 @@ import {
   buildAvgMaps
 } from "./statsHelpers.js";
 
+// A new period redraws the page
 document.getElementById("date-filter").addEventListener("change", () => {
   renderStatsPage();
 });
 
-// ===============================
-// Stats page
-// ===============================
+// Open and close the statistics page (it's redrawn every time it opens)
 
 const statsPage = document.getElementById("stats-page");
 const openStatsBtn = document.getElementById("open-stats-btn");
@@ -40,15 +39,15 @@ closeStatsBtn.addEventListener("click", () => {
   statsPage.classList.remove("open");
 });
 
-// ===============================
-// PUBLIC API
-// ===============================
+// Stats for the right sidebar (render/renderController.js)
+// All-time stats of the current session: { bestTime, mean, sigma, bestAvg, solveCounter }
 function getStatistics() {
   const session = getCurrentSession();
   const allSolves = getAllSolvesFromSession(session, averageObj);
   return getStatisticsFromSolves(allSolves, session, averageObj, classicStats);
 }
 
+// The same stats for the solves of the current day, week, month, semester or year
 function getStatisticsByDate(range) {
   const session = getCurrentSession();
   const allSolves = getAllSolvesFromSession(session, averageObj);
@@ -56,6 +55,7 @@ function getStatisticsByDate(range) {
 
   const stats = getStatisticsFromSolves(filteredSolves, session, averageObj, classicStats);
 
+// Classic mode: the best rolling ao5 that ends in the range
 if (averageObj.mode === "classic") {
   const { start, end } = getRangeTimestamps(range);
 
@@ -71,6 +71,7 @@ if (averageObj.mode === "classic") {
   stats.bestAvg = best?.avg ?? null;
 
 } else {
+  // Block modes: the best finished average in the range
   const filteredAvgs = filterAveragesByRange(session, range);
 
   const ao5Arr = filteredAvgs
@@ -83,15 +84,17 @@ if (averageObj.mode === "classic") {
   return stats;
 }
 
+// Fills the statistics page for the chosen period: overview cards, the 4 charts and the averages table
 function renderStatsPage() {
 
   const range = document.getElementById("date-filter").value;
   const session = getCurrentSession();
 
-  // 🔥 filtered data
+  // Solves in the chosen period
   const allSolves = getAllSolvesFromSession(session, averageObj);
   const filteredSolves = filterSolvesByRange(allSolves, range);
 
+// Buckets for the distribution chart
 const thresholds = generateSmartThresholds();
 
 
@@ -99,30 +102,27 @@ const distribution = getTimeDistribution(filteredSolves, thresholds);
 const distributionLabels = getDistributionLabels(thresholds);
 
 
-    // =========================
-    // GLOBAL STATS
-    // =========================
+    // Overview cards
 
   const filteredAverages = filterAveragesByRange(session, range);
 
   const stats = getStatisticsFromSolves(filteredSolves, session, averageObj, classicStats);
 
-  // fix best avg based on filtered
+  // Best average among the ones finished in the period (getStatisticsFromSolves counts every average)
   const ao5Arr = filteredAverages
     .filter(a => a.average !== "DNF")
     .map(a => parseTimeToSeconds(a.average));
 
   stats.bestAvg = ao5Arr.length ? pickBest(ao5Arr, filteredSolves) : null;
 
+  // Fill the five cards
   document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
   document.getElementById("stat-best-time").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestTime)}</span>`;
   document.getElementById("stat-mean").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.mean)}</span>`;
   document.getElementById("stat-sigma").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.sigma)}</span>`;
   document.getElementById("stat-best-avg").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestAvg)}</span>`;
 
-  // =========================
-  // TABLE
-  // =========================
+  // Averages table: emptied here, filled at the end
 
 
   const thead = document.getElementById("avg-table-head");
@@ -140,9 +140,7 @@ const distributionLabels = getDistributionLabels(thresholds);
   });
 
 
-       // =========================
-  // CHART
-  // =========================
+  // Times chart: every solve of the period, oldest first, with gaps for DNFs
 
   const existingChart = Chart.getChart("timesChart");
   if (existingChart) {
@@ -168,6 +166,7 @@ sortedSolves.forEach((solve, i) => {
   }
 });
 
+  // Line chart of the times
   const ctx = document.getElementById("timesChart");
 
   new Chart(ctx, {
@@ -206,25 +205,24 @@ sortedSolves.forEach((solve, i) => {
       }
     }
   });
- // =========================
-// COMPARISON CHART (AVERAGES AS UNITS)
-// =========================
+// Comparison chart: this period's averages next to the closest earlier period that has averages
 
 const existingComparison = Chart.getChart("comparisonChart");
 if (existingComparison) {
   existingComparison.destroy();
 }
 
-// reuse sessionData OR rename
+// The current session (the same one as session above)
 const sessionData2 = getCurrentSession();
 
-// rename destructured variables
+// This period, and the closest earlier one with averages
 const { start, end } = getRangeTimestamps(range);
 const prevRange = getLastRangeWithData(sessionData2, range);
 
 let currentAvgs = [];
 let previousAvgs = [];
 
+// Classic mode: the rolling ao5s of each period
 if (averageObj.mode === "classic") {
   const history = classicStats.history.ao5;
 
@@ -241,6 +239,7 @@ if (averageObj.mode === "classic") {
     .map(a => a.avg === "DNF" ? null : a.avg);
 
 } else {
+  // Block modes: the finished averages of each period
   currentAvgs = getAveragesInRange(sessionData2, start, end);
   // Null bounds would mean "every average", so no earlier range gives no previous data
   previousAvgs = !prevRange.start ? [] : getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
@@ -259,12 +258,13 @@ const comparisonLabels = Array.from(
   (_, i) => `Block ${i + 1}`
 );
 
+// Bar chart, one pair of bars per block
 const comparisonCtx = document.getElementById("comparisonChart");
 
 new Chart(comparisonCtx, {
   type: "bar",
   data: {
-    labels: comparisonLabels, // ✅ use new name
+    labels: comparisonLabels, // "Block 1", "Block 2"…
     datasets: [
       {
         label: "Current Range (Avg Blocks)",
@@ -292,9 +292,11 @@ new Chart(comparisonCtx, {
   }
 });
 
+// σ chart: σ of each average in the period
 let sigmaLabels = [];
 let sigmas = [];
 
+// Classic mode: σ of each rolling ao5
 if (averageObj.mode === "classic") {
   const { start, end } = getRangeTimestamps(range);
 
@@ -306,16 +308,19 @@ if (averageObj.mode === "classic") {
   sigmas = filteredHistory.map(a => a.sigma ?? null);
 
 } else {
+  // Block modes: σ of each finished average
   const sigmaData = getSigmaGraphData(filteredAverages);
   sigmaLabels = sigmaData.labels;
   sigmas = sigmaData.sigmas;
 }
 
+// Chart.js allows one chart per canvas, so the old one goes first
 const existingSigma = Chart.getChart("sigmaChart");
 if (existingSigma) {
   existingSigma.destroy();
 }
 
+// Line chart of the σ values
 const sigmaCtx = document.getElementById("sigmaChart");
 
 new Chart(sigmaCtx, {
@@ -355,6 +360,7 @@ new Chart(sigmaCtx, {
   }
 });
 
+// Distribution chart: how many solves fall under each time
 const existingDist = Chart.getChart("distributionChart");
 if (existingDist) {
   existingDist.destroy();
@@ -362,6 +368,7 @@ if (existingDist) {
 
 const distCtx = document.getElementById("distributionChart");
 
+// Only the buckets that have solves
 const { labels: finalLabels, data: finalData } =
   filterEmptyBuckets(distributionLabels, distribution);
 
@@ -381,6 +388,7 @@ new Chart(distCtx, {
       legend: { display: true },
       tooltip: {
         callbacks: {
+          // Tooltip: count and percent of the period's solves
           label: function(context) {
             const total = distribution.reduce((a, b) => a + b, 0);
             const value = context.raw;
@@ -395,14 +403,10 @@ new Chart(distCtx, {
     }
   }
 });
-  // =========================
-  // BUILD HEADER
-  // =========================
 
-// =========================
-// BUILD HEADER
-// =========================
+// Table header: solve and rolling averages in classic mode; type, result, best, worst, each solve and σ otherwise
 
+// Classic mode header
 if (averageObj.mode === "classic") {
 
   thead.innerHTML = `
@@ -418,6 +422,7 @@ if (averageObj.mode === "classic") {
 
 } else {
 
+  // Block modes header: one column per solve of the longest average
   let headHtml = `<tr>
     <th>#</th>
     <th>Type</th>
@@ -435,15 +440,12 @@ if (averageObj.mode === "classic") {
   thead.innerHTML = headHtml;
 }
 
-  // =========================
-  // BUILD ROWS
-  // =========================
 
-// =========================
-// BUILD ROWS
-// =========================
+// Table rows
+// Classic mode: one row per solve of the period, newest first, with the rolling averages that end at it
 if (averageObj.mode === "classic") {
 
+  // Rolling averages keyed by the time of their last solve
   const maps = buildAvgMaps(classicStats);
 
 const sortedSolves = [...filteredSolves].sort(
@@ -455,6 +457,7 @@ const sortedSolves = [...filteredSolves].sort(
 
     const solveTime = formatDisplayTime(solve);
 
+    // The average in a map that ends at this solve, formatted
     function getVal(map) {
       const avg = map.get(solve.createdAt);
       if (!avg) return "-";
@@ -481,6 +484,7 @@ const sortedSolves = [...filteredSolves].sort(
 
 } else {
 
+  // Block modes: one row per finished average of the whole session, newest first
   session.averages.forEach((block, i) => {
     const tr = document.createElement("tr");
 
@@ -492,6 +496,7 @@ const sortedSolves = [...filteredSolves].sort(
       <td><span class="times-color-number">${block.worst}</span></td>
     `;
 
+    // One cell per solve
     block.solves.forEach(solve => {
       rowHtml += `<td><span class="times-color-number">${formatDisplayTime(solve)}</span></td>`;
     });

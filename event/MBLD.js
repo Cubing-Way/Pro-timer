@@ -2,7 +2,9 @@ import { updateDisplay } from "../timer/countdownTimer.js";
 import { csTimer } from "../main/cstimer.js";
 
 
+// Multi-Blind layout: the solution form becomes a "Solved / Total" result box, countdown on the timer
 function handleMBLD(display, countdownObj) {
+    // Only the remove button among the penalties; submit, countdown, scrambles and timer warnings appear
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -16,6 +18,7 @@ function handleMBLD(display, countdownObj) {
     document.getElementById("fmc-form").style.display = "flex";
     document.getElementById("countdown").style.display = "block";
     document.getElementById("typing-container").style.display = "none";
+    // Smaller timer pushed down a bit; no touch timing, so the form can be used
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("timerins").style.marginTop = "75px";
     document.getElementById("touchOverlay").style.display = "none";
@@ -25,6 +28,7 @@ function handleMBLD(display, countdownObj) {
     updateDisplay(countdownObj, display);
 }
 
+// Turns "solved/total" into WCA points (solved minus unsolved); throws with a message on bad input
 function calculateMBLDPoints(resultStr) {
   if (typeof resultStr !== "string") {
     throw new Error("Input must be a string in format 'solved/total'");
@@ -39,6 +43,7 @@ function calculateMBLDPoints(resultStr) {
   const solved = Number(parts[0]);
   const total = Number(parts[1]);
 
+  // Whole numbers, not negative, and no more solved than attempted
   if (
     !Number.isInteger(solved) ||
     !Number.isInteger(total) ||
@@ -58,6 +63,7 @@ function calculateMBLDPoints(resultStr) {
   };
 }
 
+// Splits csTimer's Multi-Blind scramble ("1) … 2) …") into one scramble per cube
 function parseMBLDScramble(scrambleText) {
   return scrambleText
     .split(/\d+\)/g)        // split at "1)", "2)", etc
@@ -65,12 +71,15 @@ function parseMBLDScramble(scrambleText) {
     .filter(s => s.length > 0);
 }
 
+// Fills the pop-up grid: number, scramble and half-size picture for each cube
 async function renderMBLDGrid(grid, countInput, currentScramble) {
   grid.innerHTML = "";
 
   const scrambles = parseMBLDScramble(currentScramble);
+  // No more rows than scrambles were made
   const limit = Math.min(Number(countInput.value), scrambles.length);
 
+  // All the pictures at once, from csTimer's worker
   const images = await Promise.all(
     scrambles.slice(0, limit).map(s => csTimer.getImage(s, "333"))
   );

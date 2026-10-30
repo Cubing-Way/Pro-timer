@@ -1,17 +1,7 @@
-// ===============================
-// Config
-// ===============================
+// Length of a Fewest Moves or Multi-Blind attempt; the countdown state is countdownObj in timerState.js
 const ONE_HOUR = 60 * 60; // 3600 seconds
 
-// ===============================
-// State (countdownObj in timerState.js)
-// ===============================
-
-
-
-// ===============================
-// Helpers
-// ===============================
+// Seconds as "hh:mm:ss"
 function formatCountdown(seconds) {
     const hrs = String(Math.floor(seconds / 3600)).padStart(2, "0");
     const mins = String(Math.floor((seconds % 3600) / 60)).padStart(2, "0");
@@ -19,14 +9,13 @@ function formatCountdown(seconds) {
     return `${hrs}:${mins}:${secs}`;
 }
 
+// Writes the time left on the timer
 function updateDisplay(countdownObj, display = document.getElementById("timer")) {
     if (!display) return;
     display.textContent = formatCountdown(countdownObj.remainingTime);
 }
 
-// ===============================
-// Timer Logic
-// ===============================
+// "Start attempt": counts down one second at a time, playing the chosen warnings; a second click stops it
 function startTimer2(countdownObj, timerWarnings) {
     // If timer is running → stop it
     if (countdownObj.intervalId !== null) {
@@ -38,6 +27,7 @@ function startTimer2(countdownObj, timerWarnings) {
         document.getElementById("countdown").textContent = "Stop attempt";
         countdownObj.remainingTime --;
 
+        // A warning plays when that many minutes are left and its box is ticked in the Timer Warnings pop-up
         if(countdownObj.remainingTime === 5 * 60 && timerWarnings["5"]) new Audio("./audio/5minutes.mp3").play();
         if(countdownObj.remainingTime === 10 * 60 && timerWarnings["10"]) new Audio("./audio/10minutes.mp3").play();
         if(countdownObj.remainingTime === 15 * 60 && timerWarnings["15"]) new Audio("./audio/15minutes.mp3").play();
@@ -52,6 +42,7 @@ function startTimer2(countdownObj, timerWarnings) {
 
         updateDisplay(countdownObj);
 
+        // Time's up
         if (countdownObj.remainingTime <= 0) {
             stopTimer2(countdownObj);
         }
@@ -59,6 +50,7 @@ function startTimer2(countdownObj, timerWarnings) {
 }
 
 
+// Ends the attempt: resets the countdown to one hour and the button to "Start attempt"
 function stopTimer2(countdownObj) {
     document.getElementById("countdown").textContent = "Start attempt";
     countdownObj.remainingTime = ONE_HOUR;
@@ -67,10 +59,4 @@ function stopTimer2(countdownObj) {
     countdownObj.intervalId = null;
 }
 
-// ===============================
-// Event Listeners
-// ===============================
-
-
-// Initialize display
 export { updateDisplay, startTimer2, stopTimer2 };

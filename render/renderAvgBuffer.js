@@ -1,5 +1,6 @@
 import { wrapTimesValue } from "./renderHelpers.js";
 
+// HTML of the footer's left panel: the average in progress (live), the newest saved one (saved), or classic mode's rolling averages
 function renderCurrentAverage
     (
         currentType, 
@@ -10,11 +11,10 @@ function renderCurrentAverage
     ) {
     let html = "";
 
-    // =========================
-    // CLASSIC MODE
-    // =========================
+    // Classic mode: the current mo3, ao5, ao12 and ao100
     if (averageObj.mode === "classic") {
 
+        // One "label: value" line
         const renderRow = (label, value) => `
             <div class="history-solve">
                 ${label}: ${value != null ? wrapTimesValue(formatStatValue(value)) : wrapTimesValue("-")}
@@ -31,6 +31,7 @@ function renderCurrentAverage
         `;
     }
 
+    // Live: the solves of the average in progress
     if (currentType === "live") {
         html += `
             <div class="history-average current-average">
@@ -51,6 +52,7 @@ function renderCurrentAverage
         `;
     }
 
+    // Saved: the solves of the newest finished average
     if (currentType === "saved" && currentBlock) {
         html += `
             <div class="history-average current-average">
