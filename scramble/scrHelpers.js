@@ -12,6 +12,20 @@ function getScrambleConfig(code) {
 }
 
 // =========================
+// Events Cubisz can check (it only simulates a 3x3)
+// =========================
+const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
+const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
+
+// True when the event's scrambles are for a single 3x3, so Cubisz can apply them and check a solution
+function isCubiszEvent(code) {
+  if (CUBISZ_WCA_EVENTS.includes(code)) return true;
+  return scrdata.some(([category, scrambles]) =>
+    CUBISZ_CATEGORIES.includes(category) && scrambles.some(([, scrambleCode]) => scrambleCode === code)
+  );
+}
+
+// =========================
 // Auto-fit scramble text
 // =========================
 function autoFitText(vis) {
@@ -54,4 +68,4 @@ function formatMegaminx(scr) {
   return out.join("\n");
 }
 
-export { getScrambleConfig, autoFitText, formatMegaminx };
+export { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx };

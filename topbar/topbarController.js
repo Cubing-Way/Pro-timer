@@ -1,4 +1,4 @@
-import { eventObj, vis, showTimerLayout, showTimeInsertion } from "../event/eventController.js";
+import { eventObj, vis, showTimerLayout, showTimeInsertion, setEventInspection } from "../event/eventController.js";
 import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session/sessionController.js";
 import { averageObj } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
@@ -9,7 +9,8 @@ import { timerDOMObj } from "../timer/timerController.js";
 import { applyPenaltyToLast, removeLastSolve } from "../session/sessionController.js";
 import { handleFMC } from "../event/eventController.js";
 import { timeInsertion } from "../settings/settingsController.js";
-import { timerObj } from "../timer/timerState.js";
+import { timerObj, countdownObj } from "../timer/timerState.js";
+import { stopTimer2 } from "../timer/countdownTimer.js";
 import { scrdata } from "../scramble/scrData.js";
 import { averageOfN } from "../average/avgController.js";
 import { addAverageBlock } from "../session/sessionController.js";
@@ -129,20 +130,14 @@ eventSelect.addEventListener("change", async (e) => {
         syncModeWithEvent(eventObj.event);
     }
 
+    // A running Fewest Moves / Multi-Blind attempt ends with its event, or its countdown keeps writing over the timer
+    if (countdownObj.intervalId !== null) stopTimer2(countdownObj);
+
     // Fewest Moves and Multi-Blind switch to their own layout after the scramble below
     showTimerLayout(vis);
 
-    // Auto-set inspection to None for BLD events, restore for non-BLD
-    if (["333ni", "444bld", "555bld"].includes(eventObj.event)) { //no longer includes bf, check scrData.js
-        timerSettObj.previousInspectionType = timerSettObj.inspectionType;
-        timerSettObj.inspectionType = "None";
-        document.getElementById("inspection-type").value = "None";
-        localStorage.setItem("inspectionType", "None");
-    } else {
-        timerSettObj.inspectionType = timerSettObj.previousInspectionType;
-        document.getElementById("inspection-type").value = timerSettObj.previousInspectionType;
-        localStorage.setItem("inspectionType", timerSettObj.previousInspectionType);
-    }
+    // Inspection to None for BLD events, the saved inspection type for the others
+    setEventInspection(eventObj.event, timerSettObj);
 
     await displayScramble(eventObj.event, vis);
     if (eventObj.event === "333fm") handleFMC();
@@ -206,38 +201,26 @@ function syncModeWithEvent(event) {
 
 }
 
-document.addEventListener("sessionChanged", async () => {
+document.addEventListener("sessionChanged", () => {
     // 🔥 FIRST restore buffer
     restoringSession = true;
 
     changedSession();
     const session = getCurrentSession();
 
-    if (session.category) {
-        categorySelect.value = session.category;
-        categorySelect.dispatchEvent(new Event("change"));
-    }
+    // A new session has no category yet: WCA, or the old category's events stay and may not include "333"
+    categorySelect.value = session.category || validCategories[0][0];
+    categorySelect.dispatchEvent(new Event("change"));
 
     const ev = session.scrambleType || "333";
     eventObj.event = ev;
     eventSelect.value = ev;
+    // The event change does the layout, the inspection type, the scramble and the FMC / MBLD setup
     eventSelect.dispatchEvent(new Event("change"));
 
     restoringSession = false;
 
     renderHistory();
-
-    if (eventObj.event === "333fm") {
-        await displayScramble(eventObj.event, vis);
-        handleFMC();
-        return;
-    } else if (eventObj.event === "r3ni"){
-        handleMBLD();
-    } else {
-        showTimerLayout(vis);
-    }
-
-    await displayScramble(eventObj.event, vis);
 });
 
 const avgObj = {

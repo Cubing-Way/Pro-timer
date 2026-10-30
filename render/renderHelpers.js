@@ -8,9 +8,12 @@ function formatStatValue(value, getCurrentSession) {
     if (value === undefined || value === null) return wrapTimesValue("-");
     if (value === Infinity || value === -Infinity || value === "DNF" || value.penalty === "DNF") return wrapTimesValue("DNF");
 
-    if (value.time && getCurrentSession().scrambleType === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
+    // A solve shows as its own event (FMC moves, MBLD points); older solves without one use the session's event
+    const solveEvent = value.event ?? getCurrentSession().scrambleType;
 
-    if (value.time && getCurrentSession().scrambleType === "333fm") return wrapTimesValue(`${value.time} moves`);
+    if (value.time && solveEvent === "r3ni") return wrapTimesValue(`${value.result} (${value.time} pts)`);
+
+    if (value.time && solveEvent === "333fm") return wrapTimesValue(`${value.time} moves`);
 
     if (getCurrentSession().scrambleType === "r3ni") {
         const num = Number(value);

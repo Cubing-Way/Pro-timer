@@ -3,6 +3,7 @@ import { getCurrentSession } from "../session/sessionController.js";
 import { averageObj, parseTimeToSeconds, classicStats } from "../average/avgController.js";
 import { formatSecondsToTime, formatDisplayTime } from "../average/avgController.js";
 import {
+  pickBest,
   getAllSolvesFromSession,
   getStatisticsFromSolves,
   getRangeTimestamps,
@@ -76,7 +77,7 @@ if (averageObj.mode === "classic") {
     .filter(a => a.average !== "DNF")
     .map(a => parseTimeToSeconds(a.average));
 
-  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  stats.bestAvg = ao5Arr.length ? pickBest(ao5Arr, filteredSolves) : null;
 }
 
   return stats;
@@ -111,7 +112,7 @@ const distributionLabels = getDistributionLabels(thresholds);
     .filter(a => a.average !== "DNF")
     .map(a => parseTimeToSeconds(a.average));
 
-  stats.bestAvg = ao5Arr.length ? Math.min(...ao5Arr) : null;
+  stats.bestAvg = ao5Arr.length ? pickBest(ao5Arr, filteredSolves) : null;
 
   document.getElementById("stat-solves").innerHTML = `<span class="times-color-number">${stats.solveCounter}</span>`;
   document.getElementById("stat-best-time").innerHTML = `<span class="times-color-number">${formatSecondsToTime(stats.bestTime)}</span>`;
@@ -160,8 +161,8 @@ sortedSolves.forEach((solve, i) => {
 
   if (solve.penalty === "DNF") {
     times.push(null);
-  } else if (solve.penalty === "+2") {
-    times.push(solve.time + 2);
+  } else if (typeof solve.penalty === "number") {
+    times.push(solve.time + solve.penalty);
   } else {
     times.push(solve.time);
   }
@@ -231,26 +232,31 @@ if (averageObj.mode === "classic") {
     .filter(a => !start || (a.createdAt >= start && a.createdAt <= end))
     .map(a => a.avg === "DNF" ? null : a.avg);
 
-  previousAvgs = history
-    .filter(a => !prevRange.start || (
+  // No earlier range with data (or "All Time"): nothing to compare against
+  previousAvgs = !prevRange.start ? [] : history
+    .filter(a =>
       a.createdAt >= prevRange.start &&
       a.createdAt <= prevRange.end
-    ))
+    )
     .map(a => a.avg === "DNF" ? null : a.avg);
 
 } else {
   currentAvgs = getAveragesInRange(sessionData2, start, end);
-  previousAvgs = getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
+  // Null bounds would mean "every average", so no earlier range gives no previous data
+  previousAvgs = !prevRange.start ? [] : getAveragesInRange(sessionData2, prevRange.start, prevRange.end);
 }
 
-const minLen = Math.min(currentAvgs.length, previousAvgs.length);
+// Compare the last blocks of both ranges; with no previous range, show all the current blocks
+const compareLen = previousAvgs.length ? Math.min(currentAvgs.length, previousAvgs.length) : currentAvgs.length;
 
-const currentData = currentAvgs.slice(-minLen);
-const previousData = previousAvgs.slice(-minLen);
+// slice(-0) would return everything, so an empty comparison is handled apart
+const currentData = compareLen ? currentAvgs.slice(-compareLen) : [];
+const previousData = compareLen ? previousAvgs.slice(-compareLen) : [];
 
+// One label per compared pair of blocks
 const comparisonLabels = Array.from(
-  { length: minLen },
-  (_, i) => `Block ${sortedSolves.length - i}`
+  { length: compareLen },
+  (_, i) => `Block ${i + 1}`
 );
 
 const comparisonCtx = document.getElementById("comparisonChart");
@@ -262,11 +268,11 @@ new Chart(comparisonCtx, {
     datasets: [
       {
         label: "Current Range (Avg Blocks)",
-        data: currentAvgs
+        data: currentData
       },
       {
         label: "Previous Range (Avg Blocks)",
-        data: previousAvgs
+        data: previousData
       }
     ]
   },

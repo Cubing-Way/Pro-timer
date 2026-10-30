@@ -3,6 +3,7 @@ import { computeAverage, formatSecondsToTime } from "../average/avgController.js
 import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
+import { isCubiszEvent } from "../scramble/scrambleController.js";
 import {
   applyScramble,
   applySolution,
@@ -82,6 +83,25 @@ function openDetailsModal() {
             const buttonText = `+${counter + 2}`;
             const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
 
+            // Cubisz only checks 3x3 solutions; solves saved before solves had an event use the session's event
+            const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
+            const solutionRows = canCheck ? `
+                    <div class="modal-scramble">
+                       Solution: <input
+                            type="text"
+                            id="solution-input-${blockIndex}-${i}"
+                            placeholder="Enter solution"
+                            value="${block.solves[i].solution || ''}"
+                        />
+                        <button data-action="solution" ${solveData}>
+                            Submit
+                        </button>
+                    </div>
+                    <div class="modal-scramble">
+                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || '-'} | Moves: ${block.solves[i].moves || '-'} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : '-'}</span>
+                    </div>
+            ` : "";
+
             html += `
                 <div class="modal-solve-row">
                     <div class="modal-solve-main">
@@ -107,21 +127,7 @@ function openDetailsModal() {
                     <div class="modal-scramble">
                         Date: ${new Date(block.solves[i].createdAt)}
                     </div>
-
-                    <div class="modal-scramble">
-                       Solution: <input
-                            type="text"
-                            id="solution-input-${blockIndex}-${i}"
-                            placeholder="Enter solution"
-                            value="${block.solves[i].solution || ''}"
-                        />
-                        <button data-action="solution" ${solveData}>
-                            Submit
-                        </button>
-                    </div>
-                    <div class="modal-scramble">
-                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || '-'} | Moves: ${block.solves[i].moves || '-'} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : '-'}</span>
-                    </div>
+                    ${solutionRows}
                 </div>
             `;
         });

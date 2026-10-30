@@ -1,8 +1,9 @@
 import { csTimer } from "../main/cstimer.js";
 import { setVisualizerScale } from "./scrVisualiser.js";
-import { getScrambleConfig, autoFitText, formatMegaminx } from "./scrHelpers.js";
+import { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx } from "./scrHelpers.js";
 
 let currentScramble = "";
+let currentScrambleEvent = ""; // event code currentScramble was made for
 
 async function displayScramble(event = "333", vis, length) {
 
@@ -19,6 +20,7 @@ async function displayScramble(event = "333", vis, length) {
     const svg = await csTimer.getImage(scramble, type);
 
     currentScramble = scramble;
+    currentScrambleEvent = event;
 
     vis.innerHTML = svg;
 
@@ -105,4 +107,4 @@ function adjustVisualizerSize(event, vis) {
     if (category === "Relays") setVisualizerScale(0.45, 105, 140, vis);
 }
 
-export { currentScramble, displayScramble };
+export { currentScramble, currentScrambleEvent, displayScramble, isCubiszEvent };

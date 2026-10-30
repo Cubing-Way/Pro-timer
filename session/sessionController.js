@@ -110,8 +110,12 @@ sessionsObj.selectEl.onchange = () => {
             return;
         }
 
-        sessionsObj.sessions[newName] = sessionsObj.sessions[oldName];
-        delete sessionsObj.sessions[oldName];
+        // Rebuild the sessions so the renamed one keeps its place in the list
+        sessionsObj.sessions = Object.fromEntries(
+            Object.entries(sessionsObj.sessions).map(([name, data]) => [name === oldName ? newName : name, data])
+        );
+        // Point at the new name before switchSession saves, or saveSessions looks for the old, gone one
+        sessionsObj.currentSession = newName;
         switchSession(newName);
         return;
     }
@@ -185,11 +189,19 @@ function changedSession() {
         classicStats.current = structuredClone(session.classicStats.current);
         classicStats.best = structuredClone(session.classicStats.best);
         classicStats.history = structuredClone(session.classicStats.history);
+    } else {
+        // A session without classic stats (like a new one) must not show the previous session's
+        classicStats.current = { mo3: null, ao5: null, ao12: null, ao100: null };
+        classicStats.best = { mo3: null, ao5: null, ao12: null, ao100: null };
+        classicStats.history = { mo3: [], ao5: [], ao12: [], ao100: [] };
     }
 
     averageObj.mode = session.buffer.mode;
     averageObj.solveCounter = session.buffer.solveCounter;
     averageObj.solvesArray = [...session.buffer.solvesArray];
+
+    // No saved classic stats but classic mode: rebuild them from the buffer's solves
+    if (!session.classicStats && averageObj.mode === "classic") updateClassicStats(true);
 
     const sel = document.getElementById("modeSelect");
     if (sel) sel.value = averageObj.mode;

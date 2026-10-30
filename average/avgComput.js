@@ -1,9 +1,25 @@
+import { isPointsSolves } from "./avgHelper.js";
+
+// Best and worst of a block: lowest time, or most points for Multi-Blind; a DNF (Infinity) is always the worst
+function bestAndWorst(times, higherIsBetter) {
+    const valid = times.filter(t => t !== Infinity);
+    if (valid.length === 0) return { best: Infinity, worst: Infinity };
+    const hasDNF = valid.length < times.length;
+    return {
+        best: higherIsBetter ? Math.max(...valid) : Math.min(...valid),
+        worst: hasDNF ? Infinity : (higherIsBetter ? Math.min(...valid) : Math.max(...valid))
+    };
+}
+
 function computeAverage(solves, mode) {
     const times = solves.map(s => {
         if (s.penalty === "DNF") return Infinity;
         if (typeof s.penalty === "number") return s.time + s.penalty;
         return s.time;
     });
+
+    // Multi-Blind blocks are points, so their best is the highest value
+    const higherIsBetter = isPointsSolves(solves);
 
     let best = null;
     let worst = null;
@@ -12,14 +28,13 @@ function computeAverage(solves, mode) {
     // BO3 (Best of 3)
     // =========================
     if (mode === "bo3") {
+        // Best of 3 only needs one success: it's a DNF when every attempt is
         const dnfs = times.filter(t => t === Infinity).length;
-        if (dnfs >= 2) {
+        if (dnfs === times.length) {
             return { dnf: true };
         }
 
-        const sorted = [...times].sort((a, b) => a - b);
-        best = sorted[0];
-        worst = sorted[sorted.length - 1];
+        ({ best, worst } = bestAndWorst(times, higherIsBetter));
 
         // For BO3, avg is the mean of all 3 solves
         const validTimes = times.filter(t => t !== Infinity);
@@ -44,8 +59,7 @@ function computeAverage(solves, mode) {
         // Best single is the result, but we also compute Ao5 stats
 
         const sorted = [...times].sort((a, b) => a - b);
-        best = sorted[0];
-        worst = sorted[sorted.length - 1];
+        ({ best, worst } = bestAndWorst(times, higherIsBetter));
 
         // ---- Ao5 for the same 5 solves ----
         const trimmed = sorted.slice(1, 4);
@@ -222,8 +236,7 @@ if (mode.startsWith("ao")) {
 
     const sigma = Math.sqrt(variance);
 
-    best = Math.min(...times);
-    worst = Math.max(...times);
+    ({ best, worst } = bestAndWorst(times, higherIsBetter));
 
     return {
         dnf: false,

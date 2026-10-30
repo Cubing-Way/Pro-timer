@@ -224,6 +224,8 @@ document.getElementById("text-color").addEventListener("change", () => {
         document.body.classList.add(`theme-text-${textColor}`);
         localStorage.setItem("text-color", textColor);
     }
+    // Show the color actually used, not the one that clashed with the background
+    document.getElementById("text-color").value = textColor;
   } else {
     document.body.classList.add(`theme-text-${textColor}`);
     localStorage.setItem("text-color", textColor);
@@ -234,7 +236,8 @@ document.getElementById("text-color").addEventListener("change", () => {
 
 
 
-let inspectionStart = document.getElementById("inspection-start").value;
+// Load the saved choice; the dropdown's default (Press start) is only for the first visit
+let inspectionStart = localStorage.getItem("inspectionStart") || document.getElementById("inspection-start").value;
 localStorage.setItem("inspectionStart", inspectionStart);
 document.getElementById("inspection-start").value = inspectionStart;
 document.getElementById("inspection-start").addEventListener("change", () => {
@@ -275,7 +278,6 @@ if (Number.isInteger(savedPhases) && savedPhases > 0) {
 
 document.getElementById("inspection-type").value = timerSettObj.inspectionType;
 document.getElementById("inspection-type").addEventListener("change", () => {
-    timerSettObj.previousInspectionType = timerSettObj.inspectionType;
     timerSettObj.inspectionType = document.getElementById("inspection-type").value;
     localStorage.setItem("inspectionType", timerSettObj.inspectionType);
 });
@@ -289,28 +291,28 @@ document.getElementById("delay-flag").addEventListener("change", () => {
 
 // Time insertion setting (Timer or Typing)
 let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
-    if (timeInsertion === "Typing") {
-        timerSettObj.timerFlag = true;
-    } else {
-        timerSettObj.timerFlag = false;
-    }
-    
+timerSettObj.timerFlag = timeInsertion === "Typing";
+
 document.getElementById("time-insertion").value = timeInsertion;
 document.getElementById("time-insertion").addEventListener("change", () => {
-    timeInsertion = document.getElementById("time-insertion").value;
-    if (timeInsertion === "Typing") {
-        timerSettObj.timerFlag = true;
-    } else {
-        timerSettObj.timerFlag = false;
-    }
-    localStorage.setItem("timeInsertion", timeInsertion);
-    updateTypingUI();
+    setTimeInsertion(document.getElementById("time-insertion").value);
 });
 
+// Switch between Timer and Typing (the time insertion select and the Tab key both use this)
+function setTimeInsertion(value) {
+    timeInsertion = value;
+    localStorage.setItem("timeInsertion", timeInsertion);
+    document.getElementById("time-insertion").value = timeInsertion;
+    // Fewest Moves and Multi-Blind keep the timer off whatever the setting says
+    timerSettObj.timerFlag = timerSettObj.untimedEvent || timeInsertion === "Typing";
+    updateTypingUI();
+}
+
+// Show the typed-time box in Typing mode, except on Fewest Moves and Multi-Blind
 function updateTypingUI() {
     const container = document.getElementById("typing-container");
     if (!container) return;
-    if (localStorage.getItem("timeInsertion") === "Typing") {
+    if (timeInsertion === "Typing" && !timerSettObj.untimedEvent) {
         container.style.display = "block";
         const input = document.getElementById("typed-time");
         if (input) input.focus();
@@ -319,9 +321,10 @@ function updateTypingUI() {
     }
 }
 
-export { 
-    delayFlagType, 
-    timeInsertion, 
+export {
+    delayFlagType,
+    timeInsertion,
+    setTimeInsertion,
     updateTypingUI,
     timerSettObj,
     getThemeVar

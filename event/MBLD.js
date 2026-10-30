@@ -87,7 +87,7 @@ async function renderMBLDGrid(grid, countInput, currentScramble) {
     const visualEl = document.createElement("div");
     visualEl.className = "mbld-visual mbld-row";
     visualEl.innerHTML = images[i];
-    visualEl.style.transformOrigin = "top)";
+    visualEl.style.transformOrigin = "top";
     visualEl.style.transform = "scale(0.5)";
     grid.appendChild(indexEl);
     grid.appendChild(scrambleEl);

@@ -37,13 +37,14 @@ function renderHistoryList(averages, currentType, averageObj, formatStatValue) {
         // For bo3, show secondary mo3 average
         if (block.mode === "bo3") {
             const mo3Avg = computeAverage(block.solves, "mo3");
-            const mo3Value = mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(mo3Avg.avg));
+            // computeAverage marks a DNF mean with dnf: true and no avg
+            const mo3Value = mo3Avg.dnf || mo3Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(mo3Avg.avg));
             titleText = `${block.mode}: ${block.best} (mo3: ${wrapTimesValue(mo3Value)})`;
         }
         // For bo5, show secondary ao5 average
         else if (block.mode === "bo5") {
             const ao5Avg = computeAverage(block.solves, "ao5");
-            const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(ao5Avg.avg));
+            const ao5Value = ao5Avg.dnf || ao5Avg.avg === "DNF" ? "DNF" : wrapTimesValue(formatStatValue(ao5Avg.avg));
             titleText = `${block.mode}: ${block.best} (ao5: ${wrapTimesValue(ao5Value)})`;
         }
 

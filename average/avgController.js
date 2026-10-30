@@ -1,5 +1,6 @@
-import { 
-    parseTimeToSeconds, 
+import {
+    parseTimeToSeconds,
+    isPointsSolves,
     formatSecondsToTime,
     formatDisplayTime
 } from "./avgHelper.js";
@@ -7,6 +8,7 @@ import {
 import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
 import { averageObj, classicStats } from "./avgState.js";
 import { computeAverage } from "./avgComput.js";
+import { currentScrambleEvent } from "../scramble/scrambleController.js";
 
 function updateClassicStats(recomputeBest = false) {
     updateClassicStatsWith(recomputeBest, averageObj, classicStats);
@@ -25,14 +27,16 @@ function averageOfN(
 
     let inspecPenalty = null;
 
-    if (inspectionType === "WCA" || averageObj.mode === "fmc3") {
-        if (inspection >= 15) inspecPenalty = 2; 
+    if (inspectionType === "WCA") {
+        if (inspection >= 15) inspecPenalty = 2;
         if (inspection >= 17) inspecPenalty = "DNF";
     }
 
-    let seconds = null; 
+    let seconds = null;
     if (isFMC) {
         seconds = time.moveCount;
+        // A solution that doesn't solve the cube is a DNF
+        if (!time.solved) inspecPenalty = "DNF";
     } else if (isMBLD) {
         seconds = time.points;
         if (seconds <= 0) {
@@ -50,6 +54,7 @@ function averageOfN(
             result: time.result, 
             penalty: inspecPenalty ? inspecPenalty : null,
             scramble: scramble,
+            event: currentScrambleEvent, // event the scramble was made for (the modal and history use it)
             inspection,
             createdAt: Date.now(),
             solution,
@@ -64,8 +69,9 @@ function averageOfN(
     // =========================
 
     if (averageObj.mode === "classic") {
-        if (!modeFlag) updateClassicStats();
-            return null;
+        // Switching to classic rebuilds the rolling averages from the solves already in the buffer
+        updateClassicStats(modeFlag);
+        return null;
     }
     // Determine how many solves needed for this mode
     let neededSolves = 3; // default for mo3 and bo3
@@ -102,6 +108,7 @@ function averageOfN(
 
 export {
     parseTimeToSeconds,
+    isPointsSolves,
     formatSecondsToTime,
     computeAverage,
     formatDisplayTime,

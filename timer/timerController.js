@@ -12,7 +12,7 @@ import { renderHistory } from "../render/renderController.js";
 import { addAverageBlock } from "../session/sessionController.js";
 import { saveSessions, getCurrentSession} from "../session/sessionController.js";
 import { formatTime } from "./timeFormatting.js";
-import { updateTypingUI } from "../settings/settingsController.js";
+import { timeInsertion, setTimeInsertion } from "../settings/settingsController.js";
 import { plus2CounterObj } from "../topbar/topbarState.js";
 import { startTimer2, stopTimer2 } from "./countdownTimer.js";
 
@@ -256,33 +256,31 @@ function isTyping() {
 }
 
 document.addEventListener("keydown", (e) => {
+    // A select left focused (closed without a change) would open or change with this key: the timer takes it
+    if (document.activeElement.tagName === "SELECT" && (e.key === " " || timerObj.timerPhase === PHASE.RUNNING)) {
+        e.preventDefault();
+        document.activeElement.blur();
+    }
+
     if (e.repeat || timerSettObj.timerFlag || isTyping()) return;
 
-    // Any key splits/stops a running timer, only space drives the other phases
+    // Any key but Tab (the Timer/Typing switch) splits/stops a running timer, only space drives the other phases
     if (e.key === " ") {
         e.preventDefault();
-    } else if (timerObj.timerPhase !== PHASE.RUNNING) {
+    } else if (timerObj.timerPhase !== PHASE.RUNNING || e.key === "Tab") {
         return;
     }
 
     onPressStart();
 });
 
+// Tab switches between Timer and Typing
 document.addEventListener("keydown", (e) => {
-    if (e.key === "Tab") {
-        e.preventDefault(); // optional
-    // Time insertion setting (Timer or Typing)
-    let timeInsertion = localStorage.getItem("timeInsertion") || "Timer";
-    if (timeInsertion === "Typing") {
-        timeInsertion = "Timer";
-        timerSettObj.timerFlag = false;
-    } else if (timeInsertion === "Timer") {
-        timeInsertion = "Typing";
-        timerSettObj.timerFlag = true;
-    }
-    localStorage.setItem("timeInsertion", timeInsertion);
-    updateTypingUI();
-  }
+    if (e.key !== "Tab") return;
+    e.preventDefault();
+    // Fewest Moves and Multi-Blind have no timer to switch, and a running solve keeps its mode
+    if (timerSettObj.untimedEvent || timerObj.timerPhase !== PHASE.IDLE) return;
+    setTimeInsertion(timeInsertion === "Typing" ? "Timer" : "Typing");
 });
 
 function handleSplitOrStop() {

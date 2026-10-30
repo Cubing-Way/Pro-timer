@@ -49,8 +49,12 @@ function penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessio
 
     block.solves[solveIndex].penalty = penalty;
 
-    const newAvg = computeAverage(block.solves, block.mode).avg;
-    block.average = newAvg === "DNF" ? "DNF" : formatSecondsToTime(newAvg);
+    // A penalty changes the best, worst and σ too, not only the average (same fields as averageOfN)
+    const avgObj = computeAverage(block.solves, block.mode);
+    block.average = avgObj.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj.avg);
+    block.best = formatSecondsToTime(avgObj.best);
+    block.worst = formatSecondsToTime(avgObj.worst);
+    block.sigma = formatSecondsToTime(avgObj.sigma);
 
     saveSessions();
 }

@@ -1,4 +1,9 @@
-import { parseTimeToSeconds, formatSecondsToTime } from "../average/avgController.js";
+import { parseTimeToSeconds, formatSecondsToTime, isPointsSolves } from "../average/avgController.js";
+
+// Best of a list: the lowest time, or the most points when the solves are Multi-Blind
+function pickBest(values, solves) {
+  return isPointsSolves(solves) ? Math.max(...values) : Math.min(...values);
+}
 
 function getUserOffsetMs(ts = Date.now()) {
   const offsetMinutes = new Date(ts).getTimezoneOffset();
@@ -62,11 +67,12 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
   // process solves
   solves.forEach(solve => {
 
-    if (solve.penalty === null) {
+    if (solve.penalty == null) {
       allSolvesArr.push(solve.time);
       solveCounter++;
-    } else if (solve.penalty === "+2") {
-      allSolvesArr.push(solve.time + 2);
+    } else if (typeof solve.penalty === "number") {
+      // Penalties are saved as seconds (2, 4 … 12), not as "+2"
+      allSolvesArr.push(solve.time + solve.penalty);
       solveCounter++;
     } else {
       // DNF
@@ -85,8 +91,8 @@ function getStatisticsFromSolves(solves, session, averageObj, classicStats) {
   }
 
   const validAvgs = ao5Arr.filter(v => v != null && !isNaN(v));
-  const bestAvg = validAvgs.length ? Math.min(...validAvgs) : null;
-  const bestTime = Math.min(...allSolvesArr);
+  const bestAvg = validAvgs.length ? pickBest(validAvgs, solves) : null;
+  const bestTime = pickBest(allSolvesArr, solves);
   const mean = allSolvesArr.reduce((a, b) => a + b, 0) / allSolvesArr.length;
   const variance = allSolvesArr.reduce((sum, t) => sum + Math.pow(t - mean, 2), 0) / allSolvesArr.length;
   const sigma = Math.sqrt(variance);
@@ -188,6 +194,7 @@ function getAveragesInRange(session, start, end) {
       return (!start || lastSolve.createdAt >= start) &&
              (!end || lastSolve.createdAt <= end);
     })
+    .reverse() // session.averages is newest first; the charts want oldest first
     .map(avg => {
       if (avg.average === "DNF") return null;
       return parseTimeToSeconds(avg.average);
@@ -249,7 +256,7 @@ function getTimeDistribution(solves, thresholds) {
     let time = null;
 
     if (solve.penalty === "DNF") return;
-    if (solve.penalty === "+2") time = solve.time + 2;
+    if (typeof solve.penalty === "number") time = solve.time + solve.penalty;
     else time = solve.time;
 
     // find correct bucket
@@ -343,6 +350,7 @@ function buildAvgMaps(classicStats) {
 }
 
 export {
+  pickBest,
   getUserOffsetMs,
   getAllSolvesFromSession,
   getStatisticsFromSolves,

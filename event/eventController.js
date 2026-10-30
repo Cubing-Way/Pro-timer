@@ -2,13 +2,13 @@ import { getCurrentSession, addAverageBlock } from "../session/sessionController
 import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
 import { timerSettObj } from "../settings/settingsState.js";
 import { timeInsertion } from "../settings/settingsController.js";
-import { timerObj, countdownObj } from "../timer/timerState.js";
+import { countdownObj } from "../timer/timerState.js";
 import { averageOfN } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { applyScramble, applySolution, getLastMoveCount, checkSolved } from "../cubisz/api.js";
 import { handleFMC as handleFMCWith } from "./FMC.js";
 import { handleMBLD as handleMBLDWith, calculateMBLDPoints, renderMBLDGrid } from "./MBLD.js";
-import { showTimerLayout, showTimeInsertion } from "./eventLayout.js";
+import { showTimerLayout, showTimeInsertion, setEventInspection } from "./eventLayout.js";
 
 const eventObj = {
     event: getCurrentSession().scrambleType || "333",
@@ -70,13 +70,12 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
 
   const fmcObj = {
     moveCount,
-    solution: document.getElementById("fmc-solution").value
+    solution: document.getElementById("fmc-solution").value,
+    solved: checkSolved() // averageOfN makes an unsolved cube a DNF
   };
 
-  timerObj.inspection = 0;
-  if (!checkSolved()) timerObj.inspection = 17;
-
-  const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);
+  // Fewest Moves has no inspection, so it passes 0 instead of the timer's last inspection time
+  const block = averageOfN(fmcObj, currentScramble, 0, timerSettObj.inspectionType, true);
   if (block) addAverageBlock(block);
   renderHistory();
   await displayScramble(eventObj.event, vis);
@@ -100,9 +99,17 @@ async function submitMBLD() {
     return;
   }
 
-  const result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
+  let result = null;
+  try {
+    result = calculateMBLDPoints(document.getElementById("fmc-solution").value);
+  } catch (error) {
+    // Bad input like "5/3" or "abc": say why instead of failing silently
+    alert(`${error.message} (for example 4/5)`);
+    return;
+  }
 
-  const block = averageOfN(result, currentScramble, timerObj.inspection, timerSettObj.inspectionType, false, false, true);
+  // Multi-Blind has no inspection, so it passes 0 instead of the timer's last inspection time
+  const block = averageOfN(result, currentScramble, 0, timerSettObj.inspectionType, false, false, true);
   if (block) addAverageBlock(block);
   renderHistory();
   await displayScramble(eventObj.event, vis);
@@ -262,7 +269,7 @@ async function initEvent() {
     const session = getCurrentSession();
     eventObj.event = session.scrambleType || "333";
     eventSelect.value = eventObj.event;
-
+    setEventInspection(eventObj.event, timerSettObj);
 
     await displayScramble(eventObj.event, vis);
 
@@ -272,4 +279,4 @@ async function initEvent() {
 }
 
 
-export { eventObj, vis, handleFMC, handleMBLD, showTimerLayout, showTimeInsertion, timerWarnings, initEvent };
+export { eventObj, vis, handleFMC, handleMBLD, showTimerLayout, showTimeInsertion, setEventInspection, timerWarnings, initEvent };

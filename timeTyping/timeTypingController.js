@@ -1,7 +1,7 @@
 import { averageOfN, parseTimeToSeconds, formatSecondsToTime } from "../average/avgController.js";
 import { currentScramble, displayScramble } from "../scramble/scrambleController.js";
-import { timerObj } from "../timer/timerState.js";
 import { vis, eventObj } from "../event/eventController.js";
+import { plus2CounterObj } from "../topbar/topbarState.js";
 import { timerSettObj } from "../settings/settingsState.js";
 import { renderHistory } from "../render/renderController.js";
 import { addAverageBlock } from "../session/sessionController.js";
@@ -42,8 +42,13 @@ function initTypingSubmission() {
             lastTime = formatSecondsToTime(seconds);
             document.getElementById("timer").textContent = lastTime;
 
-            const block = averageOfN(seconds, currentScramble, timerObj.inspection, timerSettObj.inspectionType);
+            // Typed times have no tracked inspection, so 0 instead of the timer's last inspection time
+            const block = averageOfN(seconds, currentScramble, 0, timerSettObj.inspectionType);
             if (block) addAverageBlock(block);
+
+            // A new solve starts the +2 button over, like a timed solve does
+            plus2CounterObj.penalty = 0;
+            document.getElementById("penaltyPlus2Btn").textContent = "+2";
             renderHistory();
             displayScramble(eventObj.event, vis);
             saveSessions();

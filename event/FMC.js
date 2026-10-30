@@ -14,6 +14,8 @@ function handleFMC(display, currentScramble, countdownObj) {
     document.getElementById("penaltyDnfBtn").style.display = "none";
     document.getElementById("removeLastBtn").style.display = "block";
     document.getElementById("submit-moves").style.display = "block";
+    // Multi-Blind renames this button, so Fewest Moves sets its own text back
+    document.getElementById("submit-moves").textContent = "Submit solution";
     document.getElementById("fmc-cube").style.display = "block";
     document.getElementById("fmc-solution").style.display = "block";
     document.getElementById("fmc-solution-test").style.display = "block";
