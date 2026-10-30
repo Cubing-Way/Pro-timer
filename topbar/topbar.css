@@ -1,9 +1,10 @@
-/* Top bar: settings, clear, average mode, category, event and session controls */
+/* Top bar: settings, clear, average mode, category, event and session controls, and Previous / Next scramble */
 
-/* Full-width bar above the app */
+/* Full-width bar above the app; wraps when the window is too narrow for every control */
 .top-bar {
   display: flex;
-  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 8px;
   padding: 10px 14px;
   background: var(--bg-tertiary);
 }
@@ -13,6 +14,19 @@
   display: flex;
   gap: 8px;
   align-items: center;
+}
+
+/* Previous / Next row, right after the other controls */
+#scrambleNav {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Previous is greyed out when there's no older scramble */
+#scrambleNav button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Phones: controls wrap onto several lines */

@@ -1,8 +1,8 @@
 import { getCurrentSession, addAverageBlock } from "../session/sessionController.js";
-import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
+import { displayScramble, currentScramble, previousScramble, nextScramble } from "../scramble/scrambleController.js";
 import { timerSettObj } from "../settings/settingsState.js";
 import { timeInsertion } from "../settings/settingsController.js";
-import { countdownObj } from "../timer/timerState.js";
+import { countdownObj, timerObj, PHASE } from "../timer/timerState.js";
 import { averageOfN } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { applyScramble, applySolution, getLastMoveCount, checkSolved } from "../cubisz/api.js";
@@ -278,6 +278,38 @@ countInput.addEventListener("input", async () => {
 
   loadFromStorage();
   initializeDefaults();
+
+// Previous / Next scramble buttons in the top bar
+
+// True when the scramble may change: between solves, not during inspection or a running solve
+function canChangeScramble() {
+    return timerObj.timerPhase === PHASE.IDLE;
+}
+
+// Fewest Moves: puts the new scramble on the cube and clears the old solution and its result
+function resetFMCForScramble() {
+    if (eventObj.event !== "333fm") return;
+    applyScramble(currentScramble);
+    document.getElementById("fmc-solution").value = "";
+    document.getElementById("fmc-move-count").innerHTML = "";
+    solutionFlag = false;
+}
+
+// Previous: back to the scramble before this one
+document.getElementById("prevScrambleBtn").addEventListener("click", () => {
+    if (!canChangeScramble()) return;
+    previousScramble(vis);
+    resetFMCForScramble();
+});
+
+// Next: forward to a scramble already seen, or a new one after the newest
+document.getElementById("nextScrambleBtn").addEventListener("click", async () => {
+    if (!canChangeScramble()) return;
+    // Multi-Blind: new scrambles for the chosen number of cubes (5 if the box is empty, at least 1)
+    const cubeCount = eventObj.event === "r3ni" ? Math.max(1, Number(countInput.value) || 5) : undefined;
+    await nextScramble(eventObj.event, vis, cubeCount);
+    resetFMCForScramble();
+});
 
 // First scramble (mainController calls this once the top bar has filled the selects)
 async function initEvent() {

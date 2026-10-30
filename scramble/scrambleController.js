@@ -5,10 +5,15 @@ import { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx } from ".
 // The scramble on screen; the next solve is saved with it
 let currentScramble = "";
 let currentScrambleEvent = ""; // event code currentScramble was made for
+// Scrambles shown for the current event, oldest first; Previous / Next move through it
+let scrambleHistory = [];
+// Position in scrambleHistory of the scramble on screen
+let historyIndex = -1;
+// Most scrambles kept, so a long session doesn't keep every picture in memory
+const MAX_HISTORY = 100;
 
 // Gets a new scramble for an event from csTimer and shows its text and picture; length overrides the default (Multi-Blind cube count)
 async function displayScramble(event = "333", vis, length) {
-
     // csTimer type and default length from scramble/scrData.js
     const config = getScrambleConfig(event);
     if (!config) return;
@@ -19,30 +24,61 @@ async function displayScramble(event = "333", vis, length) {
 
     let scramble = await csTimer.getScramble(type, finalLength);
 
-
     // Picture of the scrambled puzzle
     const svg = await csTimer.getImage(scramble, type);
 
-    currentScramble = scramble;
-    currentScrambleEvent = event;
+    // Another event's scrambles are for another puzzle, so its history starts over
+    if (event !== currentScrambleEvent) scrambleHistory = [];
 
-    vis.innerHTML = svg;
+    // Add the new scramble at the end and point at it
+    scrambleHistory.push({ scramble, event, svg });
+    // Past the limit, forget the oldest one
+    if (scrambleHistory.length > MAX_HISTORY) scrambleHistory.shift();
+    historyIndex = scrambleHistory.length - 1;
 
-    adjustVisualizerSize(event, vis);
+    showScramble(scrambleHistory[historyIndex], vis);
+}
+
+// Puts a saved scramble on screen: makes it the current one, draws its picture and writes its text
+function showScramble(entry, vis) {
+    currentScramble = entry.scramble;
+    currentScrambleEvent = entry.event;
+
+    vis.innerHTML = entry.svg;
+
+    adjustVisualizerSize(entry.event, vis);
 
     const textEl = document.getElementById("scrambleDisplay");
 
     // Megaminx scrambles get one line per row of moves
-    if (type === "mgmp") {
-        textEl.textContent = formatMegaminx(scramble);
+    if (entry.event === "mgmp") {
+        textEl.textContent = formatMegaminx(entry.scramble);
     } else {
-        textEl.textContent = scramble;
+        textEl.textContent = entry.scramble;
     }
+
+    // Previous is greyed out on the oldest scramble, since there's nothing before it
+    document.getElementById("prevScrambleBtn").disabled = historyIndex <= 0;
 
     autoFitText(vis);
 }
 
+// Goes back to the scramble before the one on screen (nothing happens on the oldest)
+function previousScramble(vis) {
+    if (historyIndex <= 0) return;
+    historyIndex--;
+    showScramble(scrambleHistory[historyIndex], vis);
+}
 
+// Goes forward to a scramble already seen, or makes a new one when on the newest; length is the Multi-Blind cube count
+async function nextScramble(event, vis, length) {
+    if (historyIndex < scrambleHistory.length - 1) {
+        historyIndex++;
+        showScramble(scrambleHistory[historyIndex], vis);
+    } else {
+        await displayScramble(event, vis, length);
+    }
+}
 
 // Scales and places the picture for the event's puzzle: setVisualizerScale(scale, right offset, bottom offset)
 function adjustVisualizerSize(event, vis) {
@@ -112,4 +148,11 @@ function adjustVisualizerSize(event, vis) {
     if (category === "Relays") setVisualizerScale(0.45, 105, 140, vis);
 }
 
-export { currentScramble, currentScrambleEvent, displayScramble, isCubiszEvent };
+export { 
+    currentScramble, 
+    currentScrambleEvent, 
+    displayScramble, 
+    previousScramble, 
+    nextScramble, 
+    isCubiszEvent 
+};
