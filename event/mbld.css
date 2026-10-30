@@ -1,0 +1,74 @@
+/* Multi-Blind: the "View Scrambles" button and the pop-up listing one scramble and picture per cube */
+
+/* Hidden until Multi-Blind shows it; above the touch overlay so it stays clickable */
+#open-mbld-modal {
+  display: none;
+  z-index: 1000;
+}
+
+/* Full-screen dimmed backdrop, hidden until event/eventController.js opens it */
+.mbld-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 9999;
+  overflow: auto;
+}
+
+/* Centered box with big scramble text that scrolls when there are many cubes */
+.mbld-modal-content {
+  background: #111;
+  margin: 20px auto;
+  padding: 15px;
+  width: 95%;
+  font-size: 40px;
+  max-width: 1100px;
+  border-radius: 10px;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+/* Columns: cube number, scramble, picture */
+.mbld-grid {
+  display: grid;
+  grid-template-columns: 40px 700px 160px;
+  gap: 10px 20px;
+  align-items: start;
+}
+
+/* Every cell of the grid */
+.mbld-row {
+  padding: 4px 0;
+  border-bottom: none;
+}
+
+/* Cube number */
+.mbld-index {
+  font-weight: bold;
+}
+
+/* Scramble text */
+.mbld-scramble {
+  font-family: monospace;
+}
+
+/* Scramble picture */
+.mbld-visual {
+  text-align: center;
+}
+
+/* "Cubes:" label and count input */
+.mbld-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+/* Narrow cube count input */
+#mbld-count {
+  width: 60px;
+  padding: 4px;
+  font-size: 14px;
+}

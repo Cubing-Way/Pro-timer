@@ -38,19 +38,108 @@ The site lands in `dist/`. `npm run deploy` builds it and publishes `dist/` to t
 
 ## Folder layout
 
-- `index.html`: the page
-- `main/`: entry point, the bridge to csTimer's scrambler, styles
+- `index.html`: the page skeleton; each part of the page lives in its own folder
+- `vite.config.js`: Vite settings and the plugin that puts the page's HTML pieces together
+- `main/`: entry point, the bridge to csTimer's scrambler, page-wide styles
 - `timer/`: the timer, inspection, WCA delay, phases, countdown and time formatting
 - `average/`: block and classic averages
 - `session/`: sessions and solves
 - `scramble/`: scramble types, generation and the scramble picture
-- `cubisz/`: the cubisz cube, used for scramble pictures and Fewest Moves checks
-- `event/`: Fewest Moves and Multi-Blind
+- `cubisz/`: the cubisz cube, used for scramble pictures and Fewest Moves checks (a copy of its own repo, with a demo page and its own `style.css`)
+- `event/`: Fewest Moves, Multi-Blind and the timer warnings
 - `render/`: history list, statistics and average views
 - `stats/`: the statistics page and its charts
 - `settings/`, `topbar/`, `modal/`, `timeTyping/`: settings, top bar, pop-ups and typed-in times
+- `public/`: files served as they are: csTimer's scrambler worker (`cstimer_module.js`) and the timer warning sounds (`audio/`)
 
 Each folder has a `…Controller.js`. It holds the folder's state and page wiring (listeners, startup code), and it is what other folders import. The other files only export functions: when one needs state, its controller passes it in. State shared between folders lives in `…State.js` files (`avgState.js`, `sessionState.js`, `settingsState.js`, `timerState.js`, `topbarState.js`). `main/mainController.js` loads the controllers, then shows the first scramble.
+
+A folder also holds the HTML and CSS of the part of the page its controller wires up, so the markup, the styles and the code for one feature sit side by side.
+
+## The page (HTML)
+
+`index.html` is only a skeleton. Each part of the page is in its own `.html` file, and the skeleton pulls it in with a tag like this:
+
+```html
+<include src="./topbar/topbar.html"></include>
+```
+
+`<include>` is not real HTML. The `htmlIncludes` plugin in `vite.config.js` replaces every `<include>` tag with the contents of that file before the browser sees the page, both in `npm run dev` and in `npm run build`, so the browser only ever gets one complete page, the same as if it were written in one file. How it works:
+
+- `expandIncludes(html, fromDir)` finds each `<include src="…"></include>` with a regular expression (`INCLUDE_TAG`), reads that file and puts its contents in place of the tag.
+- It runs again on the file it just read, so a piece can include smaller pieces. The path in `src` is relative to the file that has the tag, like an `import`.
+- The plugin's `transformIndexHtml` hook runs it on `index.html` with `order: "pre"`, before Vite's own HTML handling, so Vite still processes the `<link>` and `<script>` tags as usual.
+- Vite doesn't track the pieces as modules, so its `handleHotUpdate` hook reloads the page whenever any `.html` file changes in dev.
+
+Because the whole page is there before any script runs, the controllers can still look up their elements with `document.getElementById` when they load.
+
+The pieces, in page order (a `→` means the piece is included inside the one above it):
+
+| File | What it is | Wired by |
+| --- | --- | --- |
+| `topbar/topbar.html` | Top bar: settings, Clear, average mode, category, event, session, Open Session, Session Stats | `topbar/topbarController.js` (gear: settings, stats button: stats) |
+| `render/historySidebar.html` | Left sidebar with the session history | `render/renderController.js` |
+| `render/statsSidebar.html` | Right sidebar with the "All time" and "Today" stats | `render/renderController.js` |
+| `scramble/scrambleText.html` | Scramble text above the timer | `scramble/scrambleController.js` |
+| `timer/timerBlock.html` | The timer and the button bar under it (penalties, Multi-Blind scrambles, timer warnings, start attempt, submit) | `timer/timerController.js`, `topbar/topbarController.js`, `event/` |
+| → `event/fmcPanel.html` | Fewest Moves cube, solution form and move count, next to the timer | `event/FMC.js`, `event/eventController.js` |
+| → `timeTyping/typingBox.html` | Typed-in time box and inspection button | `timeTyping/timeTypingController.js` |
+| `render/averageFooter.html` | Footer under the timer: the current average and its stats | `render/renderController.js` |
+| `scramble/phoneVisualizer.html` | Phone scramble picture and the button that opens it | `topbar/topbarController.js`, `event/eventController.js` |
+| `scramble/desktopVisualizer.html` | Desktop scramble picture in the bottom-right corner | `event/eventController.js`, `scramble/scrVisualiser.js` |
+| `modal/detailsModal.html` | Pop-up with the details of a solve, an average or the session | `modal/modalController.js` |
+| `stats/statsPage.html` | Full-screen statistics page: period, 4 charts, overview cards, averages table | `stats/statsController.js` |
+| `settings/settingsPanel.html` | Settings pop-up: timer options, colors, layout switches | `settings/settingsController.js` |
+| → `settings/textColorOptions.html` | The 9 text colors, shared by the two text color selects | |
+| → `settings/backgroundOptions.html` | The 30 background colors, shared by the four background selects | |
+| `event/mbldModal.html` | Multi-Blind pop-up with a scramble and picture per cube | `event/eventController.js` |
+| `event/warningsModal.html` | Timer warnings pop-up and its backdrop | `event/eventController.js` |
+
+## Styles (CSS)
+
+`index.html` links a single stylesheet, `main/style.css`. That file has no rules of its own: it `@import`s every other stylesheet, and Vite inlines them into one file (in dev and in the build). The import order matters, because when two rules match the same element equally strongly, the one imported later wins. Each phone rule sits at the end of its own file in a `@media (max-width: 768px)` block, after the desktop rules it overrides.
+
+The files, in import order:
+
+| File | What it styles |
+| --- | --- |
+| `main/variables.css` | Default colors as CSS variables on `:root` (black background, white text) and the scrollbar colors |
+| `settings/textThemes.css` | The 9 text color themes (`.theme-text-<color>`) |
+| `settings/backgroundThemes.css` | The 30 background themes (`.theme-<color>`, 4 shades per color) |
+| `main/base.css` | Reset, `body`, scrollbars, the shared look of buttons, selects and inputs, `.focus-hidden` and `.times-color-number` |
+| `main/layout.css` | The 3-column grid, sidebars, panels, the main column and the touch overlay |
+| `topbar/topbar.css` | Top bar |
+| `scramble/scramble.css` | Scramble text and the desktop and phone scramble pictures |
+| `timer/timer.css` | Timer, the row next to it and the penalty bar |
+| `timeTyping/timeTyping.css` | Typed-in time box |
+| `event/fmc.css` | Fewest Moves panel and submit button (hidden until FMC shows them) |
+| `event/mbld.css` | Multi-Blind button and pop-up |
+| `event/warnings.css` | Start attempt and Timer Warnings buttons, warnings pop-up |
+| `render/render.css` | History list blocks and the average footer |
+| `modal/modal.css` | Details pop-up |
+| `stats/stats.css` | Statistics page |
+| `settings/settings.css` | Settings pop-up |
+
+How the colors work: every color in the stylesheets is a CSS variable (`--bg-main`, `--bg-secondary`, `--bg-tertiary`, `--text-main`, `--text-strong`, `--border-main`, `--accent`…), with defaults in `main/variables.css`. The theme classes are tables of values for those variables. When you pick a background color in the settings, `settings/settingsController.js` (`getThemeVar`) adds a hidden element with that theme's class, reads one variable from it, and sets it on `<html>`, which overrides the default for the whole page. The "Secondary text" color puts a `.theme-text-<color>` class on `<body>` instead, and "Main text" sets `--times-color`, which only `.times-color-number` (times and numbers) uses. Each color setting changes one variable:
+
+| Setting | Variable | Used by |
+| --- | --- | --- |
+| Main text | `--times-color` | Times and numbers |
+| Secondary text | `--text-main` (via a class on `<body>`) | All other text |
+| Main background | `--bg-main` | Page, right sidebar, penalty bar, footer, stats page, settings panel |
+| Secondary background | `--bg-tertiary` | Top bar, left sidebar, settings rows |
+| Tertiary background | `--bg-secondary` | Pop-ups, stats table header |
+| Buttons background | `--border-main` | Buttons, selects, inputs and most borders |
+
+Some elements are hidden in the CSS and shown by the code: the event buttons and Fewest Moves panel (`event/eventLayout.js`, `event/FMC.js`, `event/MBLD.js` set their `display`), and the pop-ups (opened by adding `.open`, removing `.hidden`, or setting `display`). The Layout settings hide parts of the page by class (`settings/layout.js`).
+
+## Build config (`vite.config.js`)
+
+- `base: "/Pro-timer/"`: the site is served from `cubing-way.github.io/Pro-timer/`, so every URL starts with `/Pro-timer/`.
+- `server.port: 3000`: the dev server address.
+- `worker.format: "es"`: web workers are built as ES modules.
+- `build.minify: false`: the built code stays readable.
+- `plugins: [htmlIncludes()]`: puts the HTML pieces together (see [The page](#the-page-html)).
 
 ## License
 

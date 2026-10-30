@@ -1,0 +1,58 @@
+/* Timer block: the time, what sits next to it, and the penalty bar under it */
+
+/* Column of the timer row and the penalty bar */
+.timer-block {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+}
+
+/* Row of the timer and the event extras (FMC cube and form, typing box), wrapping when narrow */
+#timerins {
+  display: flex;
+  flex-wrap: wrap;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+/* The big running time */
+#timer {
+  font-size: 140px;
+  font-weight: 600;
+  letter-spacing: 2px;
+  margin-top: auto;
+}
+
+/* Penalty and event buttons under the timer, above the touch overlay so they stay clickable */
+.penalty-bar {
+  display: flex;
+  gap: 10px;
+  background: var(--bg-main);
+  border: 1px solid var(--bg-main);
+  z-index: 1001;
+}
+
+/* Phones: smaller timer, penalty buttons spread over the width */
+@media (max-width: 768px) {
+  /* Timer fits a phone screen */
+  #timer {
+    font-size: 72px;
+    letter-spacing: 1px;
+  }
+
+  /* Buttons wrap and center */
+  .penalty-bar {
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* Each button takes an equal share, on a near-black background with no border */
+  .penalty-bar button {
+    flex: 1;
+    background: #0b0b0b;
+    border: 1px #0b0b0b;
+  }
+}

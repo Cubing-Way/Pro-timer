@@ -1,0 +1,114 @@
+/* Settings panel: centered pop-up with timer options, colors and layout switches */
+
+/* Dimmed full-screen backdrop, hidden until the gear button opens it */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: none;
+  justify-content: center;
+  align-items: center;
+  z-index: 1002;
+}
+
+/* Open settings (settings/settingsController.js adds .open) */
+.overlay.open {
+  display: flex;
+}
+
+/* The panel, scrolling when taller than the screen */
+.settings-panel {
+  width: 320px;
+  background: var(--bg-main);
+  color: var(--text-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+  position: relative;
+  font-family: system-ui, sans-serif;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+/* Title and close button, stuck to the top while the panel scrolls */
+.settings-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px 24px 16px 24px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-strong);
+}
+
+/* Close button sits in the header's flex row */
+#closeSettings {
+  position: static;
+}
+
+/* Everything under the header */
+.settings-body {
+  padding: 0 24px 24px 24px;
+}
+
+/* A group of rows with a title ("Timer Options", "Color", "Layout") */
+.settings-section {
+  margin-top: 22px;
+}
+
+/* First group a bit closer to the header */
+.settings-section:first-of-type {
+  margin-top: 12px;
+}
+
+/* Small uppercase group title */
+.section-title {
+  font-size: 12px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  opacity: 0.6;
+  margin: 6px 4px 10px 4px;
+}
+
+/* One setting: label on the left, control on the right */
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+}
+
+/* Setting name */
+.setting-row label {
+  font-size: 14px;
+  opacity: 0.9;
+}
+
+/* Box around the select or input */
+.setting-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Smaller text in the controls than in the shared button look */
+.setting-control select,
+.setting-control button,
+.setting-control input {
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 13px;
+}
+
+/* Phones: no Statistics or Session History switches, since phones never show those sidebars */
+@media (max-width: 768px) {
+  /* The two sidebar switch rows */
+  #pc1, #pc2 {
+    display: none;
+  }
+}

@@ -1,0 +1,11 @@
+<!-- Fewest Moves panel next to the timer, hidden until FMC (or Multi-Blind, for the form) shows it (event/FMC.js) -->
+<!-- cubisz cube the solution is tested on, mounted by event/FMC.js -->
+<div id="fmc-cube"></div>
+<!-- Solution box; testing it applies the moves to the cube above (event/eventController.js) -->
+<form id="fmc-form">
+  <label id="fmc-label-form">Solution: </label>
+  <input id="fmc-solution">
+  <button id="fmc-solution-test">Test solution</button>
+</form>
+<!-- Move count and result of the tested solution -->
+<div id="fmc-move-count">0 moves<br>result: DNF</div>

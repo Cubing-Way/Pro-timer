@@ -1,0 +1,164 @@
+/* Statistics page: full-screen page with the date filter, charts, overview cards and averages table */
+
+/* Full-screen page over the timer, hidden until opened */
+.stats-page {
+  position: fixed;
+  inset: 0;
+  background: var(--bg-main);
+  border: 1px solid var(--border-main);
+  color: var(--text-main);
+  z-index: 9999;
+  overflow: scroll;
+  display: none;
+  flex-direction: column;
+}
+
+/* Open page (stats/statsController.js adds .open) */
+.stats-page.open {
+  display: flex;
+}
+
+/* Bar at the top with the back button and title */
+.stats-topbar {
+  height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 16px;
+  background: var(--bg-main);
+  border-bottom: 1px solid var(--border-main);
+}
+
+/* "Back to Timer" button */
+.stats-topbar button {
+  height: 36px;
+}
+
+/* "Session Statistics" title */
+.stats-title {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Period select (all time, year … day) */
+#date-filter {
+  width: 100px;
+  margin: 10px;
+}
+
+/* Two charts per row, one when narrower than 800px */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  gap: 20px;
+}
+
+/* Fixed-height box Chart.js draws into */
+.chart-container {
+  width: 100%;
+  height: 300px;
+}
+
+/* Distribution chart centered in its box */
+#distributionChart {
+  justify-self: center;
+}
+
+/* Row of overview cards (solves, best, mean, σ, best average) */
+.stats-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 16px;
+}
+
+/* One overview card */
+.stat-card {
+  background: var(--bg-main);
+  border-radius: 12px;
+  padding: 14px;
+  text-align: center;
+}
+
+/* Best average card, outlined in the accent color */
+.stat-card.highlight {
+  outline: 2px solid var(--accent);
+}
+
+/* Small faded card label */
+.stat-label {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* Big card value */
+.stat-value {
+  font-size: 24px;
+  font-weight: bold;
+  margin-top: 6px;
+}
+
+/* "Averages History" section, filling the rest of the page */
+.stats-averages {
+  padding: 16px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Scroll box around the table, for sessions with many averages */
+.table-scroll {
+  flex: 1;
+  overflow: auto;
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+}
+
+/* Table at least as wide as its box, wider if the columns need it */
+.avg-table {
+  width: max-content;
+  min-width: 100%;
+  border-collapse: collapse;
+}
+
+/* Centered cells on one line, with grid lines */
+.avg-table th,
+.avg-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-main);
+  border-right: 1px solid var(--border-main);
+  text-align: center;
+  white-space: nowrap;
+}
+
+/* Header row stays visible while scrolling */
+.avg-table thead {
+  position: sticky;
+  top: 0;
+  background: var(--bg-secondary);
+}
+
+/* Hovered row */
+.avg-table tr:hover {
+  background: #1a1f2b;
+}
+
+/* Phones: two cards per row, smaller text */
+@media (max-width: 768px) {
+  /* Two overview cards per row */
+  .stats-overview {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* Smaller card values */
+  .stat-value {
+    font-size: 20px;
+  }
+
+  /* Tighter table cells */
+  .avg-table th,
+  .avg-table td {
+    padding: 6px;
+    font-size: 13px;
+  }
+}

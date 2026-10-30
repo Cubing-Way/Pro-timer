@@ -1,0 +1,222 @@
+<!-- Settings pop-up, opened by the gear button; settings/settingsController.js loads, applies and saves every value -->
+<div id="settingsOverlay" class="overlay">
+  <div id="settingsPanel" class="settings-panel">
+
+    <!-- Title and close button -->
+    <div class="settings-header">
+      <h2>Settings</h2>
+      <button id="closeSettings">✖</button>
+    </div>
+
+    <div class="settings-body">
+
+      <!-- Timer options; event/eventLayout.js hides this section (by its timerOpt class) in untimed events -->
+      <div class="settings-section timerOpt">
+        <div class="section-title">Timer Options</div>
+
+        <!-- WCA (15 s with +2 / DNF), free (no limit) or no inspection -->
+        <div class="setting-row">
+          <label>Inspection type</label>
+          <div class="setting-control">
+            <select id="inspection-type">
+              <option value="WCA" selected>WCA</option>
+              <option value="Free">Free</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- How long the start key must be held before the timer is ready -->
+        <div class="setting-row">
+          <label>Delay flag</label>
+          <div class="setting-control">
+            <select id="delay-flag">
+              <option value="WCA" selected>0.3s (WCA)</option>
+              <option value="None">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Time with the timer or type the times in (timeTyping/) -->
+        <div class="setting-row">
+          <label>Time insertion</label>
+          <div class="setting-control">
+            <select id="time-insertion">
+              <option value="Timer" selected>Timer</option>
+              <option value="Typing">Typing</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- These three rows sit outside the Timer Options section, so they stay visible in untimed events -->
+
+      <!-- How many phases one solve is split into (timer/timerPhases.js) -->
+      <div class="setting-row">
+        <label>Timer Phases</label>
+        <div class="setting-control">
+          <input type="number" id="phase-count" min="1" max="10" step="1" />
+        </div>
+      </div>
+
+      <!-- Show the running time, or hide it until the solve ends -->
+      <div class="setting-row">
+        <label>Timer display</label>
+        <div class="setting-control">
+          <select id="timer-display">
+            <option value="Show" selected>Always show</option>
+            <option value="Hide">Hide while solving</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Inspection starts when the key is pressed, or when it is released -->
+      <div class="setting-row">
+        <label>Inspection start</label>
+        <div class="setting-control">
+          <select id="inspection-start">
+            <option value="press-start" selected>Press start</option>
+            <option value="press-end">Press end</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Colors: each select picks a theme class from settings/textThemes.css or settings/backgroundThemes.css -->
+      <div class="settings-section">
+        <div class="section-title">Color</div>
+
+        <!-- Color of the times and numbers (--times-color) -->
+        <div class="setting-row">
+          <label>Main text</label>
+          <div class="setting-control">
+            <select id="times-color">
+              <include src="./textColorOptions.html"></include>
+            </select>
+          </div>
+        </div>
+
+        <!-- Color of the other text (a .theme-text-* class on <body>) -->
+        <div class="setting-row">
+          <label>Secondary Text</label>
+          <div class="setting-control">
+            <select id="text-color">
+              <include src="./textColorOptions.html"></include>
+            </select>
+          </div>
+        </div>
+
+        <!-- Page background (--bg-main) -->
+        <div class="setting-row">
+          <label>Main background</label>
+          <div class="setting-control">
+            <select id="main-background">
+              <include src="./backgroundOptions.html"></include>
+            </select>
+          </div>
+        </div>
+
+        <!-- Top bar, left sidebar and settings rows (--bg-tertiary) -->
+        <div class="setting-row">
+          <label>Secondary background</label>
+          <div class="setting-control">
+            <select id="secondary-background">
+              <include src="./backgroundOptions.html"></include>
+            </select>
+          </div>
+        </div>
+
+        <!-- Pop-ups and the stats table header (--bg-secondary) -->
+        <div class="setting-row">
+          <label>Tertiary background</label>
+          <div class="setting-control">
+            <select id="tertiary-background">
+              <include src="./backgroundOptions.html"></include>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buttons, selects and most borders (--border-main) -->
+        <div class="setting-row">
+          <label>Buttons background</label>
+          <div class="setting-control">
+            <select id="buttons-background">
+              <include src="./backgroundOptions.html"></include>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Layout: each select shows or hides a part of the page (settings/layout.js) -->
+      <div class="settings-section">
+        <div class="section-title">Layout</div>
+
+        <!-- Desktop scramble picture -->
+        <div class="setting-row">
+          <label>Scramble visualizer</label>
+          <div class="setting-control">
+            <select id="toggle-scramble-visualizer">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Right sidebar; the row is hidden on phones (#pc1), which never show it -->
+        <div class="setting-row" id="pc1">
+          <label>Statistics</label>
+          <div class="setting-control">
+            <select id="toggle-statistics">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Left sidebar; the row is hidden on phones (#pc2), which never show it -->
+        <div class="setting-row" id="pc2">
+          <label>Session History</label>
+          <div class="setting-control">
+            <select id="toggle-session-history">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Scramble text above the timer -->
+        <div class="setting-row">
+          <label>Scramble text</label>
+          <div class="setting-control">
+            <select id="toggle-scramble-text">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Buttons under the timer -->
+        <div class="setting-row">
+          <label>Penalty bar</label>
+          <div class="setting-control">
+            <select id="toggle-penalty-bar">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Footer under the timer -->
+        <div class="setting-row">
+          <label>Average preview</label>
+          <div class="setting-control">
+            <select id="toggle-average-preview">
+              <option value="show">Display</option>
+              <option value="hide">None</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>

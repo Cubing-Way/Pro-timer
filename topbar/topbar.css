@@ -1,0 +1,39 @@
+/* Top bar: settings, clear, average mode, category, event and session controls */
+
+/* Full-width bar above the app */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--bg-tertiary);
+}
+
+/* Row of controls on the left of the bar */
+.left-controls {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* Phones: controls wrap onto several lines */
+@media (max-width: 768px) {
+  /* Bar grows to fit the wrapped controls */
+  .top-bar {
+    flex-wrap: wrap;
+    align-self: stretch;
+    gap: 8px;
+  }
+
+  /* Controls wrap and use the whole width */
+  .left-controls {
+    flex-wrap: wrap;
+    width: 100%;
+  }
+
+  /* Selects share each line, at least 100px wide */
+  .top-bar select {
+    flex: 1 1;
+    min-width: 100px;
+    min-height: 10px;
+  }
+}

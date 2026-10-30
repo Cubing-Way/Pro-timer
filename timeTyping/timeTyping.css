@@ -1,0 +1,29 @@
+/* Typed-in times: the time box, its Add button and the inspection button */
+
+/* Box next to the timer in Typing mode, above the touch overlay so it stays clickable */
+#typing-container {
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: center;
+  margin-top: 15px;
+}
+
+/* Time input and Add button side by side */
+.typing-controls {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+/* Narrow time input */
+#typed-time {
+  max-width: 120px;
+}
+
+/* "Inspection (space)" button under the input, full width */
+#inspection-btn {
+  margin-top: 15px;
+  width: 100%;
+}

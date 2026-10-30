@@ -1,0 +1,17 @@
+<!-- Multi-Blind scrambles pop-up: one row per cube with its scramble and picture (event/eventController.js) -->
+<div id="mbld-modal" class="mbld-modal">
+  <div class="mbld-modal-content">
+    <button id="mbld-close">✕</button>
+
+    <h2>MBLD Scrambles</h2>
+
+    <!-- How many cubes; changing it makes that many scrambles and rebuilds the list -->
+    <div class="mbld-controls">
+      <label for="mbld-count">Cubes:</label>
+      <input type="number" id="mbld-count" min="1" value="5">
+    </div>
+
+    <!-- Rows built in JS: number, scramble, picture -->
+    <div id="mbld-grid" class="mbld-grid"></div>
+  </div>
+</div>

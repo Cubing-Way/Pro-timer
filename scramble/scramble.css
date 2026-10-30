@@ -1,0 +1,80 @@
+/* Scramble text above the timer and the scramble pictures (desktop corner and phone pop-up) */
+
+/* Box for the scramble text, a fixed share of the screen height */
+#scrambleContainer {
+  max-width: 900px;
+  padding: 0 20px;
+  height: 22.5vh;
+}
+
+/* Scramble text, filled by scramble/scrambleController.js */
+#scrambleDisplay {
+  text-align: center;
+  font-size: 20px;
+  opacity: 0.8;
+  word-wrap: break-word;
+}
+
+/* Desktop cube picture, pinned to the bottom-right corner */
+.panel-cube {
+  position: absolute;
+  right: 20px;
+  bottom: 20px;
+}
+
+/* Phone cube picture: hidden on desktop */
+#scrambleVis2 {
+  display: none;
+}
+
+/* "Scramble visualizer" button that opens the phone picture: hidden on desktop */
+#scramble-button {
+  display: none;
+}
+
+/* Phones: the corner picture goes away, a button opens a pop-up picture instead */
+@media (max-width: 768px) {
+  /* Smaller scramble box */
+  #scrambleContainer {
+    max-width: 100%;
+    padding: 0 12px;
+    height: 16vh;
+  }
+
+  /* Smaller scramble text */
+  #scrambleDisplay {
+    font-size: 16px;
+  }
+
+  /* No room for the corner picture */
+  .panel-cube {
+    display: none;
+  }
+
+  /* Pop-up picture above the button, hidden until the button opens it (topbar/topbarController.js) */
+  .panel-cube2 {
+    display: none;
+    grid-template-columns: 1fr auto 1fr;
+    position: absolute;
+    bottom: 120px;
+    z-index: 1001;
+  }
+
+  /* Button pinned near the bottom of the screen */
+  #scramble-button {
+    display: block;
+    background: var(--bg-main);
+    border: 1px solid var(--bg-main);
+    color: var(--text-strong);
+    z-index: 1001;
+    position: fixed;
+    bottom: 5vh;
+    justify-self: center;
+    align-self: center;
+  }
+
+  /* Phone picture is shown inside its pop-up */
+  #scrambleVis2 {
+    display: block;
+  }
+}

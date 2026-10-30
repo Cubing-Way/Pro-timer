@@ -1,0 +1,38 @@
+/* Default colors (black background, white text); settings/settingsController.js overwrites them on <html> with the chosen theme's */
+:root {
+  /* Page, right sidebar, penalty bar, footer and stats page background ("Main background" setting) */
+  --bg-main: #070707;
+  /* Pop-up and table header background ("Tertiary background" setting) */
+  --bg-secondary: #111;
+  /* Top bar, left sidebar and settings row background ("Secondary background" setting) */
+  --bg-tertiary: #141414;
+  /* Not used by any rule yet, kept so every theme has the full set */
+  --bg-elevated: #1a1a1a;
+
+  /* Body text ("Secondary text" setting picks a .theme-text-* class) */
+  --text-main: #eaeaea;
+  /* Button and settings panel text */
+  --text-strong: #ffffff;
+  /* Not used by any rule yet */
+  --text-muted: rgba(255,255,255,0.6);
+
+  /* Button background and most borders ("Buttons background" setting) */
+  --border-main: #222;
+  /* Button border */
+  --border-soft: #2a2a2a;
+  /* Settings header bottom border */
+  --border-strong: #333;
+
+  /* Not used by any rule yet */
+  --overlay-dark: rgba(0,0,0,0.6);
+  /* Dimmed backdrop behind the solve details pop-up */
+  --overlay-strong: rgba(0,0,0,0.75);
+
+  /* Highlight color, used on the stats page's best average card */
+  --accent: #4ade80;
+
+  /* Scrollbar track, thumb and hovered thumb colors */
+  --scrollbar-track: #0f0f0f;
+  --scrollbar-thumb: #2a2a2a;
+  --scrollbar-thumb-hover: #3a3a3a;
+}

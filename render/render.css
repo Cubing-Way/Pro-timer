@@ -1,0 +1,29 @@
+/* What render/ draws: the history list in the left sidebar and the average footer under the timer */
+
+/* One average block in the history list, split from the next by a line */
+.history-average {
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #222;
+}
+
+/* The average still in progress has no line under it */
+.current-average {
+  border: none;
+}
+
+/* Footer under the timer: the average preview and the current stats, side by side and centered */
+.main-footer {
+  display: grid;
+  grid-template-columns: auto auto;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg-main);
+}
+
+/* Each footer panel only takes its content width */
+.main-footer .panel {
+  display: flex;
+  padding: 10px;
+}

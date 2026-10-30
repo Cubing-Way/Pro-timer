@@ -1,0 +1,40 @@
+/* Timed attempts (FMC, Multi-Blind): the "Start attempt" and "Timer Warnings" buttons and the warnings pop-up */
+
+/* Hidden until FMC or Multi-Blind shows them; above the touch overlay so they stay clickable */
+#countdown,
+#openConfig {
+  display: none;
+  z-index: 1000;
+}
+
+/* Warnings pop-up, centered on screen, hidden until event/eventController.js opens it */
+#modal2 {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #111;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  max-height: 70vh;
+  overflow-y: auto;
+  z-index: 1001;
+}
+
+/* Dimmed backdrop behind the warnings pop-up */
+#overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.5);
+}
+
+/* One checkbox per warning time, built by event/eventController.js */
+.minute-option {
+  margin: 5px 0;
+}

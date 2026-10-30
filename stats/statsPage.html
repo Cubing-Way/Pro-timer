@@ -1,0 +1,60 @@
+<!-- Statistics page over the timer, opened by the "Session Stats" button (stats/statsController.js) -->
+<div class="stats-page" id="stats-page" hidden>
+
+  <!-- Back button and title -->
+  <div class="stats-topbar">
+    <button id="close-stats-btn">← Back to Timer</button>
+    <div class="stats-title">Session Statistics</div>
+  </div>
+
+  <!-- Period the charts and cards cover -->
+  <select id="date-filter">
+    <option value="all">All Time</option>
+    <option value="year">Year</option>
+    <option value="semester">Semester</option>
+    <option value="month">Month</option>
+    <option value="week">Week</option>
+    <option value="day" selected>Day</option>
+  </select>
+
+  <!-- Solve times over the period, and its averages next to the previous period's (Chart.js) -->
+  <div class="charts-grid">
+    <div class="chart-container">
+      <canvas id="timesChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="comparisonChart"></canvas>
+    </div>
+  </div>
+
+  <!-- σ of each average, and how the times are spread -->
+  <div class="charts-grid">
+    <div class="chart-container">
+      <canvas id="sigmaChart"></canvas>
+    </div>
+    <div class="chart-container">
+      <canvas id="distributionChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Overview cards -->
+  <section class="stats-overview">
+    <div class="stat-card"><div class="stat-label">Solves</div><div class="stat-value" id="stat-solves">-</div></div>
+    <div class="stat-card"><div class="stat-label">Best</div><div class="stat-value" id="stat-best-time">-</div></div>
+    <div class="stat-card"><div class="stat-label">Mean</div><div class="stat-value" id="stat-mean">-</div></div>
+    <div class="stat-card"><div class="stat-label">σ</div><div class="stat-value" id="stat-sigma">-</div></div>
+    <div class="stat-card highlight"><div class="stat-label">Best Ao5</div><div class="stat-value" id="stat-best-avg">-</div></div>
+  </section>
+
+  <!-- Table of every average (or every solve in classic mode); its head and rows are built in JS -->
+  <section class="stats-averages">
+    <h2>Averages History</h2>
+    <div class="table-scroll">
+      <table class="avg-table">
+        <thead id="avg-table-head"></thead>
+        <tbody id="avg-history-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+</div>

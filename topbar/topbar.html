@@ -1,0 +1,29 @@
+<!-- Top bar: settings, clear, average mode, category, event and session controls (topbar/topbarController.js) -->
+<header class="top-bar">
+  <div class="left-controls">
+    <!-- Opens the settings panel (settings/settingsController.js) -->
+    <button id="settingsBtn">&#9881;</button>
+    <!-- Deletes the session's solves and averages, after asking -->
+    <button id="clearBtn">Clear</button>
+    <!-- Average mode: block averages, or classic rolling averages -->
+    <select id="modeSelect">
+      <option value="ao5">ao5</option>
+      <option value="mo3">mo3</option>
+      <option value="bo3">bo3</option>
+      <option value="bo5">bo5</option>
+      <option value="fmc3">ao3</option>
+      <option value="classic">classic</option>
+    </select>
+
+    <!-- Category (WCA, training sets…) and its events, filled by topbar/topbarController.js -->
+    <select id="categorySelect"></select>
+    <select id="eventSelect"></select>
+
+    <!-- Current session, filled by session/sessionController.js -->
+    <select id="sessionSelect"></select>
+    <!-- Opens the session's averages in the details pop-up -->
+    <button id="modal-button">Open Session</button>
+    <!-- Opens the statistics page (stats/statsController.js) -->
+    <button id="open-stats-btn">📊 Session Stats</button>
+  </div>
+</header>

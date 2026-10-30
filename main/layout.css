@@ -1,0 +1,121 @@
+/* Page layout: the 3-column grid under the top bar, its sidebars and panels, and the main timer column */
+
+/* Grid of left sidebar | main area | right sidebar; the second row leaves room for the desktop cube picture */
+.app-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 220px 1fr 220px;
+  grid-template-rows: 1fr 205px;
+  min-height: 0;
+  overflow: hidden;
+  align-items: start;
+}
+
+/* Sidebars fill their whole grid area, the main area only takes its content height */
+.left-sidebar, .right-sidebar {
+  align-self: stretch;
+}
+
+/* Left sidebar: session history, spanning both grid rows */
+.left-sidebar {
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+  grid-row: 1 / 3;
+}
+
+/* Right sidebar: "All time" and "Today" stats, spanning both grid rows of the last column */
+.right-sidebar {
+  background: var(--bg-main);
+  display: grid;
+  grid-template-rows: auto auto auto auto 1fr;
+  gap: 10px;
+  padding: 10px;
+  min-height: 0;
+  grid-column: 3 / 4;
+  grid-row: 1 / 3;
+  justify-content: left;
+}
+
+/* The history panel grows to fill the left sidebar */
+.left-sidebar .panel {
+  background: var(--bg-tertiary);
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+}
+
+/* Panel headings ("Session History", "All time", "Today") */
+.panel-title {
+  opacity: 0.8;
+  margin-left: 25px;
+}
+
+/* Panel bodies, filled by render/renderController.js */
+.panel-content {
+  padding: 8px;
+  overflow: hidden;
+}
+
+/* Main area: the middle column of the first grid row */
+.main-layout {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Main column: scramble, timer block, then the footer; relative so the touch overlay can cover it */
+.main-center {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 12px;
+  position: relative;
+}
+
+/* Invisible layer over the main column that catches touches for the phone timer (timer/timerController.js) */
+#touchOverlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: transparent;
+  z-index: 999;
+}
+
+/* Phones: one column, no sidebars */
+@media (max-width: 768px) {
+  /* Stack everything instead of the 3-column grid */
+  .app-layout {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* No room for the sidebars */
+  .left-sidebar,
+  .right-sidebar {
+    display: none;
+  }
+
+  /* Main area takes the full width */
+  .main-layout {
+    width: 100%;
+    padding: 0 8px;
+  }
+
+  /* Rows: scramble, timer block, average footer, then spare space; scrolls if it doesn't fit */
+  .main-center {
+    height: 100vh;
+    display: grid;
+    grid-template-rows: 2fr auto 180px 1fr;
+    overflow: auto;
+    gap: 12px;
+  }
+}

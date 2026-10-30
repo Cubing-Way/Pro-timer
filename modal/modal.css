@@ -1,0 +1,103 @@
+/* Details pop-up: a solve or an average with its solves, penalty buttons and scrambles (modal/modalController.js) */
+
+/* Full-screen blurred backdrop that centers the box */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: var(--overlay-strong);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* Closed pop-up */
+.modal.hidden {
+  display: none;
+}
+
+/* The box, scrolling when the content is taller than the screen */
+.modal-content {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-main);
+  box-shadow: 0 10px 40px rgba(0,0,0,0.8);
+  padding: 16px;
+  border-radius: 12px;
+  max-width: 700px;
+  width: 90%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Title at the top ("Session averages") */
+.modal-title {
+  margin-top: 0;
+  margin-bottom: 12px;
+  border-bottom: 1px solid #222;
+  padding-bottom: 8px;
+}
+
+/* Card for one average */
+.modal-average-card {
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-main);
+  border-radius: 10px;
+  padding: 10px;
+  margin-bottom: 14px;
+}
+
+/* Average result line at the top of the card */
+.modal-average-header {
+  margin-bottom: 8px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #222;
+  opacity: 0.9;
+}
+
+/* List of the average's solves */
+.modal-solves {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* One solve */
+.modal-solve-row {
+  background: var(--bg-main);
+  border: 1px solid var(--border-main);
+  border-radius: 8px;
+  padding: 8px;
+}
+
+/* Solve time on the left, its buttons on the right */
+.modal-solve-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+/* OK / +2 / DNF / remove buttons of a solve */
+.modal-solve-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* Small faded scramble under the solve */
+.modal-scramble {
+  margin-top: 6px;
+  font-size: 13px;
+  opacity: 0.65;
+  word-break: break-word;
+}
+
+/* Phones: wider box with less padding */
+@media (max-width: 768px) {
+  /* Almost full width */
+  .modal-content {
+    width: 95%;
+    max-height: 85vh;
+    padding: 12px;
+  }
+}
