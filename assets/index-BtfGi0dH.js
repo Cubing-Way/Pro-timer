@@ -45,9 +45,13 @@ function call(type, args = []) {
   });
 }
 const csTimer = {
+  // Scramble of a csTimer type ("333", "pll"…); len is the length for types that take one
   getScramble: (type, len = 0) => call("scramble", [type, len]),
+  // SVG picture of a scrambled puzzle
   getImage: (scramble, type) => call("image", [scramble, type]),
+  // Seed for the random scrambles
   setSeed: (seed) => call("seed", [seed]),
+  // Changes one of csTimer's global options
   setGlobal: (key, value) => call("set", [key, value])
 };
 function setVisualizerScale(scale, right, bottom, vis2) {
@@ -600,9 +604,9 @@ function computeAverage(solves, mode) {
     return {
       dnf: false,
       avg: avg2,
-      // ← now Ao5
+      // the ao5
       best,
-      // ← BLD result
+      // the BLD result
       worst,
       sigma: sigma2
     };
@@ -764,7 +768,6 @@ function updateClassicStats$1(recomputeBest, averageObj2, classicStats2) {
       best: result.best,
       worst: result.worst,
       sigma: result.sigma,
-      // 🔥 ADD THIS
       solves: window2,
       lastSolve: window2[window2.length - 1],
       createdAt: window2[window2.length - 1].createdAt
@@ -797,23 +800,28 @@ function updateClassicStats$1(recomputeBest, averageObj2, classicStats2) {
 }
 const averageObj = {
   mode: "ao5",
+  // ao5, mo3, bo3, bo5, fmc3 (ao3) or classic
   solveCounter: 0,
+  // number of solves in solvesArray
   solvesArray: []
   // array of solve objects
 };
 const classicStats = {
+  // The latest rolling average of each size (null until there are enough solves)
   current: {
     mo3: null,
     ao5: null,
     ao12: null,
     ao100: null
   },
+  // The best rolling average of each size so far
   best: {
     mo3: null,
     ao5: null,
     ao12: null,
     ao100: null
   },
+  // Every rolling average of each size, oldest first
   history: {
     mo3: [],
     ao5: [],
@@ -891,6 +899,7 @@ const sessionsObj = {
   },
   currentSession: localStorage.getItem("currentSession") || "Default",
   selectEl: document.getElementById("sessionSelect")
+  // the top bar's session select
 };
 function ensureSessionShape(getCurrentSession2) {
   const session2 = getCurrentSession2();
@@ -1160,19 +1169,29 @@ const PHASE = Object.freeze({
 });
 const timerObj = {
   timerPhase: PHASE.IDLE,
+  // current phase, one of PHASE
   interval: 0,
+  // setInterval id of the running timer or inspection
   holdTimeout: 0,
+  // setTimeout id of the hold delay
   inspecting: false,
+  // true while the inspection count is running
   inspection: 0,
+  // seconds of inspection used (15+ is +2, 17+ is DNF in WCA inspection)
   solvePhases: [],
+  // time of each phase of the solve in progress
   currentSolvePhase: 0,
+  // how many phases of the solve in progress are done
   totalSolvePhases: 1,
+  // phases per solve ("Timer Phases" setting)
   lastSplitTime: 0
+  // ms from the start of the solve to the last phase split
 };
 const countdownObj = {
   remainingTime: 60 * 60,
   // 3600 seconds
   intervalId: null
+  // setInterval id while an attempt is running, null otherwise
 };
 function bindVisibilityToggle(selectId, targetClass) {
   const select = document.getElementById(selectId);
@@ -16257,7 +16276,7 @@ function renderStatsPage() {
     type: "bar",
     data: {
       labels: comparisonLabels,
-      // ✅ use new name
+      // "Block 1", "Block 2"…
       datasets: [
         {
           label: "Current Range (Avg Blocks)",
@@ -16361,6 +16380,7 @@ function renderStatsPage() {
         legend: { display: true },
         tooltip: {
           callbacks: {
+            // Tooltip: count and percent of the period's solves
             label: function(context) {
               const total = distribution.reduce((a, b) => a + b, 0);
               const value = context.raw;
