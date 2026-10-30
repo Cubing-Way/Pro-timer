@@ -1,4 +1,7 @@
-function renderHistoryList(averages, currentType) {
+import { computeAverage } from "../average/avgController.js";
+import { wrapTimesValue } from "./renderHelpers.js";
+
+function renderHistoryList(averages, currentType, averageObj, formatStatValue) {
 
 
     let html = "";

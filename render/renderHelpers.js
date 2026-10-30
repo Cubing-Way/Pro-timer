@@ -1,3 +1,5 @@
+import { formatDisplayTime, formatSecondsToTime } from "../average/avgController.js";
+
 function wrapTimesValue(value) {
     return `<span class="times-color-number">${value}</span>`;
 }

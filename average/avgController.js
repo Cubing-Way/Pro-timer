@@ -5,9 +5,13 @@ import {
     formatDisplayTime 
 } from "./avgHelper.js";
 
-import { updateClassicStats } from "./classicAvgs.js";
+import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
 import { averageObj, classicStats } from "./avgState.js";
 import { computeAverage } from "./avgComput.js";
+
+function updateClassicStats(recomputeBest = false) {
+    updateClassicStatsWith(recomputeBest, averageObj, classicStats);
+}
 
 function averageOfN(
     time, 

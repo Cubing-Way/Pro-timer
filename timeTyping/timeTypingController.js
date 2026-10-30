@@ -1,12 +1,12 @@
 import { averageOfN, parseTimeToSeconds, formatSecondsToTime } from "../average/avgController.js";
-import { currentScramble, displayScramble } from "../scramble/scramble.js";
+import { currentScramble, displayScramble } from "../scramble/scrambleController.js";
 import { timerObj } from "../timer/timerState.js";
 import { vis, eventObj } from "../event/eventController.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
 import { renderHistory } from "../render/renderController.js";
-import { addAverageBlock } from "../session/solve.js";
+import { addAverageBlock } from "../session/sessionController.js";
 import { updateTypingUI } from "../settings/settingsController.js";
-import { saveSessions } from "../session/session.js";
+import { saveSessions } from "../session/sessionController.js";
 
 let lastTime = null;
 

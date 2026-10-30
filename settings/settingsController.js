@@ -1,7 +1,33 @@
 import { timerSettObj } from "./timerSetObj.js";
 import { timerObj } from "../timer/timerState.js";
+import { bindVisibilityToggle } from "./layout.js";
 
+// ===============================
+// Settings panel
+// ===============================
 
+const overlay = document.getElementById("settingsOverlay");
+const openBtn = document.getElementById("settingsBtn");
+const closeBtn = document.getElementById("closeSettings");
+
+openBtn.addEventListener("click", () => {
+    overlay.classList.add("open");
+});
+
+closeBtn.addEventListener("click", () => {
+    overlay.classList.remove("open");
+});
+
+// ===============================
+// Layout
+// ===============================
+
+bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
+bindVisibilityToggle("toggle-statistics", "right-sidebar");
+bindVisibilityToggle("toggle-session-history", "left-sidebar");
+bindVisibilityToggle("toggle-scramble-text", "scramble-container");
+bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
+bindVisibilityToggle("toggle-average-preview", "main-footer");
 
 function getThemeVar(themeClass, variable) {
   const temp = document.createElement('div');

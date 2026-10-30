@@ -1,3 +1,5 @@
+import { scrdata } from "./scrData.js";
+
 function getScrambleConfig(code) {
   for (const [, scrambles] of scrdata) {
     for (const [, scrambleCode, length] of scrambles) {

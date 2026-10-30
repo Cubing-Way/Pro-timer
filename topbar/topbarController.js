@@ -1,21 +1,20 @@
 import { eventObj, vis } from "../event/eventController.js";
-import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session/session.js";
+import { getCurrentSession, saveSessions, clearAverages, changedSession } from "../session/sessionController.js";
 import { averageObj, classicStats } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
-import { displayScramble, currentScramble } from "../scramble/scramble.js";
-import { openDetailsModal } from "../modal/modal.js";
-import { getSessionAverages } from "../session/solve.js";
+import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
+import { openDetailsModal } from "../modal/modalController.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
-import { renderStatsPage } from "../no  separation/stats";
 import { timerDOMObj } from "../timer/timerController.js";
-import { applyPenaltyToLast, removeLastSolve } from "../session/solve.js";
-import { handleFMC } from "../event/FMC.js";
+import { applyPenaltyToLast, removeLastSolve } from "../session/sessionController.js";
+import { handleFMC } from "../event/eventController.js";
 import { timeInsertion } from "../settings/settingsController.js";
 import { timerObj } from "../timer/timerState.js";
 import { scrdata } from "../scramble/scrData.js";
 import { averageOfN } from "../average/avgController.js";
-import { addAverageBlock } from "../session/solve.js";
-import { handleMBLD } from "../event/MBLD.js";
+import { addAverageBlock } from "../session/sessionController.js";
+import { handleMBLD } from "../event/eventController.js";
+import { plus2CounterObj } from "./topbarState.js";
 
 let restoringSession = false;
 
@@ -265,29 +264,8 @@ function syncModeWithEvent(event) {
 
         saveSessions();
     }
-   
+
 }
-const modal = document.getElementById("detailsModal");
-const modalBody = document.getElementById("modalBody");
-const closeModalBtn = document.getElementById("closeModalBtn");
-
-closeModalBtn.onclick = () => modal.classList.add("hidden");
-modal.onclick = e => {
-    if (e.target === modal) modal.classList.add("hidden");
-};
-
-const statsPage = document.getElementById("stats-page");
-const openStatsBtn = document.getElementById("open-stats-btn");
-const closeStatsBtn = document.getElementById("close-stats-btn");
-
-openStatsBtn.addEventListener("click", () => {
-  renderStatsPage();
-  statsPage.classList.add("open");
-});
-
-closeStatsBtn.addEventListener("click", () => {
-  statsPage.classList.remove("open");
-});
 
 document.addEventListener("sessionChanged", async () => {
     // 🔥 FIRST restore buffer
@@ -373,8 +351,7 @@ avgObj.clearBtn.onclick = () => {
     renderHistory();
 }
 
-avgObj.openSessionBtn.onclick = () =>openDetailsModal(modal, getSessionAverages);
-let plus2CounterObj = { penalty: 0 };
+avgObj.openSessionBtn.onclick = () => openDetailsModal();
 
 avgObj.penaltyOkBtn.onclick = () => {
     applyPenaltyToLast(null);

@@ -18,8 +18,12 @@ licensed under GPLv3.
 
 
 import  "../timer/timerController.js";
-import "../settings/layout.js";
-import "../settings/settings.js";
+import "../settings/settingsController.js";
 import "../topbar/topbarController.js";
-import "../timer/countdownTimer.js";
-import "../timeTyping/timeTyping.js";
+import "../stats/statsController.js";
+import "../modal/modalController.js";
+import "../timeTyping/timeTypingController.js";
+import { initEvent } from "../event/eventController.js";
+
+// The top bar fills the category and event selects, so the first scramble comes after it
+await initEvent();

@@ -1,4 +1,6 @@
-function updateClassicStats(recomputeBest = false) {
+import { computeAverage } from "./avgComput.js";
+
+function updateClassicStats(recomputeBest, averageObj, classicStats) {
 if (recomputeBest) {
   const solves = averageObj.solvesArray;
 

@@ -1,6 +1,7 @@
-import {averageObj} from "../average/avgState.js";
+import { computeAverage, parseTimeToSeconds } from "../average/avgController.js";
+import { wrapTimesValue } from "./renderHelpers.js";
 
-function renderAvgStats({ type, solves, mode, block }) {
+function renderAvgStats({ type, solves, mode, block }, averageObj, classicStats, formatStatValue) {
     // type: "live" | "saved" | null
 
 if (averageObj.mode === "classic") {

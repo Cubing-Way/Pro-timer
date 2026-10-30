@@ -12,4 +12,10 @@ const timerObj = {
     lastSplitTime: 0,
 };
 
-export { timerObj };
+// 1-hour countdown used by Fewest Moves and Multi-Blind
+const countdownObj = {
+    remainingTime: 60 * 60, // 3600 seconds
+    intervalId: null,
+};
+
+export { timerObj, countdownObj };

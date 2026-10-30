@@ -1,43 +1,3 @@
-import { lastTime } from "../timeTyping/timeTyping.js";
-import { setTimerDisplay } from "./timerController.js";
-
-let seconds = 0;
-let interval = null;
-let running = false;
-
-function inspection2() {
-        if (!running) {
-        // START
-        running = true;
-        setTimerDisplay('time', seconds);
-        interval = setInterval(() => {
-            seconds++;
-                        setTimerDisplay('time', seconds);
-                if (seconds === 8)  new Audio("./audio/8seconds.mp3").play();
-                if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
-                if (seconds === 17) {
-                    running = false;
-                    clearInterval(interval);
-                    interval = null;
-                    seconds = 0;
-
-                        setTimerDisplay('time', "0.00");
-
-                }
-        }, 1000);
-    } else {
-        // STOP
-        running = false;
-        clearInterval(interval);
-        interval = null;
-        seconds = 0;
-
-                setTimerDisplay('time', "0.00");
-
-
-    }
-}
-
 function inspection(inspecType, setTimerDisplay, timerObj) {
 
     timerObj.inspecting = true;
@@ -67,4 +27,4 @@ function inspection(inspecType, setTimerDisplay, timerObj) {
     }, 10); // interval frequency does NOT matter anymore
 }
 
-export { inspection, inspection2 };
+export { inspection };

@@ -1,35 +1,24 @@
 // solves.js
-import { renderHistory } from "../render/renderController.js";
-import { openDetailsModal } from "../modal/modal.js";
-import { getCurrentSession, saveSessions } from "./session.js";
-import { averageObj, computeAverage, formatSecondsToTime, updateClassicStats, classicStats } from "../average/avgController.js";
-const modal = document.getElementById("detailsModal");
+import { computeAverage, formatSecondsToTime } from "../average/avgController.js";
 
-function ensureSessionShape() {
+function ensureSessionShape(getCurrentSession) {
     const session = getCurrentSession();
     if (!session.averages) session.averages = [];
 }
 
-function addAverageBlock(block) {
-    ensureSessionShape();
+function addAverageBlock(block, getCurrentSession, saveSessions) {
+    ensureSessionShape(getCurrentSession);
     const session = getCurrentSession();
     session.averages.unshift(block);
     saveSessions();
 }
 
-function clearSessionAverages() {
-    const session = getCurrentSession();
-    session.averages = [];
-    saveSessions();
-    renderHistory();
-}
-
-function getSessionAverages() {
+function getSessionAverages(getCurrentSession) {
     const session = getCurrentSession();
     return session.averages || [];
 }
 
-function getLastSolveTarget() {
+function getLastSolveTarget(averageObj, getCurrentSession) {
     // 1) Current in-progress solves always win
     if (averageObj.solvesArray.length > 0) {
         return {
@@ -39,7 +28,7 @@ function getLastSolveTarget() {
     }
 
     // 2) Otherwise, newest saved average (index 0!)
-    const averages = getSessionAverages();
+    const averages = getSessionAverages(getCurrentSession);
     if (averages.length === 0) return null;
 
     const newestBlockIndex = 0;
@@ -54,59 +43,8 @@ function getLastSolveTarget() {
     };
 }
 
-// Track penalty counters for each solve in modal (key: "blockIndex-solveIndex")
-window.modalPenaltyCounters = {};
-
-window.setPenalty = function(blockIndex, solveIndex, penalty, cycleMode = false) {
-    let finalPenalty = penalty;
-    
-    if (cycleMode) {
-        const counterKey = `${blockIndex}-${solveIndex}`;
-        let counter = window.modalPenaltyCounters[counterKey] || 0;
-        
-        if (counter === 12) {
-            counter = 0;
-            finalPenalty = null;
-        } else {
-            counter += 2;
-            finalPenalty = counter;
-        }
-        
-        window.modalPenaltyCounters[counterKey] = counter;
-        
-        // Update button text - identical to topbar button
-        const buttonEl = document.getElementById(`plus2-${blockIndex}-${solveIndex}`);
-        if (buttonEl) {
-            buttonEl.textContent = `+${counter + 2}`;
-        }
-    }
-    
-    penalty2(blockIndex, solveIndex, finalPenalty);
-    saveSessions();
-    renderHistory();
-    if (averageObj.mode === "classic") updateClassicStats(true);
-    const session = getCurrentSession();
-    session.classicStats = structuredClone(classicStats);
-    if (!modal.classList.contains("hidden")) {
-        openDetailsModal();
-    }
-};
-
-window.removeSolve = function(blockIndex, solveIndex) {
-    remove2(blockIndex, solveIndex)
-    if(averageObj.mode === "classic") updateClassicStats(true);
-    const session = getCurrentSession();
-    session.classicStats = structuredClone(classicStats);
-    saveSessions();
-    renderHistory();
-    if (!modal.classList.contains("hidden")) {
-        openDetailsModal();
-    }
-};
-
-
-function penalty2(blockIndex, solveIndex, penalty) {
-    const averages = getSessionAverages();
+function penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions) {
+    const averages = getSessionAverages(getCurrentSession);
     const block = averages[blockIndex];
 
     block.solves[solveIndex].penalty = penalty;
@@ -117,8 +55,9 @@ function penalty2(blockIndex, solveIndex, penalty) {
     saveSessions();
 }
 
-function remove2(blockIndex, solveIndex) {
-    const averages = getSessionAverages();
+function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions) {
+    const averages = getSessionAverages(getCurrentSession);
+    const modal = document.getElementById("detailsModal");
 
     // =========================
     // CURRENT (no dialog)
@@ -183,8 +122,8 @@ function remove2(blockIndex, solveIndex) {
     saveSessions();
 }
 
-function applyPenaltyToLast(penalty) {
-    const target = getLastSolveTarget();
+function applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats) {
+    const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;
 
     if (target.type === "current") {
@@ -195,8 +134,8 @@ function applyPenaltyToLast(penalty) {
     }
 }
 
-function removeLastSolve() {
-    const target = getLastSolveTarget();
+function removeLastSolve(averageObj, getCurrentSession) {
+    const target = getLastSolveTarget(averageObj, getCurrentSession);
     if (!target) return;
 
     if (target.type === "current") {
@@ -208,7 +147,6 @@ function removeLastSolve() {
 
 export {
     addAverageBlock,
-    clearSessionAverages,
     getSessionAverages,
     getLastSolveTarget,
     penalty2,

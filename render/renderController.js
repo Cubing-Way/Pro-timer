@@ -1,15 +1,19 @@
 import { averageObj, parseTimeToSeconds, classicStats } from "../average/avgController.js";
 import { formatSecondsToTime, computeAverage, formatDisplayTime } from "../average/avgController.js";
-import { getSessionAverages } from "../session/solve.js";
-import { getStatistcs, getStatisticsByDate } from "../no  separation/stats.js";
-import { timerSettObj } from "../settings/settingsController.js";
-import { getCurrentSession } from "../session/session.js";
-import { formatStatValue } from "./renderHelpers.js";
+import { getSessionAverages } from "../session/sessionController.js";
+import { getStatistcs, getStatisticsByDate } from "../stats/statsController.js";
+import { timerSettObj } from "../settings/timerSetObj.js";
+import { getCurrentSession } from "../session/sessionController.js";
+import { formatStatValue as formatStatValueWith } from "./renderHelpers.js";
 import { renderAvgStats } from "./renderBufferAvgStats.js";
 import { renderCurrentAverage } from "./renderAvgBuffer.js";
 import { renderHistoryList } from "./renderHistoryList.js";
 import { renderStats } from "./statistics.js";
 
+
+function formatStatValue(value) {
+    return formatStatValueWith(value, getCurrentSession);
+}
 
 function renderHistory() {
     const averages = getSessionAverages();
@@ -53,19 +57,19 @@ function renderHistory() {
             solves: averageObj.solvesArray,
             mode: averageObj.mode,
             block: currentBlock
-        });
+        }, averageObj, classicStats, formatStatValue);
     }
 
 
     // Render HISTORY list
     if (historyContainer) {
-        historyContainer.innerHTML = renderHistoryList(averages, currentType);
+        historyContainer.innerHTML = renderHistoryList(averages, currentType, averageObj, formatStatValue);
     }
 
     // Render SESSION stats
     if (statisticsContainer) {
-        statisticsContainer.innerHTML = renderStats(stats);
-        todayStatsContainer.innerHTML = renderStats(todayStats)
+        statisticsContainer.innerHTML = renderStats(stats, formatStatValue);
+        todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue)
     }
 }
 

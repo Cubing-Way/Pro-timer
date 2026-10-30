@@ -1,20 +1,20 @@
-import { currentScramble, displayScramble } from "../scramble/scramble.js";
-import { eventObj, vis } from "../event/eventController.js";
+import { currentScramble, displayScramble } from "../scramble/scrambleController.js";
+import { eventObj, vis, timerWarnings } from "../event/eventController.js";
 import { timerSettObj } from "../settings/timerSetObj.js";
 import { delayFlagType } from "../settings/settingsController.js";
-import { timerObj } from "./timerState.js";
+import { timerObj, countdownObj } from "./timerState.js";
 import { timerPhases } from "./timerPhases.js";
-import { inspection, inspection2 } from "./inspection.js";
+import { inspection } from "./inspection.js";
 import { wcaDelayFlag } from "./timerPhases.js";
 import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
 import { averageOfN, averageObj, classicStats } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
-import { addAverageBlock } from "../session/solve.js";
-import { saveSessions, getCurrentSession} from "../session/session.js";
+import { addAverageBlock } from "../session/sessionController.js";
+import { saveSessions, getCurrentSession} from "../session/sessionController.js";
 import { formatTime } from "./timeFormatting.js";
 import { updateTypingUI } from "../settings/settingsController.js";
-import { plus2CounterObj } from "../topbar/topbarController.js";
+import { plus2CounterObj } from "../topbar/topbarState.js";
 import { startTimer2, stopTimer2 } from "./countdownTimer.js";
 
 
@@ -25,8 +25,8 @@ const display = document.getElementById("timer");
 const startBtn = document.getElementById("countdown");
 const stopBtn = document.getElementById("submit-moves");
 
-startBtn.addEventListener("click", startTimer2);
-stopBtn.addEventListener("click", stopTimer2);
+startBtn.addEventListener("click", () => startTimer2(countdownObj, timerWarnings));
+stopBtn.addEventListener("click", () => stopTimer2(countdownObj));
 
 const timerDOMObj = {
     scrDisplayFlag: false
@@ -41,6 +41,47 @@ function setTimerDisplay(colorOrTime, content) {
         document.getElementById("timer").style.color = content;
     } else if (colorOrTime === "time") {
         document.getElementById("timer").textContent = content;
+    }
+}
+
+// ===============================
+// Inspection for typed-in times
+// ===============================
+
+let seconds = 0;
+let interval = null;
+let running = false;
+
+function inspection2() {
+        if (!running) {
+        // START
+        running = true;
+        setTimerDisplay('time', seconds);
+        interval = setInterval(() => {
+            seconds++;
+                        setTimerDisplay('time', seconds);
+                if (seconds === 8)  new Audio("./audio/8seconds.mp3").play();
+                if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
+                if (seconds === 17) {
+                    running = false;
+                    clearInterval(interval);
+                    interval = null;
+                    seconds = 0;
+
+                        setTimerDisplay('time', "0.00");
+
+                }
+        }, 1000);
+    } else {
+        // STOP
+        running = false;
+        clearInterval(interval);
+        interval = null;
+        seconds = 0;
+
+                setTimerDisplay('time', "0.00");
+
+
     }
 }
 

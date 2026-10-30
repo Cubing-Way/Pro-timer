@@ -29,10 +29,4 @@ function bindVisibilityToggle(selectId, targetClass) {
     apply();
 }
 
-
-bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
-bindVisibilityToggle("toggle-statistics", "right-sidebar");
-bindVisibilityToggle("toggle-session-history", "left-sidebar");
-bindVisibilityToggle("toggle-scramble-text", "scramble-container");
-bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
-bindVisibilityToggle("toggle-average-preview", "main-footer");
+export { bindVisibilityToggle };

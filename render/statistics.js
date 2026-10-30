@@ -1,4 +1,6 @@
-function renderStats(stats) {
+import { wrapTimesValue } from "./renderHelpers.js";
+
+function renderStats(stats, formatStatValue) {
     return `
         Best single: ${stats.bestTime !== Infinity ? formatStatValue(stats.bestTime) : wrapTimesValue("-")}
         <br>

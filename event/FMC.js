@@ -1,27 +1,14 @@
-import { 
-  mountCube, 
-  setSize, 
-  setView, 
-  applyScramble, 
-  applySolution, 
-  getLastMoveCount, 
-  checkSolved,
+import {
+  mountCube,
+  setSize,
+  setView,
+  applyScramble,
   setFMC
-} from "../cubisz/api.js"; 
- 
-import { displayScramble, currentScramble } from "../scramble/scramble.js";
-import { averageOfN } from "../average/avgController.js";
-import { timerObj } from "../timer/timerState.js";
-import { timerSettObj } from "../settings/settingsController.js";
-import { renderHistory } from "../render/renderController.js";
-import { eventObj, vis } from "./eventController.js";
-import { addAverageBlock } from "../session/solve.js";
+} from "../cubisz/api.js";
+
 import { updateDisplay } from "../timer/countdownTimer.js";
 
-//Fix too many imports
-
-let solutionFlag = false;
-function handleFMC(display = document.getelementById("timer")) {
+function handleFMC(display, currentScramble, countdownObj) {
     document.getElementById("penaltyOkBtn").style.display = "none";
     document.getElementById("penaltyPlus2Btn").style.display = "none";
     document.getElementById("penaltyDnfBtn").style.display = "none";
@@ -38,67 +25,16 @@ function handleFMC(display = document.getelementById("timer")) {
     document.getElementById("open-mbld-modal").style.display = "none";
 
     document.getElementById("openConfig").style.display = "block";
-    
-    
+
+
     document.getElementById("timer").style.fontSize = "50px";
     document.getElementById("touchOverlay").style.display = "none";
-    updateDisplay(document.getElementById("timer"));
+    updateDisplay(countdownObj, display);
     mountCube(document.getElementById("fmc-cube"));
     setSize(28);
     setView("3d");
     applyScramble(currentScramble);
     setFMC(true);
-    solutionFlag = false;
 }
-
-document.getElementById("fmc-solution").addEventListener("input", (e) => {
-  if (eventObj.event !== "333fm") return;
-    e.preventDefault();
-    applySolution(e.target.value.trim());
-    solutionFlag = true;
-});
-
-let moveCount = null;
-
-document.getElementById("fmc-form").addEventListener("submit", (e) => {
-  if (eventObj.event !== "333fm") return;
-  e.preventDefault();
-  if (solutionFlag) {
-    moveCount = getLastMoveCount();
-      document.getElementById("fmc-move-count").innerHTML = `${moveCount} moves 
-      <br>
-      Result: ${checkSolved() ? "Solved" : "DNF"}`;
-  } else {
-    document.getElementById("fmc-move-count").innerHTML = `no moves`;
-  }
-
-});
-
-
-document.getElementById("submit-moves").addEventListener("click", async () => {
-  if (eventObj.event !== "333fm") return;
-  if (document.getElementById("fmc-solution").value !== "") {
-    moveCount = getLastMoveCount();
-  } else {
-    alert("Submit needs a solution");
-    return;
-  }
-
-  const fmcObj = {
-    moveCount,
-    solution: document.getElementById("fmc-solution").value
-  };
-
-  timerObj.inspection = 0;
-  if (!checkSolved()) timerObj.inspection = 17;
-
-  const block = averageOfN(fmcObj, currentScramble, timerObj.inspection, timerSettObj.inspectionType, true);
-  if (block) addAverageBlock(block);
-  renderHistory();
-  await displayScramble(eventObj.event, vis);
-  applyScramble(currentScramble);
-  document.getElementById("fmc-solution").value = "";
-});
-
 
 export { handleFMC };

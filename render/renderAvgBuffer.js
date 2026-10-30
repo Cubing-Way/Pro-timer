@@ -1,3 +1,5 @@
+import { wrapTimesValue } from "./renderHelpers.js";
+
 function renderCurrentAverage
     (
         currentType, 

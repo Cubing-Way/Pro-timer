@@ -2,7 +2,7 @@
 //import { setTimerDisplay } from "./timerDOM.js";
 //import { getThemeVar } from "../settings/timerSett.js";
 
-function startWcaDelay() {
+function startWcaDelay(timerObj, setTimerDisplay) {
     // Reset counter
     timerObj.wcaDelayCount = 0;
 
@@ -15,7 +15,7 @@ function startWcaDelay() {
     }, 300);
 }
 
-function resolveWcaDelay() {
+function resolveWcaDelay(timerObj, setTimerDisplay, getThemeVar) {
     if (timerObj.wcaDelayCount >= 1) {
         // Successful delay
         timerObj.timerPhase++;

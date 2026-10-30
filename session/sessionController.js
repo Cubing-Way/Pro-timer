@@ -1,21 +1,10 @@
 import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
-
-// ===============================
-// Session state
-// ===============================
+import { sessionsObj } from "./sessionObj.js";
+import * as solve from "./solve.js";
 
 // ===============================
 // Init
 // ===============================
-
-const sessionsObj = {
-    sessions: JSON.parse(localStorage.getItem("sessions")) || {
-        "Default": { averages: [] }
-    },
-    currentSession: localStorage.getItem("currentSession") || "Default",
-    selectEl: document.getElementById("sessionSelect")
-};
-
 
 
 // Now it's safe:
@@ -240,6 +229,39 @@ function changedSession() {
     const sel = document.getElementById("modeSelect");
     if (sel) sel.value = averageObj.mode;
 }
+
+// ===============================
+// Solves (solve.js gets the session state from here)
+// ===============================
+
+function addAverageBlock(block) {
+    solve.addAverageBlock(block, getCurrentSession, saveSessions);
+}
+
+function getSessionAverages() {
+    return solve.getSessionAverages(getCurrentSession);
+}
+
+function getLastSolveTarget() {
+    return solve.getLastSolveTarget(averageObj, getCurrentSession);
+}
+
+function penalty2(blockIndex, solveIndex, penalty) {
+    solve.penalty2(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
+}
+
+function remove2(blockIndex, solveIndex) {
+    solve.remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions);
+}
+
+function applyPenaltyToLast(penalty) {
+    solve.applyPenaltyToLast(penalty, averageObj, getCurrentSession, updateClassicStats);
+}
+
+function removeLastSolve() {
+    solve.removeLastSolve(averageObj, getCurrentSession);
+}
+
 // ===============================
 // Exports
 // ===============================
@@ -249,7 +271,14 @@ export {
     saveSessions,
     sessionsObj,
     renderSessionSelect,
-    toggleMode, 
+    toggleMode,
     clearAverages,
-    changedSession
+    changedSession,
+    addAverageBlock,
+    getSessionAverages,
+    getLastSolveTarget,
+    penalty2,
+    remove2,
+    applyPenaltyToLast,
+    removeLastSolve
 };

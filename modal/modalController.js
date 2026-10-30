@@ -1,23 +1,32 @@
-import { getSessionAverages } from "../session/solve.js";
+import { getSessionAverages, getCurrentSession, penalty2, remove2 } from "../session/sessionController.js";
 import { formatDisplayTime, computeAverage, formatSecondsToTime } from "../average/avgController.js";
-import { formatStatValue } from "../render/renderController.js";
-import { saveSessions } from "../session/session.js";
-import { 
-  mountCube, 
-  setSize, 
-  setView, 
-  applyScramble, 
-  applySolution, 
-  getLastMoveCount, 
-  checkSolved 
-} from "../cubisz/api.js"; 
+import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
+import { formatStatValue, renderHistory } from "../render/renderController.js";
+import { saveSessions } from "../session/sessionController.js";
+import {
+  mountCube,
+  setSize,
+  setView,
+  applyScramble,
+  applySolution,
+  getLastMoveCount,
+  checkSolved
+} from "../cubisz/api.js";
 
+const modal = document.getElementById("detailsModal");
+const modalBody = document.getElementById("modalBody");
+const closeModalBtn = document.getElementById("closeModalBtn");
+
+closeModalBtn.onclick = () => modal.classList.add("hidden");
+modal.onclick = e => {
+    if (e.target === modal) modal.classList.add("hidden");
+};
 
 function wrapTimesValue(value) {
     return `<span class="times-color-number">${value}</span>`;
 }
 
-function openDetailsModal(modal, getsessionAverages) {
+function openDetailsModal() {
     const averages = getSessionAverages();
 
     let html = `<h3 class="modal-title">Session averages</h3>`;
@@ -113,6 +122,56 @@ function openDetailsModal(modal, getsessionAverages) {
     modalBody.innerHTML = html;
     modal.classList.remove("hidden");
 }
+
+// Track penalty counters for each solve in modal (key: "blockIndex-solveIndex")
+window.modalPenaltyCounters = {};
+
+window.setPenalty = function(blockIndex, solveIndex, penalty, cycleMode = false) {
+    let finalPenalty = penalty;
+
+    if (cycleMode) {
+        const counterKey = `${blockIndex}-${solveIndex}`;
+        let counter = window.modalPenaltyCounters[counterKey] || 0;
+
+        if (counter === 12) {
+            counter = 0;
+            finalPenalty = null;
+        } else {
+            counter += 2;
+            finalPenalty = counter;
+        }
+
+        window.modalPenaltyCounters[counterKey] = counter;
+
+        // Update button text - identical to topbar button
+        const buttonEl = document.getElementById(`plus2-${blockIndex}-${solveIndex}`);
+        if (buttonEl) {
+            buttonEl.textContent = `+${counter + 2}`;
+        }
+    }
+
+    penalty2(blockIndex, solveIndex, finalPenalty);
+    saveSessions();
+    renderHistory();
+    if (averageObj.mode === "classic") updateClassicStats(true);
+    const session = getCurrentSession();
+    session.classicStats = structuredClone(classicStats);
+    if (!modal.classList.contains("hidden")) {
+        openDetailsModal();
+    }
+};
+
+window.removeSolve = function(blockIndex, solveIndex) {
+    remove2(blockIndex, solveIndex)
+    if(averageObj.mode === "classic") updateClassicStats(true);
+    const session = getCurrentSession();
+    session.classicStats = structuredClone(classicStats);
+    saveSessions();
+    renderHistory();
+    if (!modal.classList.contains("hidden")) {
+        openDetailsModal();
+    }
+};
 
 window.submitSolution = function(blockIndex, solveIndex) {
     const block = window.modalBlocks[blockIndex];
