@@ -23,28 +23,24 @@ function getSessionAverages(getCurrentSession) {
 
 // Where the most recent solve is: { type: "current", solveIndex } or { type: "saved", blockIndex, solveIndex }, or null
 function getLastSolveTarget(averageObj, getCurrentSession) {
-    // 1) Current in-progress solves always win
-    if (averageObj.solvesArray.length > 0) {
-        return {
-            type: "current",
-            solveIndex: averageObj.solvesArray.length - 1
-        };
+    const buffer = averageObj.solvesArray;
+    // Newest finished average (index 0), undefined when there's none
+    const newestBlock = getSessionAverages(getCurrentSession)[0];
+
+    // Last solve of each place, undefined when that place is empty
+    const lastInBuffer = buffer[buffer.length - 1];
+    const lastInBlock = newestBlock?.solves[newestBlock.solves.length - 1];
+
+    // No solves anywhere
+    if (!lastInBuffer && !lastInBlock) return null;
+
+    // The block wins only if the buffer is empty or older (old solves without createdAt count as 0)
+    const blockIsNewer = lastInBlock && (!lastInBuffer || (lastInBlock.createdAt ?? 0) > (lastInBuffer.createdAt ?? 0));
+
+    if (blockIsNewer) {
+        return { type: "saved", blockIndex: 0, solveIndex: newestBlock.solves.length - 1 };
     }
-
-    // 2) Otherwise, newest saved average (index 0!)
-    const averages = getSessionAverages(getCurrentSession);
-    if (averages.length === 0) return null;
-
-    const newestBlockIndex = 0;
-    const newestBlock = averages[0];
-
-    if (!newestBlock || newestBlock.solves.length === 0) return null;
-
-    return {
-        type: "saved",
-        blockIndex: newestBlockIndex,
-        solveIndex: newestBlock.solves.length - 1
-    };
+    return { type: "current", solveIndex: buffer.length - 1 };
 }
 
 // Sets a solve's penalty: in the average in progress (blockIndex -1), or in a saved average, which is then recomputed
