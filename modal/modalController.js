@@ -42,7 +42,7 @@ modalBody.addEventListener("click", (e) => {
     if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
 });
 
-// HTML of one solve row: time, penalty buttons, scramble, inspection, date and, for 3x3, the solution box
+// HTML of one solve row: time, penalty buttons, scramble, inspection, date, done at (when it has one) and, for 3x3, the solution box
 function solveRowHtml(s, i, blockIndex) {
     // Start this solve's +2 counter at its current penalty
     const counterKey = `${blockIndex}-${i}`;
@@ -76,7 +76,14 @@ function solveRowHtml(s, i, blockIndex) {
             </div>
     ` : "";
 
-    // Solve row: time, penalty buttons, scramble, inspection, date, solution
+    // Where it was done, only for solves that have it (solves saved before it existed don't)
+    const doneAtRow = s.doneAt ? `
+            <div class="modal-scramble">
+                Done at: ${s.doneAt}
+            </div>
+    ` : "";
+
+    // Solve row: time, penalty buttons, scramble, inspection, date, done at, solution
     return `
         <div class="modal-solve-row">
             <div class="modal-solve-main">
@@ -102,6 +109,7 @@ function solveRowHtml(s, i, blockIndex) {
             <div class="modal-scramble">
                 Date: ${new Date(s.createdAt)}
             </div>
+            ${doneAtRow}
             ${solutionRows}
         </div>
     `;

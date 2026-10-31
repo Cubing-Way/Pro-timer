@@ -250,6 +250,26 @@ function addSolvesToSession(solves) {
     return solve.addSolvesToSession(solves, averageObj, getCurrentSession);
 }
 
+// Adds competition rounds to the session called name, current or not; returns how many solves were new
+function addRoundsToSession(name, rounds) {
+    // The current session's solves in progress live in averageObj, and its rolling averages in classicStats
+    if (name === sessionsObj.currentSession) {
+        const added = solve.addRoundsToSession(rounds, averageObj, getCurrentSession);
+        // Classic mode recounts its rolling averages, and the session keeps a copy (like a file import)
+        if (averageObj.mode === "classic") updateClassicStats(true);
+        getCurrentSession().classicStats = structuredClone(classicStats);
+        return added;
+    }
+
+    const session = sessionsObj.sessions[name];
+    // Any other session keeps its solves in progress in its buffer (one never opened may not have one yet)
+    if (!session.buffer) session.buffer = { mode: session.mode || "ao5", solveCounter: 0, solvesArray: [] };
+    const added = solve.addRoundsToSession(rounds, session.buffer, () => session);
+    // Its copy of the rolling averages is out of date; without it, opening the session rebuilds them (changedSession)
+    if (session.buffer.mode === "classic") delete session.classicStats;
+    return added;
+}
+
 export {
     getCurrentSession,
     saveSessions,
@@ -265,5 +285,6 @@ export {
     applyPenaltyToLast,
     removeLastSolve,
     getLastSolve,
-    addSolvesToSession
+    addSolvesToSession,
+    addRoundsToSession
 };

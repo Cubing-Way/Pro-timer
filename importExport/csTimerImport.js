@@ -37,7 +37,8 @@ function convertCsTimerSolve(record, event) {
         inspection: 0,                                                        // csTimer doesn't save it, like typed times
         createdAt: unixSeconds * 1000,                                        // csTimer saves seconds, Pro Timer ms
         solution: null,
-        solvePhases: csTimerPhases(times)
+        solvePhases: csTimerPhases(times),
+        doneAt: "csTimer"                                                     // where it was done: the app it came from
     };
 }
 

@@ -7,7 +7,7 @@ const PHASE = Object.freeze({
     RUNNING: "running",       // solve being timed
 });
 
-// State of the main timer, shared by timer/, settings/, topbar/ and event/
+// State of the main timer, shared by timer/, settings/, topbar/, event/ and importExport/ (WCA sync)
 const timerObj = {
     timerPhase: PHASE.IDLE,   // current phase, one of PHASE
     interval: 0,              // setInterval id of the running timer or inspection

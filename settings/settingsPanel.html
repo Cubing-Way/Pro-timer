@@ -217,9 +217,19 @@
         </div>
       </div>
 
-      <!-- Data: back up every session to a file, or load solves from Pro Timer or csTimer (importExport/) -->
+      <!-- Data: back up every session to a file, or load solves from other timers' files or from the WCA website (importExport/) -->
       <div class="settings-section">
         <div class="section-title">Data</div>
+
+        <!-- Saved on every solve timed or typed here as its "done at"; the placeholder shows what's used when it's empty (settings/settingsController.js) -->
+        <div class="setting-row import-row">
+          <label for="deviceNameInput">This device
+            <span class="setting-hint">Saved on each solve as where it was done</span>
+          </label>
+          <div class="setting-control">
+            <input type="text" id="deviceNameInput" class="device-name-input" maxlength="30" autocomplete="off" />
+          </div>
+        </div>
 
         <div class="setting-row">
           <label>Export solves</label>
@@ -229,11 +239,27 @@
         </div>
 
         <div class="setting-row import-row">
-          <label>Import solves (Pro Timer or csTimer)</label>
+          <!-- The hint lists the files Pro Timer can read -->
+          <label>Import solves
+            <span class="setting-hint">Pro Timer, csTimer, CubeDesk, Twisty Timer, a competition's WCIF (WCA Live) or a list of times</span>
+          </label>
           <div class="setting-control">
             <!-- Opens the file picker; what to import and where is asked in the import pop-up -->
             <button id="importSolvesBtn">Import</button>
-            <input type="file" id="importFileInput" accept=".json,.txt" hidden />
+            <input type="file" id="importFileInput" accept=".json,.txt,.csv" hidden />
+          </div>
+        </div>
+
+        <!-- Official results: the WCA ID is remembered, and Sync adds new results to the "WCA <event>" sessions (also once a day on load) -->
+        <div class="setting-row import-row">
+          <label for="wcaIdInput">WCA sync
+            <span class="setting-hint">Keeps your competition results up to date, by WCA ID</span>
+            <!-- When it last synced and how many solves it added, or what went wrong; written by the controller -->
+            <span id="wcaSyncStatus" class="setting-hint"></span>
+          </label>
+          <div class="setting-control">
+            <input type="text" id="wcaIdInput" class="wca-id-input" placeholder="2009ZEMD01" maxlength="10" autocomplete="off" spellcheck="false" />
+            <button id="wcaSyncBtn">Sync</button>
           </div>
         </div>
 
@@ -243,6 +269,14 @@
             <h3>Import solves</h3>
             <!-- How many sessions and solves the file has, written by the controller -->
             <p id="importInfo"></p>
+
+            <!-- Whose results: one option per competitor; only shown for a competition file (WCIF), which has everyone's -->
+            <div id="importCompetitorRow" class="import-dialog-field" hidden>
+              <label for="importCompetitorSelect">Competitor</label>
+              <div class="setting-control">
+                <select id="importCompetitorSelect"></select>
+              </div>
+            </div>
 
             <!-- Which sessions: "All sessions", then one option per session in the file; hidden when the file has only one -->
             <div id="importSessionRow" class="import-dialog-field">

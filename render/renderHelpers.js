@@ -36,7 +36,8 @@ function formatStatValue(value, getCurrentSession) {
 
         if (!Number.isFinite(num)) return wrapTimesValue("DNF");
 
-        return wrapTimesValue(`${num} moves`);
+        // Whole move counts as they are, means and σ with 2 decimals (like Multi-Blind's points)
+        return wrapTimesValue(`${Number.isInteger(num) ? num : num.toFixed(2)} moves`);
     }
 
     // Solve with timer phases: the time, then each phase's time when there's more than one

@@ -257,6 +257,8 @@ document.getElementById("inspection-btn").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
     if (!timerSettObj.timerFlag) return;
     if (e.code !== "Space" || e.repeat) return;
+    // A space typed in another text box (device name, solution) is just text; the typed-time box has the focus in Typing mode, so it keeps the shortcut
+    if (isTyping() && document.activeElement.id !== "typed-time") return;
     if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
     inspection2();
 });

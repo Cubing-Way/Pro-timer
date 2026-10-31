@@ -216,6 +216,43 @@ function addSolvesToSession(solves, averageObj, getCurrentSession) {
     return newSolves.length;
 }
 
+
+// Adds competition rounds ([{ mode, solves }]) to a session, skipping solves it has: an all-new round with a mode is its own average, the other new solves join the session's mode; returns how many were new
+function addRoundsToSession(rounds, averageObj, getSession) {
+    ensureSessionShape(getSession);
+    const session = getSession();
+
+    // Every solve the session already has, finished or in progress
+    const seen = new Set([
+        ...session.averages.flatMap(block => block.solves),
+        ...averageObj.solvesArray
+    ].map(solveKey));
+
+    // How many solves were new, and the new solves that can't be their own average
+    let added = 0;
+    const loose = [];
+
+    rounds.forEach(round => {
+        // The round's solves the session doesn't have yet
+        const newSolves = round.solves.filter(solve => !seen.has(solveKey(solve)));
+        // A full round the session has none of: its own average, in its own mode (like buildRoundsSession)
+        if (round.mode && newSolves.length === round.solves.length) {
+            session.averages.push(buildAverageBlock(round.solves, round.mode));
+            added += newSolves.length;
+        } else {
+            // No mode, or part of it is already in the session: only its missing solves, grouped like any import
+            loose.push(...newSolves);
+        }
+    });
+
+    // The loose solves join the average in progress, cut into the session's mode by date
+    added += addSolvesToSession(loose, averageObj, getSession);
+
+    // Finished averages newest first, the new rounds placed by date (addSolvesToSession skips this in classic mode)
+    session.averages.sort((a, b) => blockDate(b) - blockDate(a));
+    return added;
+}
+
 export {
     addAverageBlock,
     getSessionAverages,
@@ -225,5 +262,6 @@ export {
     remove2,
     applyPenaltyToLast,
     removeLastSolve,
-    addSolvesToSession
+    addSolvesToSession,
+    addRoundsToSession
 };

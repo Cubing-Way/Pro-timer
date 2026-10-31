@@ -10,7 +10,7 @@ function parseJSON(text) {
     }
 }
 
-// Which app made the file: "protimer", "cstimer", or null when it's neither
+// Which app made a JSON file: "protimer", "cstimer", "wcif", "cubedesk", or null when it's none of them
 function detectFormat(data) {
     // Not an object (a number, a list, null): no app exports that
     if (!data || typeof data !== "object" || Array.isArray(data)) return null;
@@ -21,7 +21,99 @@ function detectFormat(data) {
     // csTimer's export has keys like "session1", "session2"…
     if (Object.keys(data).some(key => /^session\d+$/.test(key))) return "cstimer";
 
+    // A competition's WCIF (WCA Live, the WCA website) has a format version, its competitors and its events
+    if (typeof data.formatVersion === "string" && Array.isArray(data.persons) && Array.isArray(data.events)) return "wcif";
+
+    // CubeDesk's export has a list of sessions and a list of solves (its old export kept them in timer.sessionMap)
+    if ((Array.isArray(data.sessions) && Array.isArray(data.solves)) || data.timer?.sessionMap) return "cubedesk";
+
     return null;
+}
+
+// Which kind of text file it is, from its first line: "twistytimer", "cstimercsv", or "timelist" (anything else is read as a list of times)
+function detectTextFormat(text) {
+    // The header line, without the byte order mark some editors add at the start
+    const firstLine = text.replace(/^﻿/, "").split(/\r?\n/, 1)[0].trim();
+
+    // Twisty Timer's backup starts with its column names, separated by commas (its solve lines use ";")
+    if (firstLine.startsWith("Puzzle,Category,Time(millis)")) return "twistytimer";
+
+    // csTimer's "Export CSV" of a session starts with its column names, separated by ";"
+    if (firstLine.startsWith("No.;Time;")) return "cstimercsv";
+
+    return "timelist";
+}
+
+// The rows of a CSV text as lists of fields; quoted fields can hold the separator, newlines and doubled quotes ("")
+function parseCsv(text, separator) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let quoted = false;    // inside "…", where separators and newlines are part of the field
+
+    // Read character by character, since a quoted field can span lines
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (quoted) {
+            // "" is a quote inside the field; a lone " closes it
+            if (char === '"' && text[i + 1] === '"') {
+                field += '"';
+                i++;
+            } else if (char === '"') {
+                quoted = false;
+            } else {
+                field += char;
+            }
+        } else if (char === '"') {
+            quoted = true;
+        } else if (char === separator) {
+            row.push(field);
+            field = "";
+        } else if (char === "\n" || char === "\r") {
+            // End of the row; the "\n" of "\r\n" then ends an empty row, which is skipped
+            row.push(field);
+            if (row.length > 1 || row[0] !== "") rows.push(row);
+            row = [];
+            field = "";
+        } else {
+            field += char;
+        }
+    }
+
+    // The last row, when the text doesn't end with a newline
+    row.push(field);
+    if (row.length > 1 || row[0] !== "") rows.push(row);
+    return rows;
+}
+
+// Milliseconds as seconds cut to hundredths, like the timer saves them (12345 → 12.34)
+function msToSeconds(ms) {
+    return Math.floor(ms / 10) / 100;
+}
+
+// Seconds with more decimals cut to hundredths; going through whole ms first keeps 10.05 from becoming 10.04
+function toHundredths(seconds) {
+    return msToSeconds(Math.round(seconds * 1000));
+}
+
+// A Pro Timer solve from another app; what other apps don't save is filled in like a typed time
+function importedSolve({ time, penalty = null, scramble = "", event, createdAt, result, solvePhases, doneAt }) {
+    const solve = {
+        time,                   // seconds, moves for FMC, points for Multi-Blind
+        penalty,                // null, seconds added (2) or "DNF"
+        scramble,
+        event,
+        inspection: 0,          // no app saves it in its export
+        createdAt,              // ms since 1970
+        solution: null          // only Pro Timer's own FMC solves have one
+    };
+    // Multi-Blind's "solved / total", and each phase's time, only when the app saved them
+    if (result != null) solve.result = result;
+    if (solvePhases) solve.solvePhases = solvePhases;
+    // Where it was done: the app's name, or the competition's; a list of times has none
+    if (doneAt) solve.doneAt = doneAt;
+    return solve;
 }
 
 // The sessions of a Pro Timer file as [{ name, session }]; throws when a newer Pro Timer made the file
@@ -84,12 +176,36 @@ function buildSession(solves, event, mode, category) {
     };
 }
 
-export { 
-    parseJSON, 
-    detectFormat, 
-    readProTimerFile, 
-    sessionSolves, 
-    countSolves, 
+// When a block's newest solve was done
+function newestSolveDate(block) {
+    return Math.max(...block.solves.map(s => s.createdAt));
+}
+
+// A Pro Timer session from competition rounds ([{ mode, solves }]): a round with a mode is its own average, the others' solves are grouped like buildSession
+function buildRoundsSession(rounds, event, mode, category) {
+    // Solves of rounds with no full average (a missed cutoff, a best of 1…), cut into the session's mode by date
+    const session = buildSession(rounds.filter(r => !r.mode).flatMap(r => r.solves), event, mode, category);
+
+    // Every full round as a finished average in its own mode (a bo3 round stays a bo3 in a bo5 session)
+    rounds.filter(r => r.mode).forEach(r => session.averages.push(buildAverageBlock(r.solves, r.mode)));
+
+    // Newest first, the rounds placed by date among the grouped solves
+    session.averages.sort((a, b) => newestSolveDate(b) - newestSolveDate(a));
+    return session;
+}
+
+export {
+    parseJSON,
+    detectFormat,
+    detectTextFormat,
+    parseCsv,
+    msToSeconds,
+    toHundredths,
+    importedSolve,
+    readProTimerFile,
+    sessionSolves,
+    countSolves,
     uniqueSessionName,
-    buildSession
+    buildSession,
+    buildRoundsSession
 };

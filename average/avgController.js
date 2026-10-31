@@ -10,6 +10,7 @@ import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
 import { averageObj, classicStats } from "./avgState.js";
 import { computeAverage, buildAverageBlock } from "./avgComput.js";
 import { currentScrambleEvent } from "../scramble/scrambleController.js";
+import { deviceSettObj } from "../settings/settingsState.js";
 
 // Updates classic mode's rolling averages with this folder's state (recomputeBest rebuilds them from scratch)
 function updateClassicStats(recomputeBest = false) {
@@ -66,7 +67,8 @@ function averageOfN(
             inspection,
             createdAt: Date.now(),
             solution,
-            solvePhases
+            solvePhases,
+            doneAt: deviceSettObj.name || deviceSettObj.detected // where it was done: the typed device name, else the detected model or type
         });
 
         averageObj.solveCounter++;

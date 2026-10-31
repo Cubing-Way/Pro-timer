@@ -8,4 +8,10 @@ const timerSettObj = {
   untimedEvent: false   // true on Fewest Moves and Multi-Blind, set by showTimeInsertion
 };
 
-export { timerSettObj };
+// This device (Settings → Data): the name typed there, and what's used when it's empty
+const deviceSettObj = {
+  name: localStorage.getItem("deviceName") || "",   // "" when no name was typed
+  detected: ""                                       // the device's type, then its model when the browser gives it (filled by settingsController.js)
+};
+
+export { timerSettObj, deviceSettObj };

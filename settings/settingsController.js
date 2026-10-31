@@ -1,4 +1,5 @@
-import { timerSettObj } from "./settingsState.js";
+import { timerSettObj, deviceSettObj } from "./settingsState.js";
+import { detectDeviceType, detectDeviceModel } from "./device.js";
 import { timerObj } from "../timer/timerState.js";
 import { bindVisibilityToggle } from "./layout.js";
 
@@ -338,6 +339,30 @@ function updateTypingUI() {
         container.style.display = "none";
     }
 }
+
+// This device (Settings → Data): the name saved on each solve as its "done at"
+const deviceNameInput = document.getElementById("deviceNameInput");
+
+// The type is known right away, so solves never lack a "done at"; the box shows it as the placeholder
+deviceSettObj.detected = detectDeviceType();
+deviceNameInput.value = deviceSettObj.name;
+deviceNameInput.placeholder = deviceSettObj.detected;
+
+// The model comes a moment later, and only on some devices; without one the type stays
+detectDeviceModel().then(model => {
+    if (!model) return;
+    deviceSettObj.detected = model;
+    deviceNameInput.placeholder = model;
+});
+
+// Save the name when the box loses focus or Enter is pressed; an empty box goes back to the detected one
+deviceNameInput.addEventListener("change", () => {
+    deviceSettObj.name = deviceNameInput.value.trim();
+    deviceNameInput.value = deviceSettObj.name;   // show it without the spaces around it
+    // Only keep the key while there's a name
+    if (deviceSettObj.name) localStorage.setItem("deviceName", deviceSettObj.name);
+    else localStorage.removeItem("deviceName");
+});
 
 export {
     delayFlagType,
