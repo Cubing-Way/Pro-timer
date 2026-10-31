@@ -433,6 +433,9 @@ function formatMegaminx(scr) {
 }
 let currentScramble = "";
 let currentScrambleEvent = "";
+let scrambleHistory = [];
+let historyIndex = -1;
+const MAX_HISTORY = 100;
 async function displayScramble(event = "333", vis2, length) {
   const config = getScrambleConfig(event);
   if (!config) return;
@@ -440,17 +443,38 @@ async function displayScramble(event = "333", vis2, length) {
   const finalLength = length ?? rawLength;
   let scramble = await csTimer.getScramble(type, finalLength);
   const svg = await csTimer.getImage(scramble, type);
-  currentScramble = scramble;
-  currentScrambleEvent = event;
-  vis2.innerHTML = svg;
-  adjustVisualizerSize(event, vis2);
+  if (event !== currentScrambleEvent) scrambleHistory = [];
+  scrambleHistory.push({ scramble, event, svg });
+  if (scrambleHistory.length > MAX_HISTORY) scrambleHistory.shift();
+  historyIndex = scrambleHistory.length - 1;
+  showScramble(scrambleHistory[historyIndex], vis2);
+}
+function showScramble(entry, vis2) {
+  currentScramble = entry.scramble;
+  currentScrambleEvent = entry.event;
+  vis2.innerHTML = entry.svg;
+  adjustVisualizerSize(entry.event, vis2);
   const textEl = document.getElementById("scrambleDisplay");
-  if (type === "mgmp") {
-    textEl.textContent = formatMegaminx(scramble);
+  if (entry.event === "mgmp") {
+    textEl.textContent = formatMegaminx(entry.scramble);
   } else {
-    textEl.textContent = scramble;
+    textEl.textContent = entry.scramble;
   }
+  document.getElementById("prevScrambleBtn").disabled = historyIndex <= 0;
   autoFitText(vis2);
+}
+function previousScramble(vis2) {
+  if (historyIndex <= 0) return;
+  historyIndex--;
+  showScramble(scrambleHistory[historyIndex], vis2);
+}
+async function nextScramble(event, vis2, length) {
+  if (historyIndex < scrambleHistory.length - 1) {
+    historyIndex++;
+    showScramble(scrambleHistory[historyIndex], vis2);
+  } else {
+    await displayScramble(event, vis2, length);
+  }
 }
 function adjustVisualizerSize(event, vis2) {
   const category = document.getElementById("categorySelect").value;
@@ -550,6 +574,11 @@ function formatSecondsToTime(sec) {
     return `${m}:${s}`;
   }
   return manageTime(sec);
+}
+function getNeededSolves(mode) {
+  if (mode === "ao5" || mode === "bo5") return 5;
+  if (mode === "ao12") return 12;
+  return 3;
 }
 function bestAndWorst(times, higherIsBetter) {
   const valid = times.filter((t) => t !== Infinity);
@@ -869,12 +898,7 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
     updateClassicStats(modeFlag);
     return null;
   }
-  let neededSolves = 3;
-  if (averageObj.mode === "ao5" || averageObj.mode === "bo5") {
-    neededSolves = 5;
-  } else if (averageObj.mode === "ao12") {
-    neededSolves = 12;
-  }
+  const neededSolves = getNeededSolves(averageObj.mode);
   if (averageObj.solveCounter >= neededSolves) {
     const relevantSolves = averageObj.solvesArray.slice(0, neededSolves);
     const avgObj2 = computeAverage(relevantSolves, averageObj.mode);
@@ -915,24 +939,29 @@ function getSessionAverages$1(getCurrentSession2) {
   return session2.averages || [];
 }
 function getLastSolveTarget(averageObj2, getCurrentSession2) {
-  if (averageObj2.solvesArray.length > 0) {
-    return {
-      type: "current",
-      solveIndex: averageObj2.solvesArray.length - 1
-    };
+  const buffer = averageObj2.solvesArray;
+  const newestBlock = getSessionAverages$1(getCurrentSession2)[0];
+  const lastInBuffer = buffer[buffer.length - 1];
+  const lastInBlock = newestBlock?.solves[newestBlock.solves.length - 1];
+  if (!lastInBuffer && !lastInBlock) return null;
+  const blockIsNewer = lastInBlock && (!lastInBuffer || (lastInBlock.createdAt ?? 0) > (lastInBuffer.createdAt ?? 0));
+  if (blockIsNewer) {
+    return { type: "saved", blockIndex: 0, solveIndex: newestBlock.solves.length - 1 };
   }
-  const averages = getSessionAverages$1(getCurrentSession2);
-  if (averages.length === 0) return null;
-  const newestBlockIndex = 0;
-  const newestBlock = averages[0];
-  if (!newestBlock || newestBlock.solves.length === 0) return null;
-  return {
-    type: "saved",
-    blockIndex: newestBlockIndex,
-    solveIndex: newestBlock.solves.length - 1
-  };
+  return { type: "current", solveIndex: buffer.length - 1 };
 }
-function penalty2$1(blockIndex, solveIndex, penalty, getCurrentSession2, saveSessions2) {
+function getLastSolve$1(averageObj2, getCurrentSession2) {
+  const target = getLastSolveTarget(averageObj2, getCurrentSession2);
+  if (!target) return null;
+  if (target.type === "current") return averageObj2.solvesArray[target.solveIndex];
+  return getSessionAverages$1(getCurrentSession2)[target.blockIndex].solves[target.solveIndex];
+}
+function penalty2$1(blockIndex, solveIndex, penalty, averageObj2, getCurrentSession2, saveSessions2) {
+  if (blockIndex === -1) {
+    averageObj2.solvesArray[solveIndex].penalty = penalty;
+    saveSessions2();
+    return;
+  }
   const averages = getSessionAverages$1(getCurrentSession2);
   const block = averages[blockIndex];
   block.solves[solveIndex].penalty = penalty;
@@ -1135,7 +1164,7 @@ function getSessionAverages() {
   return getSessionAverages$1(getCurrentSession);
 }
 function penalty2(blockIndex, solveIndex, penalty) {
-  penalty2$1(blockIndex, solveIndex, penalty, getCurrentSession, saveSessions);
+  penalty2$1(blockIndex, solveIndex, penalty, averageObj, getCurrentSession, saveSessions);
 }
 function remove2(blockIndex, solveIndex) {
   remove2$1(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions);
@@ -1145,6 +1174,9 @@ function applyPenaltyToLast(penalty, setPenalty2) {
 }
 function removeLastSolve(removeSolve2) {
   removeLastSolve$1(averageObj, getCurrentSession, removeSolve2);
+}
+function getLastSolve() {
+  return getLastSolve$1(averageObj, getCurrentSession);
 }
 const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
 const timerSettObj = {
@@ -17679,6 +17711,27 @@ document.getElementById("closeModal").addEventListener("click", closeModal);
 overlay.addEventListener("click", closeModal);
 loadFromStorage();
 initializeDefaults();
+function canChangeScramble() {
+  return timerObj.timerPhase === PHASE.IDLE;
+}
+function resetFMCForScramble() {
+  if (eventObj.event !== "333fm") return;
+  applyScramble(currentScramble);
+  document.getElementById("fmc-solution").value = "";
+  document.getElementById("fmc-move-count").innerHTML = "";
+  solutionFlag = false;
+}
+document.getElementById("prevScrambleBtn").addEventListener("click", () => {
+  if (!canChangeScramble()) return;
+  previousScramble(vis);
+  resetFMCForScramble();
+});
+document.getElementById("nextScrambleBtn").addEventListener("click", async () => {
+  if (!canChangeScramble()) return;
+  const cubeCount = eventObj.event === "r3ni" ? Math.max(1, Number(countInput.value) || 5) : void 0;
+  await nextScramble(eventObj.event, vis, cubeCount);
+  resetFMCForScramble();
+});
 async function initEvent() {
   const session2 = getCurrentSession();
   eventObj.event = session2.scrambleType || "333";
@@ -17786,6 +17839,12 @@ function setTimerDisplay(colorOrTime, content) {
     document.getElementById("timer").textContent = content;
   }
 }
+function showLastSolve() {
+  if (timerSettObj.untimedEvent) return;
+  const last = getLastSolve();
+  const isTime = last && last.event !== "333fm" && last.event !== "r3ni";
+  setTimerDisplay("time", isTime ? formatDisplayTime(last) : "0.00");
+}
 let seconds = 0;
 let interval = null;
 let running = false;
@@ -17803,7 +17862,7 @@ function inspection2() {
         clearInterval(interval);
         interval = null;
         seconds = 0;
-        setTimerDisplay("time", "0.00");
+        showLastSolve();
       }
     }, 1e3);
   } else {
@@ -17811,7 +17870,7 @@ function inspection2() {
     clearInterval(interval);
     interval = null;
     seconds = 0;
-    setTimerDisplay("time", "0.00");
+    showLastSolve();
   }
 }
 function showOnlyTimerSafe() {
@@ -17903,7 +17962,7 @@ document.addEventListener("keydown", (event) => {
     timerObj.solvePhases = [];
     timerObj.currentSolvePhase = 0;
     timerObj.lastSplitTime = 0;
-    document.getElementById("timer").textContent = "0.00";
+    showLastSolve();
     resetTimerColor(setTimerDisplay, getThemeVar);
     restoreUI();
   }
@@ -18024,10 +18083,93 @@ modalBody.addEventListener("click", (e) => {
   if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
   if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
 });
+function solveRowHtml(s, i, blockIndex) {
+  const counterKey = `${blockIndex}-${i}`;
+  let counter = 0;
+  if (typeof s.penalty === "number" && s.penalty > 0) {
+    counter = s.penalty;
+  }
+  modalPenaltyCounters[counterKey] = counter;
+  const buttonText = `+${counter + 2}`;
+  const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
+  const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
+  const solutionRows = canCheck ? `
+            <div class="modal-scramble">
+                Solution: <input
+                    type="text"
+                    id="solution-input-${blockIndex}-${i}"
+                    placeholder="Enter solution"
+                    value="${s.solution || ""}"
+                />
+                <button data-action="solution" ${solveData}>
+                    Submit
+                </button>
+            </div>
+            <div class="modal-scramble">
+                <span id="tps-${blockIndex}-${i}">Status: ${s.status || "-"} | Moves: ${s.moves || "-"} | TPS: ${s.tps ? s.tps.toFixed(2) : "-"}</span>
+            </div>
+    ` : "";
+  return `
+        <div class="modal-solve-row">
+            <div class="modal-solve-main">
+                <span>#${i + 1}: ${formatStatValue(s)}</span>
+
+                <div class="modal-solve-actions">
+                    <button data-action="ok" ${solveData}>OK</button>
+                    <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
+                    <button data-action="dnf" ${solveData}>DNF</button>
+                    <button data-action="remove" ${solveData}>✖</button>
+                </div>
+            </div>
+
+            <div class="modal-scramble">
+                Scramble: ${s.scramble}
+            </div>
+
+            <div class="modal-scramble">
+                Inspection: ${s.inspection}
+            </div>
+
+
+            <div class="modal-scramble">
+                Date: ${new Date(s.createdAt)}
+            </div>
+            ${solutionRows}
+        </div>
+    `;
+}
 function openDetailsModal() {
   const averages = getSessionAverages();
   let html = `<h3 class="modal-title">Session averages</h3>`;
   modalBlocks = averages;
+  const bufferSolves = averageObj.solvesArray;
+  if (bufferSolves.length > 0) {
+    let bufferHeader;
+    if (averageObj.mode === "classic") {
+      bufferHeader = `classic: ${wrapTimesValue(bufferSolves.length)} solves`;
+    } else {
+      bufferHeader = `${averageObj.mode} in progress: ${wrapTimesValue(`${bufferSolves.length}/${getNeededSolves(averageObj.mode)}`)}`;
+      if (averageObj.mode === "ao5" && bufferSolves.length === 4) {
+        const ao5Avg = computeAverage(bufferSolves, "ao5");
+        bufferHeader += ` (bpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.bpAo5)}, wpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.wpA05)})`;
+      }
+    }
+    html += `
+            <div class="modal-average-card modal-buffer-card">
+                <div class="modal-average-header">
+                    <b>${bufferHeader}</b>
+                </div>
+
+                <div class="modal-solves">
+        `;
+    bufferSolves.forEach((s, i) => {
+      html += solveRowHtml(s, i, -1);
+    });
+    html += `
+                </div>
+            </div>
+        `;
+  }
   averages.forEach((block, blockIndex) => {
     let headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)}`;
     if (block.mode === "bo3") {
@@ -18048,59 +18190,7 @@ function openDetailsModal() {
                 <div class="modal-solves">
         `;
     block.solves.forEach((s, i) => {
-      const counterKey = `${blockIndex}-${i}`;
-      let counter = 0;
-      if (typeof s.penalty === "number" && s.penalty > 0) {
-        counter = s.penalty;
-      }
-      modalPenaltyCounters[counterKey] = counter;
-      const buttonText = `+${counter + 2}`;
-      const solveData = `data-block="${blockIndex}" data-solve="${i}"`;
-      const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
-      const solutionRows = canCheck ? `
-                    <div class="modal-scramble">
-                       Solution: <input
-                            type="text"
-                            id="solution-input-${blockIndex}-${i}"
-                            placeholder="Enter solution"
-                            value="${block.solves[i].solution || ""}"
-                        />
-                        <button data-action="solution" ${solveData}>
-                            Submit
-                        </button>
-                    </div>
-                    <div class="modal-scramble">
-                        <span id="tps-${blockIndex}-${i}">Status: ${block.solves[i].status || "-"} | Moves: ${block.solves[i].moves || "-"} | TPS: ${block.solves[i].tps ? block.solves[i].tps.toFixed(2) : "-"}</span>
-                    </div>
-            ` : "";
-      html += `
-                <div class="modal-solve-row">
-                    <div class="modal-solve-main">
-                        <span>#${i + 1}: ${formatStatValue(s)}</span>
-
-                        <div class="modal-solve-actions">
-                            <button data-action="ok" ${solveData}>OK</button>
-                            <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
-                            <button data-action="dnf" ${solveData}>DNF</button>
-                            <button data-action="remove" ${solveData}>✖</button>
-                        </div>
-                    </div>
-
-                    <div class="modal-scramble">
-                        Scramble: ${block.solves[i].scramble}
-                    </div>
-
-                    <div class="modal-scramble">
-                        Inspection: ${block.solves[i].inspection}
-                    </div>
-
-
-                    <div class="modal-scramble">
-                        Date: ${new Date(block.solves[i].createdAt)}
-                    </div>
-                    ${solutionRows}
-                </div>
-            `;
+      html += solveRowHtml(s, i, blockIndex);
     });
     html += `
                 </div>
@@ -18129,11 +18219,11 @@ function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
     }
   }
   penalty2(blockIndex, solveIndex, finalPenalty);
-  saveSessions();
-  renderHistory();
   if (averageObj.mode === "classic") updateClassicStats(true);
   const session2 = getCurrentSession();
   session2.classicStats = structuredClone(classicStats);
+  saveSessions();
+  renderHistory();
   if (!modal.classList.contains("hidden")) {
     openDetailsModal();
   }
@@ -18145,13 +18235,13 @@ function removeSolve(blockIndex, solveIndex) {
   session2.classicStats = structuredClone(classicStats);
   saveSessions();
   renderHistory();
+  showLastSolve();
   if (!modal.classList.contains("hidden")) {
     openDetailsModal();
   }
 }
 function submitSolution(blockIndex, solveIndex) {
-  const block = modalBlocks[blockIndex];
-  const solve = block.solves[solveIndex];
+  const solve = blockIndex === -1 ? averageObj.solvesArray[solveIndex] : modalBlocks[blockIndex].solves[solveIndex];
   const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
   const value = input.value;
   applyScramble(solve.scramble, true);
@@ -18435,4 +18525,150 @@ function normalizeTypedTime(raw) {
   const result = `${minutes}:${seconds2}.${hundredths}`;
   return result;
 }
+const scriptRel = "modulepreload";
+const assetsURL = function(dep) {
+  return "/Pro-timer/" + dep;
+};
+const seen = {};
+const __vitePreload = function preload(baseModule, deps, importerUrl) {
+  let promise = Promise.resolve();
+  if (deps && deps.length > 0) {
+    let allSettled = function(promises$2) {
+      return Promise.all(promises$2.map((p) => Promise.resolve(p).then((value$1) => ({
+        status: "fulfilled",
+        value: value$1
+      }), (reason) => ({
+        status: "rejected",
+        reason
+      }))));
+    };
+    document.getElementsByTagName("link");
+    const cspNonceMeta = document.querySelector("meta[property=csp-nonce]");
+    const cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
+    promise = allSettled(deps.map((dep) => {
+      dep = assetsURL(dep);
+      if (dep in seen) return;
+      seen[dep] = true;
+      const isCss = dep.endsWith(".css");
+      const cssSelector = isCss ? '[rel="stylesheet"]' : "";
+      if (document.querySelector(`link[href="${dep}"]${cssSelector}`)) return;
+      const link = document.createElement("link");
+      link.rel = isCss ? "stylesheet" : scriptRel;
+      if (!isCss) link.as = "script";
+      link.crossOrigin = "";
+      link.href = dep;
+      if (cspNonce) link.setAttribute("nonce", cspNonce);
+      document.head.appendChild(link);
+      if (isCss) return new Promise((res, rej) => {
+        link.addEventListener("load", res);
+        link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(`Unable to preload CSS for ${dep}`)));
+      });
+    }));
+  }
+  function handlePreloadError(err$2) {
+    const e$1 = new Event("vite:preloadError", { cancelable: true });
+    e$1.payload = err$2;
+    window.dispatchEvent(e$1);
+    if (!e$1.defaultPrevented) throw err$2;
+  }
+  return promise.then((res) => {
+    for (const item of res || []) {
+      if (item.status !== "rejected") continue;
+      handlePreloadError(item.reason);
+    }
+    return baseModule().catch(handlePreloadError);
+  });
+};
+function registerSW(options = {}) {
+  const {
+    immediate = false,
+    onNeedReload,
+    onNeedRefresh,
+    onOfflineReady,
+    onRegistered,
+    onRegisteredSW,
+    onRegisterError
+  } = options;
+  let wb;
+  let registerPromise;
+  let sendSkipWaitingMessage;
+  const updateServiceWorker = async (_reloadPage = true) => {
+    await registerPromise;
+    {
+      sendSkipWaitingMessage?.();
+    }
+  };
+  async function register() {
+    if ("serviceWorker" in navigator) {
+      wb = await __vitePreload(async () => {
+        const { Workbox } = await import("./workbox-window.prod.es5-BAA1jQbh.js");
+        return { Workbox };
+      }, true ? [] : void 0).then(({ Workbox }) => {
+        return new Workbox("/Pro-timer/sw.js", { scope: "/Pro-timer/", type: "classic" });
+      }).catch((e) => {
+        onRegisterError?.(e);
+        return void 0;
+      });
+      if (!wb)
+        return;
+      sendSkipWaitingMessage = () => {
+        wb?.messageSkipWaiting();
+      };
+      {
+        {
+          let onNeedRefreshCalled = false;
+          const showSkipWaitingPrompt = () => {
+            onNeedRefreshCalled = true;
+            wb?.addEventListener("controlling", (event) => {
+              if (event.isUpdate) {
+                if (onNeedReload)
+                  onNeedReload();
+                else
+                  window.location.reload();
+              }
+            });
+            onNeedRefresh?.();
+          };
+          wb.addEventListener("installed", (event) => {
+            if (typeof event.isUpdate === "undefined") {
+              if (typeof event.isExternal !== "undefined") {
+                if (event.isExternal)
+                  showSkipWaitingPrompt();
+                else
+                  !onNeedRefreshCalled && onOfflineReady?.();
+              } else {
+                !onNeedRefreshCalled && onOfflineReady?.();
+              }
+            } else if (!event.isUpdate) {
+              onOfflineReady?.();
+            }
+          });
+          wb.addEventListener("waiting", showSkipWaitingPrompt);
+        }
+      }
+      wb.register({ immediate }).then((r) => {
+        if (onRegisteredSW)
+          onRegisteredSW("/Pro-timer/sw.js", r);
+        else
+          onRegistered?.(r);
+      }).catch((e) => {
+        onRegisterError?.(e);
+      });
+    }
+  }
+  registerPromise = register();
+  return updateServiceWorker;
+}
+const updateBanner = document.getElementById("updateBanner");
+const updateReload = document.getElementById("updateReload");
+const updateLater = document.getElementById("updateLater");
+const updateSW = registerSW({
+  // A new version finished downloading: show the bar instead of reloading in the middle of a solve
+  onNeedRefresh() {
+    updateBanner.classList.add("open");
+  }
+});
+updateReload.addEventListener("click", () => updateSW());
+updateLater.addEventListener("click", () => updateBanner.classList.remove("open"));
+navigator.storage?.persist?.();
 await initEvent();

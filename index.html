@@ -5,13 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Timer v1</title>
     <!-- Imports every folder's CSS (main/style.css lists them) -->
-  <script type="module" crossorigin src="/Pro-timer/assets/index-CAf-KWyQ.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BEseyt5a.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-ChpsJaa6.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-tLdtfs7E.css">
 </head>
 <body>
     <!-- Page skeleton: each <include> is swapped for that file's HTML by the plugin in vite.config.js -->
 
-    <!-- Top bar: settings, clear, average mode, category, event and session controls (topbar/topbarController.js) -->
+    <!-- Top bar: settings, clear, average mode, category, event and session controls (topbar/topbarController.js), and Previous / Next scramble -->
 <header class="top-bar">
   <div class="left-controls">
     <!-- Opens the settings panel (settings/settingsController.js) -->
@@ -38,6 +38,11 @@
     <button id="modal-button">Open Session</button>
     <!-- Opens the statistics page (stats/statsController.js) -->
     <button id="open-stats-btn">📊 Session Stats</button>
+  </div>
+  <!-- Previous / Next scramble (event/eventController.js); hidden for Fewest Moves and Multi-Blind -->
+  <div id="scrambleNav">
+    <button id="prevScrambleBtn">‹ Previous</button>
+    <button id="nextScrambleBtn">Next ›</button>
   </div>
 </header>
 
@@ -676,6 +681,15 @@
   <br>
   <button id="saveConfig">Save</button>
   <button id="closeModal">Cancel</button>
+</div>
+
+    <!-- Bar at the bottom of the page, shown when a new version of the app is ready (offline/offlineController.js adds .open) -->
+<div id="updateBanner" class="update-banner">
+  <span>A new version of Pro Timer is ready.</span>
+  <!-- Switches to the new version now -->
+  <button id="updateReload">Reload</button>
+  <!-- Hides the bar; the new version loads the next time the app is opened -->
+  <button id="updateLater">Later</button>
 </div>
 
 
