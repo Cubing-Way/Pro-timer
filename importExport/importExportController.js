@@ -16,15 +16,17 @@ import { readCsTimerFile } from "./csTimerImport.js";
 import { getDefaultModeForEvent } from "../topbar/topbarController.js";
 import { getCategoryOfEvent } from "../scramble/scrambleController.js";
 
-// The Data section's buttons in the settings panel
+// The Data section's buttons in the settings panel, and the import pop-up
 const dataDOM = {
     exportBtn: document.getElementById("exportSolvesBtn"),
     importBtn: document.getElementById("importSolvesBtn"),
     fileInput: document.getElementById("importFileInput"),
+    importDialog: document.getElementById("importDialog"),            // asks which sessions to import and where
+    importInfo: document.getElementById("importInfo"),                // the line under the dialog's title
+    sessionRow: document.getElementById("importSessionRow"),          // the sessions select and its label
+    sessionSelect: document.getElementById("importSessionSelect"),    // All sessions, or one of them
     importTarget: document.getElementById("importTarget"),            // New sessions or Current session
-    sessionDialog: document.getElementById("importSessionDialog"),    // asks which of the file's sessions to import
-    sessionInfo: document.getElementById("importSessionInfo"),        // the line under the dialog's title
-    sessionSelect: document.getElementById("importSessionSelect")     // All sessions, or one of them
+    currentOption: document.querySelector('#importTarget option[value="current"]')    // gets the session's name
 };
 
 // Export: put the average in progress in its session first, then download every session
@@ -53,12 +55,6 @@ function sessionsFromFile(text) {
 
 // Adds imported sessions under free names, saves, and switches to the first one
 function addImportedSessions(imported) {
-    // A file with no sessions has nothing to add
-    if (imported.length === 0) {
-        alert("This file has no sessions.");
-        return;
-    }
-
     // Ask first, saying how much is coming
     const solveCount = imported.reduce((sum, { session }) => sum + countSolves(session), 0);
     if (!confirm(`Import ${imported.length} session(s) with ${solveCount} solves?\nThey're added next to your sessions; nothing is replaced.`)) return;
@@ -131,32 +127,39 @@ function addIntoCurrentSession(imported) {
     alert(`Added ${added} solves to "${name}".` + (skipped ? ` ${skipped} were already there.` : ""));
 }
 
-// Asks which of the file's sessions to import; resolves with the chosen ones, or null when cancelled
-function chooseSessions(imported) {
-    // Zero or one session: nothing to choose
-    if (imported.length <= 1) return Promise.resolve(imported);
-
-    // Say where they go, since the target select is behind the dialog
-    const where = dataDOM.importTarget.value === "current" ? `to "${sessionsObj.currentSession}"` : "as new sessions";
-    dataDOM.sessionInfo.textContent = `This file has ${imported.length} sessions. Add all of them, or just one, ${where}.`;
-
-    // "All sessions" first (what Import did before), then each session with its solve count; the value is its index
+// Asks which of the file's sessions to import and where; resolves with { chosen, target }, or null when cancelled
+function askImport(imported) {
     const total = imported.reduce((sum, { session }) => sum + countSolves(session), 0);
+    const several = imported.length > 1;
+
+    // What the file holds: how many sessions, or the name of its only one
+    dataDOM.importInfo.textContent = several
+        ? `This file has ${imported.length} sessions with ${total} solves.`
+        : `This file has 1 session, "${imported[0].name}", with ${total} solves.`;
+
+    // "All sessions" first, then each session with its solve count (the value is its index); only shown when there's a choice
+    dataDOM.sessionRow.hidden = !several;
     dataDOM.sessionSelect.replaceChildren(
         new Option(`All sessions (${total} solves)`, "all"),
         ...imported.map(({ name, session }, i) => new Option(`${name} (${countSolves(session)} solves)`, i))
     );
 
-    // Escape closes the dialog without a button, keeping the last returnValue, so clear it first
-    dataDOM.sessionDialog.returnValue = "";
-    dataDOM.sessionDialog.showModal();
+    // Name the session in use, since that's where "Current session" puts the solves
+    dataDOM.currentOption.textContent = `Current session ("${sessionsObj.currentSession}")`;
 
-    // Wait for Cancel, Import or Escape
+    // Escape closes the dialog without a button, keeping the last returnValue, so clear it first
+    dataDOM.importDialog.returnValue = "";
+    dataDOM.importDialog.showModal();
+
+    // Wait for Cancel, Import or Escape; the target select keeps its choice for the next import
     return new Promise(resolve => {
-        dataDOM.sessionDialog.addEventListener("close", () => {
-            if (dataDOM.sessionDialog.returnValue !== "import") return resolve(null);
+        dataDOM.importDialog.addEventListener("close", () => {
+            if (dataDOM.importDialog.returnValue !== "import") return resolve(null);
             const choice = dataDOM.sessionSelect.value;
-            resolve(choice === "all" ? imported : [imported[Number(choice)]]);
+            resolve({
+                chosen: choice === "all" ? imported : [imported[Number(choice)]],
+                target: dataDOM.importTarget.value
+            });
         }, { once: true });
     });
 }
@@ -175,14 +178,21 @@ dataDOM.fileInput.addEventListener("change", async () => {
     dataDOM.fileInput.value = "";
 
     try {
-        // Several sessions in the file: all of them, or the one picked (null: cancelled)
-        const imported = await chooseSessions(sessionsFromFile(text));
-        if (!imported) return;
-        // Where the solves go: the session in use, or new sessions (the select next to Import)
-        if (dataDOM.importTarget.value === "current") {
-            addIntoCurrentSession(imported);
+        const imported = sessionsFromFile(text);
+        // A file with no sessions has nothing to import
+        if (imported.length === 0) {
+            alert("This file has no sessions.");
+            return;
+        }
+
+        // Which sessions and where they go, picked in the import pop-up (null: cancelled)
+        const answer = await askImport(imported);
+        if (!answer) return;
+        // The session in use, or new sessions
+        if (answer.target === "current") {
+            addIntoCurrentSession(answer.chosen);
         } else {
-            addImportedSessions(imported);
+            addImportedSessions(answer.chosen);
         }
     } catch (err) {
         alert(err.message);

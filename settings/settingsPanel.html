@@ -231,26 +231,38 @@
         <div class="setting-row import-row">
           <label>Import solves (Pro Timer or csTimer)</label>
           <div class="setting-control">
-            <!-- Where the imported solves go: new sessions, or the session in use -->
-            <select id="importTarget">
-              <option value="new" selected>New sessions</option>
-              <option value="current">Current session</option>
-            </select>
+            <!-- Opens the file picker; what to import and where is asked in the import pop-up -->
             <button id="importSolvesBtn">Import</button>
             <input type="file" id="importFileInput" accept=".json,.txt" hidden />
           </div>
         </div>
 
-        <!-- Pop-up after picking a file with several sessions: import all of them, or just one (importExport/importExportController.js) -->
-        <dialog id="importSessionDialog" class="import-dialog">
+        <!-- Pop-up after picking a file: which of its sessions to import, and where they go (importExport/importExportController.js) -->
+        <dialog id="importDialog" class="import-dialog">
           <form method="dialog">
-            <h3>Which sessions?</h3>
-            <!-- How many sessions the file has and where they go, written by the controller -->
-            <p id="importSessionInfo"></p>
-            <div class="setting-control">
-              <!-- "All sessions", then one option per session in the file, built by the controller -->
-              <select id="importSessionSelect"></select>
+            <h3>Import solves</h3>
+            <!-- How many sessions and solves the file has, written by the controller -->
+            <p id="importInfo"></p>
+
+            <!-- Which sessions: "All sessions", then one option per session in the file; hidden when the file has only one -->
+            <div id="importSessionRow" class="import-dialog-field">
+              <label for="importSessionSelect">Sessions</label>
+              <div class="setting-control">
+                <select id="importSessionSelect"></select>
+              </div>
             </div>
+
+            <!-- Where the solves go: new sessions, or the session in use (the controller adds its name) -->
+            <div class="import-dialog-field">
+              <label for="importTarget">Import into</label>
+              <div class="setting-control">
+                <select id="importTarget">
+                  <option value="new" selected>New sessions</option>
+                  <option value="current">Current session</option>
+                </select>
+              </div>
+            </div>
+
             <!-- The button's value becomes the dialog's returnValue when it closes it -->
             <div class="setting-control import-dialog-buttons">
               <button value="cancel">Cancel</button>

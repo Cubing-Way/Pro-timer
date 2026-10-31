@@ -266,6 +266,8 @@ document.querySelectorAll("select").forEach(select => {
 avgObj.clearBtn.onclick = () => {
     clearAverages();
     renderHistory();
+    // An empty session shows "0.00" on the timer (a cancelled Clear keeps its last solve)
+    showLastSolve();
 }
 
 // Open Session: the session's averages in the details pop-up
