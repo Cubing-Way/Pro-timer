@@ -56,32 +56,36 @@ let running = false;
 
 // Starts the typed-time inspection count, or stops and resets it if it's running
 function inspection2() {
-        if (!running) {
+    if (!running) {
         // Start: show 0, then count one second at a time
         running = true;
         setTimerDisplay('time', seconds);
         interval = setInterval(() => {
+            // Not in Typing mode anymore, or now on Fewest Moves / Multi-Blind: stop without writing over their timer
+            if (!timerSettObj.timerFlag || timerSettObj.untimedEvent) {
+                stopInspection2();
+                return;
+            }
             seconds++;
-                        setTimerDisplay('time', seconds);
-                // WCA calls at 8 and 12 seconds; at 17 the count stops on its own
-                if (seconds === 8)  new Audio("./audio/8seconds.mp3").play();
-                if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
-                if (seconds === 17) {
-                    running = false;
-                    clearInterval(interval);
-                    interval = null;
-                    seconds = 0;
-                    showLastSolve();
-                }
+            setTimerDisplay('time', seconds);
+            // WCA calls at 8 and 12 seconds; at 17 the count stops on its own
+            if (seconds === 8)  new Audio("./audio/8seconds.mp3").play();
+            if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
+            if (seconds === 17) stopInspection2();
         }, 1000);
     } else {
-        // Stop: reset the count and the display
-        running = false;
-        clearInterval(interval);
-        interval = null;
-        seconds = 0;
-        showLastSolve();
+        stopInspection2();
     }
+}
+
+// Stops and resets the typed-time inspection count and puts the last solve back on the timer; does nothing when it isn't running
+function stopInspection2() {
+    if (!running) return;
+    running = false;
+    clearInterval(interval);
+    interval = null;
+    seconds = 0;
+    showLastSolve();
 }
 
 // Focus mode while solving: hide everything but the timer and the touch overlay
@@ -211,6 +215,8 @@ document.addEventListener("keydown", (event) => {
         timerObj.solvePhases = [];
         timerObj.currentSolvePhase = 0;
         timerObj.lastSplitTime = 0;
+        // The typed-time inspection count too
+        stopInspection2();
         showLastSolve();
         resetTimerColor(setTimerDisplay, getThemeVar);
         restoreUI();
@@ -263,6 +269,9 @@ document.addEventListener("keydown", (e) => {
     inspection2();
 });
 
+// Switching to Timer with the Time insertion select stops the typed-time inspection count right away (Tab does it in its own handler)
+document.getElementById("time-insertion").addEventListener("change", stopInspection2);
+
 // True when the focus is in a text field, so keys go to it and not to the timer
 function isTyping() {
   const el = document.activeElement;
@@ -301,6 +310,8 @@ document.addEventListener("keydown", (e) => {
     // Fewest Moves and Multi-Blind have no timer to switch, and a running solve keeps its mode
     if (timerSettObj.untimedEvent || timerObj.timerPhase !== PHASE.IDLE) return;
     setTimeInsertion(timeInsertion === "Typing" ? "Timer" : "Typing");
+    // The typed-time inspection count only belongs to Typing mode
+    stopInspection2();
 });
 
 // A press while running: ends the current phase, and on the last phase stops and saves the solve
