@@ -875,6 +875,20 @@ const classicStats = {
     ao100: []
   }
 };
+const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
+const timerSettObj = {
+  inspectionType: inspection$1,
+  timerFlag: false,
+  // true when the timer is off (Typing mode, Fewest Moves or Multi-Blind)
+  untimedEvent: false
+  // true on Fewest Moves and Multi-Blind, set by showTimeInsertion
+};
+const deviceSettObj = {
+  name: localStorage.getItem("deviceName") || "",
+  // "" when no name was typed
+  detected: ""
+  // the device's type, then its model when the browser gives it (filled by settingsController.js)
+};
 function updateClassicStats(recomputeBest = false) {
   updateClassicStats$1(recomputeBest, averageObj, classicStats);
 }
@@ -908,7 +922,9 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
       inspection: inspection3,
       createdAt: Date.now(),
       solution,
-      solvePhases
+      solvePhases,
+      doneAt: deviceSettObj.name || deviceSettObj.detected
+      // where it was done: the typed device name, else the detected model or type
     });
     averageObj.solveCounter++;
   }
@@ -1072,6 +1088,28 @@ function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
   averageObj2.solveCounter = inProgress.length;
   return newSolves.length;
 }
+function addRoundsToSession$1(rounds, averageObj2, getSession) {
+  ensureSessionShape(getSession);
+  const session2 = getSession();
+  const seen2 = new Set([
+    ...session2.averages.flatMap((block) => block.solves),
+    ...averageObj2.solvesArray
+  ].map(solveKey));
+  let added = 0;
+  const loose = [];
+  rounds.forEach((round2) => {
+    const newSolves = round2.solves.filter((solve) => !seen2.has(solveKey(solve)));
+    if (round2.mode && newSolves.length === round2.solves.length) {
+      session2.averages.push(buildAverageBlock(round2.solves, round2.mode));
+      added += newSolves.length;
+    } else {
+      loose.push(...newSolves);
+    }
+  });
+  added += addSolvesToSession$1(loose, averageObj2, getSession);
+  session2.averages.sort((a, b) => blockDate(b) - blockDate(a));
+  return added;
+}
 const session = getCurrentSession();
 averageObj.mode = session.mode || "ao5";
 const modeSel = document.getElementById("modeSelect");
@@ -1226,14 +1264,42 @@ function getLastSolve() {
 function addSolvesToSession(solves) {
   return addSolvesToSession$1(solves, averageObj, getCurrentSession);
 }
-const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
-const timerSettObj = {
-  inspectionType: inspection$1,
-  timerFlag: false,
-  // true when the timer is off (Typing mode, Fewest Moves or Multi-Blind)
-  untimedEvent: false
-  // true on Fewest Moves and Multi-Blind, set by showTimeInsertion
-};
+function addRoundsToSession(name, rounds) {
+  if (name === sessionsObj.currentSession) {
+    const added2 = addRoundsToSession$1(rounds, averageObj, getCurrentSession);
+    if (averageObj.mode === "classic") updateClassicStats(true);
+    getCurrentSession().classicStats = structuredClone(classicStats);
+    return added2;
+  }
+  const session2 = sessionsObj.sessions[name];
+  if (!session2.buffer) session2.buffer = { mode: session2.mode || "ao5", solveCounter: 0, solvesArray: [] };
+  const added = addRoundsToSession$1(rounds, session2.buffer, () => session2);
+  if (session2.buffer.mode === "classic") delete session2.classicStats;
+  return added;
+}
+function isIPad(userAgent) {
+  return /iPad/.test(userAgent) || /Macintosh/.test(userAgent) && navigator.maxTouchPoints > 1;
+}
+function detectDeviceType() {
+  const userAgent = navigator.userAgent;
+  if (isIPad(userAgent)) return "Tablet";
+  if (/Mobi|iPhone/.test(userAgent)) return "Cellphone";
+  if (/Android/.test(userAgent)) return "Tablet";
+  return "Computer";
+}
+async function detectDeviceModel() {
+  if (navigator.userAgentData) {
+    try {
+      const { model } = await navigator.userAgentData.getHighEntropyValues(["model"]);
+      if (model) return model;
+    } catch {
+    }
+  }
+  const userAgent = navigator.userAgent;
+  if (/iPhone/.test(userAgent)) return "iPhone";
+  if (isIPad(userAgent)) return "iPad";
+  return null;
+}
 const PHASE = Object.freeze({
   IDLE: "idle",
   // waiting for the next solve
@@ -1511,6 +1577,21 @@ function updateTypingUI() {
     container.style.display = "none";
   }
 }
+const deviceNameInput = document.getElementById("deviceNameInput");
+deviceSettObj.detected = detectDeviceType();
+deviceNameInput.value = deviceSettObj.name;
+deviceNameInput.placeholder = deviceSettObj.detected;
+detectDeviceModel().then((model) => {
+  if (!model) return;
+  deviceSettObj.detected = model;
+  deviceNameInput.placeholder = model;
+});
+deviceNameInput.addEventListener("change", () => {
+  deviceSettObj.name = deviceNameInput.value.trim();
+  deviceNameInput.value = deviceSettObj.name;
+  if (deviceSettObj.name) localStorage.setItem("deviceName", deviceSettObj.name);
+  else localStorage.removeItem("deviceName");
+});
 function round(v) {
   return v + 0.5 | 0;
 }
@@ -16562,7 +16643,7 @@ function formatStatValue$1(value, getCurrentSession2) {
   if (getCurrentSession2().scrambleType === "333fm") {
     const num = Number(value);
     if (!Number.isFinite(num)) return wrapTimesValue("DNF");
-    return wrapTimesValue(`${num} moves`);
+    return wrapTimesValue(`${Number.isInteger(num) ? num : num.toFixed(2)} moves`);
   }
   if (value.time && value.solvePhases) {
     const base = formatDisplayTime(value);
@@ -17901,25 +17982,27 @@ function inspection2() {
     running = true;
     setTimerDisplay("time", seconds);
     interval = setInterval(() => {
+      if (!timerSettObj.timerFlag || timerSettObj.untimedEvent) {
+        stopInspection2();
+        return;
+      }
       seconds++;
       setTimerDisplay("time", seconds);
       if (seconds === 8) new Audio("./audio/8seconds.mp3").play();
       if (seconds === 12) new Audio("./audio/12seconds.mp3").play();
-      if (seconds === 17) {
-        running = false;
-        clearInterval(interval);
-        interval = null;
-        seconds = 0;
-        showLastSolve();
-      }
+      if (seconds === 17) stopInspection2();
     }, 1e3);
   } else {
-    running = false;
-    clearInterval(interval);
-    interval = null;
-    seconds = 0;
-    showLastSolve();
+    stopInspection2();
   }
+}
+function stopInspection2() {
+  if (!running) return;
+  running = false;
+  clearInterval(interval);
+  interval = null;
+  seconds = 0;
+  showLastSolve();
 }
 function showOnlyTimerSafe() {
   const timer = document.getElementById("timer");
@@ -18010,6 +18093,7 @@ document.addEventListener("keydown", (event) => {
     timerObj.solvePhases = [];
     timerObj.currentSolvePhase = 0;
     timerObj.lastSplitTime = 0;
+    stopInspection2();
     showLastSolve();
     resetTimerColor(setTimerDisplay, getThemeVar);
     restoreUI();
@@ -18042,9 +18126,11 @@ document.getElementById("inspection-btn").addEventListener("click", () => {
 document.addEventListener("keydown", (e) => {
   if (!timerSettObj.timerFlag) return;
   if (e.code !== "Space" || e.repeat) return;
+  if (isTyping() && document.activeElement.id !== "typed-time") return;
   if (eventObj.event === "333fm" || eventObj.event === "r3ni") return;
   inspection2();
 });
+document.getElementById("time-insertion").addEventListener("change", stopInspection2);
 function isTyping() {
   const el = document.activeElement;
   return el.tagName === "INPUT" || el.tagName === "TEXTAREA" || el.isContentEditable;
@@ -18067,6 +18153,7 @@ document.addEventListener("keydown", (e) => {
   e.preventDefault();
   if (timerSettObj.untimedEvent || timerObj.timerPhase !== PHASE.IDLE) return;
   setTimeInsertion(timeInsertion === "Typing" ? "Timer" : "Typing");
+  stopInspection2();
 });
 function handleSplitOrStop() {
   const now = performance.now();
@@ -18157,6 +18244,11 @@ function solveRowHtml(s, i, blockIndex) {
                 <span id="tps-${blockIndex}-${i}">Status: ${s.status || "-"} | Moves: ${s.moves || "-"} | TPS: ${s.tps ? s.tps.toFixed(2) : "-"}</span>
             </div>
     ` : "";
+  const doneAtRow = s.doneAt ? `
+            <div class="modal-scramble">
+                Done at: ${s.doneAt}
+            </div>
+    ` : "";
   return `
         <div class="modal-solve-row">
             <div class="modal-solve-main">
@@ -18182,6 +18274,7 @@ function solveRowHtml(s, i, blockIndex) {
             <div class="modal-scramble">
                 Date: ${new Date(s.createdAt)}
             </div>
+            ${doneAtRow}
             ${solutionRows}
         </div>
     `;
@@ -18536,7 +18629,75 @@ function detectFormat(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) return null;
   if (data.app === "Pro Timer" && data.sessions && typeof data.sessions === "object") return "protimer";
   if (Object.keys(data).some((key) => /^session\d+$/.test(key))) return "cstimer";
+  if (typeof data.formatVersion === "string" && Array.isArray(data.persons) && Array.isArray(data.events)) return "wcif";
+  if (Array.isArray(data.sessions) && Array.isArray(data.solves) || data.timer?.sessionMap) return "cubedesk";
   return null;
+}
+function detectTextFormat(text) {
+  const firstLine = text.replace(/^﻿/, "").split(/\r?\n/, 1)[0].trim();
+  if (firstLine.startsWith("Puzzle,Category,Time(millis)")) return "twistytimer";
+  if (firstLine.startsWith("No.;Time;")) return "cstimercsv";
+  return "timelist";
+}
+function parseCsv(text, separator) {
+  const rows = [];
+  let row = [];
+  let field = "";
+  let quoted = false;
+  for (let i = 0; i < text.length; i++) {
+    const char = text[i];
+    if (quoted) {
+      if (char === '"' && text[i + 1] === '"') {
+        field += '"';
+        i++;
+      } else if (char === '"') {
+        quoted = false;
+      } else {
+        field += char;
+      }
+    } else if (char === '"') {
+      quoted = true;
+    } else if (char === separator) {
+      row.push(field);
+      field = "";
+    } else if (char === "\n" || char === "\r") {
+      row.push(field);
+      if (row.length > 1 || row[0] !== "") rows.push(row);
+      row = [];
+      field = "";
+    } else {
+      field += char;
+    }
+  }
+  row.push(field);
+  if (row.length > 1 || row[0] !== "") rows.push(row);
+  return rows;
+}
+function msToSeconds(ms) {
+  return Math.floor(ms / 10) / 100;
+}
+function toHundredths(seconds2) {
+  return msToSeconds(Math.round(seconds2 * 1e3));
+}
+function importedSolve({ time, penalty = null, scramble = "", event, createdAt, result, solvePhases, doneAt }) {
+  const solve = {
+    time,
+    // seconds, moves for FMC, points for Multi-Blind
+    penalty,
+    // null, seconds added (2) or "DNF"
+    scramble,
+    event,
+    inspection: 0,
+    // no app saves it in its export
+    createdAt,
+    // ms since 1970
+    solution: null
+    // only Pro Timer's own FMC solves have one
+  };
+  if (result != null) solve.result = result;
+  if (solvePhases) solve.solvePhases = solvePhases;
+  if (doneAt) solve.doneAt = doneAt;
+  return solve;
 }
 function readProTimerFile(data) {
   if (data.version > 1) {
@@ -18579,6 +18740,15 @@ function buildSession(solves, event, mode, category) {
     mode
   };
 }
+function newestSolveDate(block) {
+  return Math.max(...block.solves.map((s) => s.createdAt));
+}
+function buildRoundsSession(rounds, event, mode, category) {
+  const session2 = buildSession(rounds.filter((r) => !r.mode).flatMap((r) => r.solves), event, mode, category);
+  rounds.filter((r) => r.mode).forEach((r) => session2.averages.push(buildAverageBlock(r.solves, r.mode)));
+  session2.averages.sort((a, b) => newestSolveDate(b) - newestSolveDate(a));
+  return session2;
+}
 const CLOCK_TIME_ONLY = ["333fm", "r3ni"];
 function unwrapJSON(value) {
   return typeof value === "string" ? parseJSON(value) : value;
@@ -18605,7 +18775,9 @@ function convertCsTimerSolve(record, event) {
     createdAt: unixSeconds * 1e3,
     // csTimer saves seconds, Pro Timer ms
     solution: null,
-    solvePhases: csTimerPhases(times)
+    solvePhases: csTimerPhases(times),
+    doneAt: "csTimer"
+    // where it was done: the app it came from
   };
 }
 function readCsTimerFile(data) {
@@ -18623,20 +18795,354 @@ function readCsTimerFile(data) {
     };
   }).filter((session2) => session2.solves.length > 0);
 }
+const CUBEDESK_EVENTS = {
+  "222": ["222so", "2x2"],
+  "333": ["333", "3x3"],
+  "444": ["444wca", "4x4"],
+  "555": ["555wca", "5x5"],
+  "666": ["666wca", "6x6"],
+  "777": ["777wca", "7x7"],
+  sq1: ["sqrs", "Square-1"],
+  pyram: ["pyrso", "Pyraminx"],
+  pyraminx: ["pyrso", "Pyraminx"],
+  // what CubeDesk's own csTimer import saves
+  clock: ["clkwca", "Clock"],
+  skewb: ["skbso", "Skewb"],
+  minx: ["mgmp", "Megaminx"],
+  "333mirror": ["333", "3x3 Mirror"],
+  "222oh": ["222so", "2x2 One-Handed"],
+  "333oh": ["333oh", "3x3 One-Handed"],
+  "333bl": ["333ni", "3x3 Blind"],
+  other: ["333", "Other"]
+};
+const LEGACY_FIELDS = ["time", "raw_time", "event_type", "scramble", "session_id", "started_at", "ended_at", "id", "dnf", "plus_two"];
+function cubeDeskData(data) {
+  if (!data.timer?.sessionMap) return { sessions: data.sessions, solves: data.solves };
+  const sessions = [];
+  const solves = [];
+  Object.entries(data.timer.sessionMap).forEach(([id, session2]) => {
+    sessions.push({ id, name: session2.name, order: session2.order });
+    Object.values(session2.solves || {}).flat().forEach((values) => {
+      const solve = Object.fromEntries(LEGACY_FIELDS.map((field, i) => [field, values[i]]));
+      solves.push({ ...solve, session_id: id });
+    });
+  });
+  return { sessions, solves };
+}
+function cubeDeskDate(solve) {
+  return [solve.ended_at, solve.started_at, Date.parse(solve.created_at)].filter((value) => value != null).map(Number).find((ms) => Number.isFinite(ms) && ms > 0) ?? Date.now();
+}
+function convertCubeDeskSolve(solve, event) {
+  const raw = solve.raw_time ?? (solve.plus_two ? solve.time - 2 : solve.time);
+  return importedSolve({
+    time: toHundredths(Math.max(0, raw)),
+    penalty: solve.dnf ? "DNF" : solve.plus_two ? 2 : null,
+    scramble: solve.scramble || "",
+    event,
+    createdAt: cubeDeskDate(solve),
+    doneAt: "CubeDesk"
+    // where it was done: the app it came from
+  });
+}
+function readCubeDeskFile(data) {
+  const { sessions, solves } = cubeDeskData(data);
+  const ordered = [...sessions || []].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const bySession = new Map(ordered.map((session2) => [session2.id, /* @__PURE__ */ new Map()]));
+  (solves || []).forEach((solve) => {
+    const events = bySession.get(solve.session_id);
+    if (!events) return;
+    const type = solve.event_type ?? solve.cube_type ?? "333";
+    if (!events.has(type)) events.set(type, []);
+    events.get(type).push(solve);
+  });
+  return ordered.flatMap((session2) => {
+    const events = bySession.get(session2.id);
+    return [...events].map(([type, eventSolves]) => {
+      const [event, label] = CUBEDESK_EVENTS[type] ?? ["333", type];
+      return {
+        // The event's name is only added when the session has more than one event
+        name: events.size > 1 ? `${session2.name} ${label}` : String(session2.name),
+        event,
+        solves: eventSolves.map((solve) => convertCubeDeskSolve(solve, event))
+      };
+    });
+  });
+}
+const TWISTY_PUZZLES = {
+  "222": ["222so", "2x2"],
+  "333": ["333", "3x3"],
+  "444": ["444wca", "4x4"],
+  "555": ["555wca", "5x5"],
+  "666": ["666wca", "6x6"],
+  "777": ["777wca", "7x7"],
+  mega: ["mgmp", "Megaminx"],
+  pyra: ["pyrso", "Pyraminx"],
+  skewb: ["skbso", "Skewb"],
+  clock: ["clkwca", "Clock"],
+  sq1: ["sqrs", "Square-1"]
+};
+const PLUS_TWO = 1;
+const DNF = 2;
+function convertTwistySolve(millis, date, scramble, penalty, event) {
+  return importedSolve({
+    time: msToSeconds(penalty === PLUS_TWO ? millis - 2e3 : millis),
+    // the time without the +2
+    penalty: penalty === DNF ? "DNF" : penalty === PLUS_TWO ? 2 : null,
+    scramble: scramble || "",
+    event,
+    createdAt: date,
+    doneAt: "Twisty Timer"
+    // where it was done: the app it came from
+  });
+}
+function readTwistyTimerFile(text) {
+  const [, ...rows] = parseCsv(text, ";");
+  const sessions = /* @__PURE__ */ new Map();
+  rows.forEach(([puzzle, category = "", millis, date, scramble, penalty]) => {
+    if (!puzzle || !Number.isFinite(Number(millis))) return;
+    const [event, label] = TWISTY_PUZZLES[puzzle] ?? ["333", puzzle];
+    const name = `${label} ${category}`.trim();
+    if (!sessions.has(name)) sessions.set(name, { name, event, solves: [] });
+    sessions.get(name).solves.push(convertTwistySolve(Number(millis), Number(date), scramble, Number(penalty), event));
+  });
+  return [...sessions.values()];
+}
+const TEXT_EVENT = "333";
+function clockToSeconds(text) {
+  if (!/^(\d+:){0,2}\d+\.\d+$/.test(text)) return null;
+  return toHundredths(text.split(":").reduce((total, part) => total * 60 + parseFloat(part), 0));
+}
+function parseTimeText(text) {
+  const t = text.trim();
+  const dnf = t.match(/^DNF(?:\((.*)\))?$/i);
+  if (dnf) return { time: clockToSeconds(dnf[1] ?? "") ?? 0, penalty: "DNF" };
+  const plusTwo = t.endsWith("+");
+  const seconds2 = clockToSeconds(plusTwo ? t.slice(0, -1) : t);
+  if (seconds2 == null) return null;
+  return plusTwo ? { time: toHundredths(seconds2 - 2), penalty: 2 } : { time: seconds2, penalty: null };
+}
+function parseDate(text) {
+  if (!text) return null;
+  const trimmed = text.trim();
+  const ms = Date.parse(/^\d{4}-\d{2}-\d{2} \d/.test(trimmed) ? trimmed.replace(" ", "T") : trimmed);
+  return Number.isNaN(ms) ? null : ms;
+}
+function fillMissingDates(solves) {
+  const now = Date.now();
+  solves.forEach((solve, i) => {
+    if (solve.createdAt == null) solve.createdAt = now - (solves.length - i) * 1e3;
+  });
+}
+function readCsTimerCsv(text, name) {
+  const [header, ...rows] = parseCsv(text.replace(/^﻿/, ""), ";");
+  const firstPhase = header.indexOf("P.1");
+  const solves = rows.map((row) => {
+    const parsed = parseTimeText(row[1] ?? "");
+    if (!parsed) return null;
+    const phases = firstPhase === -1 ? [] : row.slice(firstPhase).filter((phase) => phase !== "");
+    return importedSolve({
+      ...parsed,
+      scramble: row[3] ?? "",
+      event: TEXT_EVENT,
+      createdAt: parseDate(row[4]),
+      solvePhases: phases.length > 1 ? phases : null,
+      doneAt: "csTimer"
+      // where it was done: the app it came from
+    });
+  }).filter(Boolean);
+  fillMissingDates(solves);
+  return solves.length ? [{ name, event: TEXT_EVENT, solves }] : [];
+}
+function lineSolves(line) {
+  if (/[;\t]/.test(line)) {
+    const [fields = []] = parseCsv(line, line.includes(";") ? ";" : "	");
+    const parsed2 = parseTimeText(fields[0] ?? "");
+    if (!parsed2) return [];
+    if (fields[3]?.trim().toUpperCase() === "DNF") parsed2.penalty = "DNF";
+    return [importedSolve({ ...parsed2, scramble: fields[1]?.trim() ?? "", event: TEXT_EVENT, createdAt: parseDate(fields[2]) })];
+  }
+  if (line.includes(",")) {
+    return line.split(",").map(parseTimeText).filter(Boolean).map((parsed2) => importedSolve({ ...parsed2, event: TEXT_EVENT, createdAt: null }));
+  }
+  const [, timeText = "", scramble = ""] = line.trim().replace(/^\d+[.)]\s+/, "").match(/^(\S+)\s*(.*)$/) ?? [];
+  const parsed = parseTimeText(timeText);
+  return parsed ? [importedSolve({ ...parsed, scramble, event: TEXT_EVENT, createdAt: null })] : [];
+}
+function readTimeList(text, name) {
+  const solves = text.replace(/^﻿/, "").split(/\r?\n/).flatMap(lineSolves);
+  fillMissingDates(solves);
+  return solves.length ? [{ name, event: TEXT_EVENT, solves }] : [];
+}
+const WCA_API = "https://www.worldcubeassociation.org/api/v0";
+const WCA_ID = /^\d{4}[A-Z]{4}\d{2}$/;
+const WCA_EVENTS = [
+  ["333", "333", "3x3x3"],
+  ["222", "222so", "2x2x2"],
+  ["444", "444wca", "4x4x4"],
+  ["555", "555wca", "5x5x5"],
+  ["666", "666wca", "6x6x6"],
+  ["777", "777wca", "7x7x7"],
+  ["333bf", "333ni", "3x3 Blindfolded"],
+  ["333fm", "333fm", "Fewest Moves"],
+  ["333oh", "333oh", "3x3 One-Handed"],
+  ["clock", "clkwca", "Clock"],
+  ["minx", "mgmp", "Megaminx"],
+  ["pyram", "pyrso", "Pyraminx"],
+  ["skewb", "skbso", "Skewb"],
+  ["sq1", "sqrs", "Square-1"],
+  ["444bf", "444bld", "4x4 Blindfolded"],
+  ["555bf", "555bld", "5x5 Blindfolded"],
+  ["333mbf", "r3ni", "Multi-Blind"],
+  ["333ft", "333ft", "3x3 With Feet"]
+];
+const ROUND_ORDER = ["0", "h", "1", "d", "2", "e", "3", "g", "b", "c", "f"];
+const SECOND$1 = 1e3;
+const MINUTE$1 = 60 * SECOND$1;
+function cleanWcaId(text) {
+  const id = text.trim().toUpperCase();
+  return WCA_ID.test(id) ? id : null;
+}
+async function fetchPersonData(wcaId, part) {
+  let response;
+  try {
+    response = await fetch(`${WCA_API}/persons/${wcaId}/${part}`);
+  } catch {
+    throw new Error("Couldn't reach the WCA website. Check your internet connection and try again.");
+  }
+  if (response.status === 404) throw new Error(`There's no WCA competitor with the ID ${wcaId}.`);
+  if (!response.ok) throw new Error(`The WCA website answered with an error (${response.status}). Try again later.`);
+  return response.json();
+}
+async function fetchWcaPerson(wcaId) {
+  const [results, competitions] = await Promise.all([
+    fetchPersonData(wcaId, "results"),
+    fetchPersonData(wcaId, "competitions")
+  ]);
+  return { results, competitions };
+}
+function decodeMultiBlind(value) {
+  const points = 99 - Math.floor(value / 1e7) % 100;
+  const missed = value % 100;
+  const solved = points + missed;
+  return { points, result: `${solved} / ${solved + missed}` };
+}
+function convertWcaAttempt(value, wcaEvent, event, createdAt, doneAt) {
+  if (value < 0) {
+    return importedSolve({ time: 0, penalty: "DNF", event, createdAt, doneAt, result: wcaEvent === "333mbf" ? "DNF" : null });
+  }
+  if (wcaEvent === "333mbf") {
+    const { points, result } = decodeMultiBlind(value);
+    return importedSolve({ time: points, penalty: points <= 0 ? "DNF" : null, event, createdAt, doneAt, result });
+  }
+  return importedSolve({ time: wcaEvent === "333fm" ? value : value / 100, event, createdAt, doneAt });
+}
+function roundMode(formatId, attemptCount) {
+  if (formatId === "a" && attemptCount === 5) return "ao5";
+  if (formatId === "m" && attemptCount === 3) return "mo3";
+  if (formatId === "3" && attemptCount === 3) return "bo3";
+  if (formatId === "5" && attemptCount === 5) return "bo5";
+  return null;
+}
+function attemptDate(startDate, eventIndex, roundType, attemptIndex) {
+  const day = (/* @__PURE__ */ new Date(`${startDate}T08:00:00`)).getTime();
+  return day + eventIndex * 20 * MINUTE$1 + Math.max(0, ROUND_ORDER.indexOf(roundType)) * MINUTE$1 + attemptIndex * SECOND$1;
+}
+function readWcaResults(results, competitions) {
+  const startDates = new Map(competitions.map((c) => [c.id, c.start_date]));
+  const names2 = new Map(competitions.map((c) => [c.id, c.short_name || c.name]));
+  return WCA_EVENTS.map(([wcaEvent, event, name], eventIndex) => {
+    const rounds = results.filter((result) => result.event_id === wcaEvent).map((result) => {
+      const attempts = result.attempts.filter((value) => value !== 0);
+      const startDate = startDates.get(result.competition_id) ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+      const competition = names2.get(result.competition_id) ?? result.competition_id;
+      return {
+        mode: roundMode(result.format_id, attempts.length),
+        solves: attempts.map((value, i) => convertWcaAttempt(value, wcaEvent, event, attemptDate(startDate, eventIndex, result.round_type_id, i), competition))
+      };
+    });
+    return { name: `WCA ${name}`, event, rounds };
+  }).filter(({ rounds }) => rounds.length > 0);
+}
+const SECOND = 1e3;
+const MINUTE = 60 * SECOND;
+function scheduleActivities(schedule) {
+  const activities = /* @__PURE__ */ new Map();
+  const collect = (activity) => {
+    activities.set(activity.id, activity);
+    (activity.childActivities || []).forEach(collect);
+  };
+  (schedule?.venues || []).forEach((venue) => (venue.rooms || []).forEach((room) => (room.activities || []).forEach(collect)));
+  return activities;
+}
+function roundStarts(activities) {
+  const starts = /* @__PURE__ */ new Map();
+  activities.forEach(({ activityCode, startTime }) => {
+    if (!/^[a-z0-9]+-r\d+$/.test(activityCode || "")) return;
+    const start = Date.parse(startTime);
+    if (Number.isFinite(start) && (!starts.has(activityCode) || start < starts.get(activityCode))) starts.set(activityCode, start);
+  });
+  return starts;
+}
+function groupStart(person, roundId, activities) {
+  const group = (person.assignments || []).filter((assignment) => assignment.assignmentCode === "competitor").map((assignment) => activities.get(assignment.activityId)).find((activity) => activity?.activityCode?.startsWith(`${roundId}-g`));
+  const start = Date.parse(group?.startTime);
+  return Number.isFinite(start) ? start : null;
+}
+function fallbackStart(startDate, eventIndex, roundNumber) {
+  return (/* @__PURE__ */ new Date(`${startDate}T08:00:00`)).getTime() + eventIndex * 20 * MINUTE + roundNumber * MINUTE;
+}
+function readWcifFile(data) {
+  const competition = data.shortName || data.name || data.id || "Competition";
+  const activities = scheduleActivities(data.schedule);
+  const starts = roundStarts(activities);
+  const startDate = data.schedule?.startDate ?? (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+  const resultsByRound = new Map(data.events.flatMap((wcifEvent) => (wcifEvent.rounds || []).map((round2) => [round2.id, new Map((round2.results || []).map((result) => [result.personId, result]))])));
+  return data.persons.map((person) => ({
+    name: person.name,
+    wcaId: person.wcaId,
+    // null for a newcomer
+    competition,
+    events: WCA_EVENTS.map(([wcaEvent, event, eventName], eventIndex) => {
+      const wcifEvent = data.events.find((e) => e.id === wcaEvent);
+      const rounds = (wcifEvent?.rounds || []).flatMap((round2) => {
+        const result = resultsByRound.get(round2.id).get(person.registrantId);
+        const attempts = (result?.attempts || []).map((a) => a.value ?? a.result).filter((value) => value);
+        if (attempts.length === 0) return [];
+        const roundNumber = Number(round2.id.split("-r")[1]) || 1;
+        const start = groupStart(person, round2.id, activities) ?? starts.get(round2.id) ?? fallbackStart(startDate, eventIndex, roundNumber);
+        return [{
+          mode: roundMode(round2.format, attempts.length),
+          solves: attempts.map((value, i) => convertWcaAttempt(value, wcaEvent, event, start + i * SECOND, competition))
+        }];
+      });
+      return { name: `${competition} ${eventName}`, event, rounds };
+    }).filter(({ rounds }) => rounds.length > 0)
+  })).filter(({ events }) => events.length > 0).sort((a, b) => a.name.localeCompare(b.name));
+}
 const dataDOM = {
   exportBtn: document.getElementById("exportSolvesBtn"),
   importBtn: document.getElementById("importSolvesBtn"),
   fileInput: document.getElementById("importFileInput"),
+  wcaIdInput: document.getElementById("wcaIdInput"),
+  // the WCA ID to sync results from
+  wcaSyncBtn: document.getElementById("wcaSyncBtn"),
+  wcaSyncStatus: document.getElementById("wcaSyncStatus"),
+  // when it last synced, or what went wrong
   importDialog: document.getElementById("importDialog"),
   // asks which sessions to import and where
   importInfo: document.getElementById("importInfo"),
   // the line under the dialog's title
+  competitorRow: document.getElementById("importCompetitorRow"),
+  // the competitors select and its label (competition files only)
+  competitorSelect: document.getElementById("importCompetitorSelect"),
   sessionRow: document.getElementById("importSessionRow"),
   // the sessions select and its label
   sessionSelect: document.getElementById("importSessionSelect"),
   // All sessions, or one of them
   importTarget: document.getElementById("importTarget"),
-  // New sessions or Current session
+  // New sessions (WCA sessions for a WCA sync) or Current session
+  newOption: document.querySelector('#importTarget option[value="new"]'),
+  // says what the non-current choice does
   currentOption: document.querySelector('#importTarget option[value="current"]')
   // gets the session's name
 };
@@ -18644,17 +19150,38 @@ dataDOM.exportBtn.addEventListener("click", () => {
   saveSessions();
   downloadJSON(buildExportFile(sessionsObj.sessions), exportFileName());
 });
-function sessionsFromFile(text) {
-  const data = parseJSON(text);
-  const format = detectFormat(data);
+function toSessions(looseSessions) {
+  return looseSessions.map(({ name, event, solves }) => ({
+    name,
+    session: buildSession(solves, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))
+  }));
+}
+function toRoundSessions(events) {
+  return events.map(({ name, event, rounds }) => ({
+    name,
+    session: buildRoundsSession(rounds, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))
+  }));
+}
+function competitorChoices(data) {
+  return readWcifFile(data).map(({ name, wcaId, competition, events }) => ({
+    label: wcaId ? `${name} (${wcaId})` : name,
+    // newcomers have no WCA ID yet
+    source: `${name} at ${competition}`,
+    // "Caio Almeida at Campinas Open 2026 has 3 sessions…"
+    imported: toRoundSessions(events)
+  }));
+}
+function sessionsFromFile(text, data, fileName) {
+  const format = detectFormat(data) ?? detectTextFormat(text);
+  const name = fileName.replace(/\.[^.]+$/, "");
   if (format === "protimer") return readProTimerFile(data);
-  if (format === "cstimer") {
-    return readCsTimerFile(data).map(({ name, event, solves }) => ({
-      name,
-      session: buildSession(solves, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))
-    }));
-  }
-  throw new Error("This file isn't a Pro Timer or csTimer export.");
+  if (format === "cstimer") return toSessions(readCsTimerFile(data));
+  if (format === "cubedesk") return toSessions(readCubeDeskFile(data));
+  if (format === "twistytimer") return toSessions(readTwistyTimerFile(text));
+  if (format === "cstimercsv") return toSessions(readCsTimerCsv(text, name));
+  const timeList = toSessions(readTimeList(text, name));
+  if (timeList.length > 0) return timeList;
+  throw new Error("Pro Timer can't read this file. It reads exports from Pro Timer, csTimer (file or CSV), CubeDesk and Twisty Timer, competition files (WCIF, from WCA Live), and lists of times.");
 }
 function addImportedSessions(imported) {
   const solveCount = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
@@ -18709,28 +19236,56 @@ They're grouped into ${averageObj.mode} averages by date; solves already in "${n
   const skipped = solves.length - added;
   alert(`Added ${added} solves to "${name}".` + (skipped ? ` ${skipped} were already there.` : ""));
 }
-function askImport(imported) {
+const LAST_COMPETITOR_KEY = "importCompetitor";
+function showChoice({ source, imported }) {
   const total = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
   const several = imported.length > 1;
-  dataDOM.importInfo.textContent = several ? `This file has ${imported.length} sessions with ${total} solves.` : `This file has 1 session, "${imported[0].name}", with ${total} solves.`;
+  dataDOM.importInfo.textContent = several ? `${source} has ${imported.length} sessions with ${total} solves.` : `${source} has 1 session, "${imported[0].name}", with ${total} solves.`;
   dataDOM.sessionRow.hidden = !several;
   dataDOM.sessionSelect.replaceChildren(
     new Option(`All sessions (${total} solves)`, "all"),
     ...imported.map(({ name, session: session2 }, i) => new Option(`${name} (${countSolves(session2)} solves)`, i))
   );
+}
+function askImport(choices, newLabel) {
+  const last = choices.findIndex(({ label }) => label === localStorage.getItem(LAST_COMPETITOR_KEY));
+  let choice = choices[Math.max(0, last)];
+  dataDOM.competitorRow.hidden = choices.length < 2;
+  dataDOM.competitorSelect.replaceChildren(...choices.map(({ label }, i) => new Option(label, i)));
+  dataDOM.competitorSelect.value = choices.indexOf(choice);
+  dataDOM.competitorSelect.onchange = () => {
+    choice = choices[Number(dataDOM.competitorSelect.value)];
+    showChoice(choice);
+  };
+  showChoice(choice);
   dataDOM.currentOption.textContent = `Current session ("${sessionsObj.currentSession}")`;
+  dataDOM.newOption.textContent = newLabel;
   dataDOM.importDialog.returnValue = "";
   dataDOM.importDialog.showModal();
   return new Promise((resolve2) => {
     dataDOM.importDialog.addEventListener("close", () => {
       if (dataDOM.importDialog.returnValue !== "import") return resolve2(null);
-      const choice = dataDOM.sessionSelect.value;
+      if (choices.length > 1) localStorage.setItem(LAST_COMPETITOR_KEY, choice.label);
+      const session2 = dataDOM.sessionSelect.value;
       resolve2({
-        chosen: choice === "all" ? imported : [imported[Number(choice)]],
+        chosen: session2 === "all" ? choice.imported : [choice.imported[Number(session2)]],
         target: dataDOM.importTarget.value
       });
     }, { once: true });
   });
+}
+async function importSessions(choices, newLabel = "New sessions", addNew = addImportedSessions) {
+  if (choices.every(({ imported }) => imported.length === 0)) {
+    alert(`${choices[0]?.source ?? "This file"} has no solves to import.`);
+    return;
+  }
+  const answer = await askImport(choices, newLabel);
+  if (!answer) return;
+  if (answer.target === "current") {
+    addIntoCurrentSession(answer.chosen);
+  } else {
+    addNew(answer.chosen);
+  }
 }
 dataDOM.importBtn.addEventListener("click", () => dataDOM.fileInput.click());
 dataDOM.fileInput.addEventListener("change", async () => {
@@ -18739,22 +19294,124 @@ dataDOM.fileInput.addEventListener("change", async () => {
   const text = await file.text();
   dataDOM.fileInput.value = "";
   try {
-    const imported = sessionsFromFile(text);
-    if (imported.length === 0) {
-      alert("This file has no sessions.");
-      return;
-    }
-    const answer = await askImport(imported);
-    if (!answer) return;
-    if (answer.target === "current") {
-      addIntoCurrentSession(answer.chosen);
-    } else {
-      addImportedSessions(answer.chosen);
-    }
+    const data = parseJSON(text);
+    const choices = detectFormat(data) === "wcif" ? competitorChoices(data) : [{ label: null, source: "This file", imported: sessionsFromFile(text, data, file.name) }];
+    await importSessions(choices);
   } catch (err) {
     alert(err.message);
   }
 });
+const WCA_ID_KEY = "wcaId";
+const WCA_LAST_SYNC_KEY = "wcaLastSync";
+function wcaSession(wcaId, event, name) {
+  const sessions = sessionsObj.sessions;
+  const marked = Object.keys(sessions).find((key) => sessions[key].wcaSync?.wcaId === wcaId && sessions[key].wcaSync.event === event);
+  if (marked) return marked;
+  const old = sessions[name];
+  if (old && !old.wcaSync && old.scrambleType === event) {
+    old.wcaSync = { wcaId, event };
+    return name;
+  }
+  return null;
+}
+function showLastSync(note) {
+  const last = Number(localStorage.getItem(WCA_LAST_SYNC_KEY));
+  if (!last) {
+    dataDOM.wcaSyncStatus.textContent = "";
+    return;
+  }
+  const when = new Date(last).toLocaleString(void 0, { dateStyle: "medium", timeStyle: "short" });
+  dataDOM.wcaSyncStatus.textContent = note ? `Last synced ${when} (${note})` : `Last synced ${when}`;
+}
+function wcaSyncFailed(message, quiet) {
+  dataDOM.wcaSyncStatus.textContent = message;
+  if (!quiet) alert(message);
+}
+function syncIntoWcaSessions(wcaId, person, events, createMissing) {
+  saveSessions();
+  let added = 0;
+  let currentChanged = false;
+  events.forEach(({ name, event, rounds }) => {
+    const sessionName = wcaSession(wcaId, event, name);
+    if (sessionName) {
+      const newSolves = addRoundsToSession(sessionName, rounds);
+      added += newSolves;
+      if (newSolves > 0 && sessionName === sessionsObj.currentSession) currentChanged = true;
+    } else if (createMissing) {
+      const session2 = buildRoundsSession(rounds, event, getDefaultModeForEvent(event), getCategoryOfEvent(event));
+      session2.wcaSync = { wcaId, event };
+      sessionsObj.sessions[uniqueSessionName(name, sessionsObj.sessions)] = session2;
+      added += countSolves(session2);
+    }
+  });
+  try {
+    saveSessions();
+  } catch {
+    sessionsObj.sessions = JSON.parse(localStorage.getItem("sessions"));
+    changedSession();
+    throw new Error("Not enough space in the browser's storage for these solves. Nothing was synced.");
+  }
+  renderSessionSelect();
+  if (currentChanged) {
+    renderHistory();
+    if (timerObj.timerPhase === PHASE.IDLE) showLastSolve();
+  }
+  localStorage.setItem(WCA_ID_KEY, wcaId);
+  localStorage.setItem(WCA_LAST_SYNC_KEY, Date.now());
+  showLastSync(`${person}: ${added} new solves`);
+}
+async function syncWca(quiet = false) {
+  if (!dataDOM.wcaIdInput.value.trim()) {
+    localStorage.removeItem(WCA_ID_KEY);
+    localStorage.removeItem(WCA_LAST_SYNC_KEY);
+    dataDOM.wcaSyncStatus.textContent = "";
+    return;
+  }
+  const wcaId = cleanWcaId(dataDOM.wcaIdInput.value);
+  if (!wcaId) {
+    wcaSyncFailed("Type a WCA ID, like 2009ZEMD01. It's on your profile at worldcubeassociation.org.", quiet);
+    return;
+  }
+  dataDOM.wcaIdInput.value = wcaId;
+  dataDOM.wcaSyncBtn.disabled = true;
+  dataDOM.wcaSyncStatus.textContent = "Syncing…";
+  try {
+    const { results, competitions } = await fetchWcaPerson(wcaId);
+    const person = results[0]?.name ?? wcaId;
+    const events = readWcaResults(results, competitions);
+    if (quiet) {
+      syncIntoWcaSessions(wcaId, person, events, false);
+      return;
+    }
+    showLastSync();
+    const imported = events.map(({ name, event, rounds }) => ({
+      name,
+      event,
+      rounds,
+      session: buildRoundsSession(rounds, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))
+    }));
+    await importSessions(
+      [{ label: null, source: `${person}'s WCA profile`, imported }],
+      "WCA sessions (new solves only)",
+      (chosen) => syncIntoWcaSessions(wcaId, person, chosen, true)
+    );
+  } catch (err) {
+    wcaSyncFailed(err.message, quiet);
+  } finally {
+    dataDOM.wcaSyncBtn.disabled = false;
+  }
+}
+dataDOM.wcaSyncBtn.addEventListener("click", () => syncWca());
+dataDOM.wcaIdInput.addEventListener("keydown", (e) => {
+  if (e.key === "Enter") syncWca();
+});
+dataDOM.wcaIdInput.value = localStorage.getItem(WCA_ID_KEY) ?? "";
+showLastSync();
+const DAY = 24 * 60 * 60 * 1e3;
+const lastSync = Number(localStorage.getItem(WCA_LAST_SYNC_KEY));
+if (dataDOM.wcaIdInput.value && navigator.onLine && Date.now() - lastSync > DAY) {
+  syncWca(true);
+}
 let lastTime = null;
 function initTypingSubmission() {
   updateTypingUI();

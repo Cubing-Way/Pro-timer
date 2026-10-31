@@ -1637,6 +1637,25 @@ button {
   opacity: 0.9;
 }
 
+/* Small line under a setting's name (what the import reads) */
+.setting-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  opacity: 0.6;
+}
+
+/* WCA ID box: wide enough for 10 characters, in capitals like WCA IDs are written */
+.wca-id-input {
+  width: 110px;
+  text-transform: uppercase;
+}
+
+/* Device name box: room for a name like "Caio's laptop" */
+.device-name-input {
+  width: 140px;
+}
+
 /* Box around the select or input */
 .setting-control {
   display: flex;
