@@ -26,7 +26,8 @@ function averageOfN(
     isFMC = false,
     modeFlag = false,   // true: only the mode changed, add no solve
     isMBLD = false,
-    solvePhases         // time of each timer phase
+    solvePhases,        // time of each timer phase
+    doneWith            // "Timer" or "Typing": how the time was entered (FMC and Multi-Blind have none)
 ) {
 
     // WCA inspection: 15 s or more is +2, 17 s or more is DNF
@@ -68,7 +69,8 @@ function averageOfN(
             createdAt: Date.now(),
             solution,
             solvePhases,
-            doneAt: deviceSettObj.name || deviceSettObj.detected // where it was done: the typed device name, else the detected model or type
+            doneAt: deviceSettObj.name || deviceSettObj.detected, // where it was done: the typed device name, else the detected model or type
+            doneWith // how the time was entered; left out of the saved file when undefined (FMC, Multi-Blind)
         });
 
         averageObj.solveCounter++;

@@ -83,7 +83,14 @@ function solveRowHtml(s, i, blockIndex) {
             </div>
     ` : "";
 
-    // Solve row: time, penalty buttons, scramble, inspection, date, done at, solution
+    // How the time was entered (Timer or Typing), only for solves that have it (older, FMC, Multi-Blind and imported ones don't)
+    const doneWithRow = s.doneWith ? `
+            <div class="modal-scramble">
+                With: ${s.doneWith}
+            </div>
+    ` : "";
+
+    // Solve row: time, penalty buttons, scramble, inspection, date, done at, done with, solution
     return `
         <div class="modal-solve-row">
             <div class="modal-solve-main">
@@ -110,6 +117,7 @@ function solveRowHtml(s, i, blockIndex) {
                 Date: ${new Date(s.createdAt)}
             </div>
             ${doneAtRow}
+            ${doneWithRow}
             ${solutionRows}
         </div>
     `;

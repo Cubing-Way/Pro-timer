@@ -352,7 +352,8 @@ function handleSplitOrStop() {
         false,
         false,
         false,
-        timerObj.solvePhases
+        timerObj.solvePhases,
+        "Timer"             // done with the timer
     );
 
     // Keep the session's copy of the classic rolling averages up to date

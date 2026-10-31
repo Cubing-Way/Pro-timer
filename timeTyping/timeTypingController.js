@@ -48,8 +48,8 @@ function initTypingSubmission() {
             lastTime = formatSecondsToTime(seconds);
             document.getElementById("timer").textContent = lastTime;
 
-            // Typed times have no tracked inspection, so 0 instead of the timer's last inspection time
-            const block = averageOfN(seconds, currentScramble, 0, timerSettObj.inspectionType);
+            // Typed times have no tracked inspection, so 0 instead of the timer's last inspection time; no phases, and done with Typing
+            const block = averageOfN(seconds, currentScramble, 0, timerSettObj.inspectionType, false, false, false, undefined, "Typing");
             if (block) addAverageBlock(block);
 
             // A new solve starts the +2 button over, like a timed solve does
