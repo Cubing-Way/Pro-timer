@@ -1626,7 +1626,7 @@ button {
   border-radius: 8px;
 }
 
-/* Import row: its label is long, so the select and button drop to their own line */
+/* Import row: its label is long, so the button drops to its own line when there's no room */
 .import-row {
   flex-wrap: wrap;
 }
@@ -1653,7 +1653,7 @@ button {
   font-size: 13px;
 }
 
-/* Import session picker: a native <dialog>, so it opens on top of the settings pop-up */
+/* Import pop-up: a native <dialog>, so it opens on top of the settings pop-up */
 .import-dialog {
   width: 280px;
   max-width: calc(100vw - 32px);
@@ -1678,12 +1678,24 @@ button {
 }
 
 .import-dialog p {
-  margin: 0 0 14px 0;
+  margin: 0;
   font-size: 13px;
   opacity: 0.8;
 }
 
-/* The session list takes the whole width */
+/* A label with its select under it ("Sessions", "Import into") */
+.import-dialog-field {
+  margin-top: 14px;
+}
+
+.import-dialog label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* The selects take the whole width */
 .import-dialog select {
   width: 100%;
 }

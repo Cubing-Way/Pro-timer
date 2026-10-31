@@ -18459,6 +18459,7 @@ document.querySelectorAll("select").forEach((select) => {
 avgObj.clearBtn.onclick = () => {
   clearAverages();
   renderHistory();
+  showLastSolve();
 };
 avgObj.openSessionBtn.onclick = () => openDetailsModal();
 avgObj.penaltyOkBtn.onclick = () => {
@@ -18626,14 +18627,18 @@ const dataDOM = {
   exportBtn: document.getElementById("exportSolvesBtn"),
   importBtn: document.getElementById("importSolvesBtn"),
   fileInput: document.getElementById("importFileInput"),
+  importDialog: document.getElementById("importDialog"),
+  // asks which sessions to import and where
+  importInfo: document.getElementById("importInfo"),
+  // the line under the dialog's title
+  sessionRow: document.getElementById("importSessionRow"),
+  // the sessions select and its label
+  sessionSelect: document.getElementById("importSessionSelect"),
+  // All sessions, or one of them
   importTarget: document.getElementById("importTarget"),
   // New sessions or Current session
-  sessionDialog: document.getElementById("importSessionDialog"),
-  // asks which of the file's sessions to import
-  sessionInfo: document.getElementById("importSessionInfo"),
-  // the line under the dialog's title
-  sessionSelect: document.getElementById("importSessionSelect")
-  // All sessions, or one of them
+  currentOption: document.querySelector('#importTarget option[value="current"]')
+  // gets the session's name
 };
 dataDOM.exportBtn.addEventListener("click", () => {
   saveSessions();
@@ -18652,10 +18657,6 @@ function sessionsFromFile(text) {
   throw new Error("This file isn't a Pro Timer or csTimer export.");
 }
 function addImportedSessions(imported) {
-  if (imported.length === 0) {
-    alert("This file has no sessions.");
-    return;
-  }
   const solveCount = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
   if (!confirm(`Import ${imported.length} session(s) with ${solveCount} solves?
 They're added next to your sessions; nothing is replaced.`)) return;
@@ -18708,22 +18709,26 @@ They're grouped into ${averageObj.mode} averages by date; solves already in "${n
   const skipped = solves.length - added;
   alert(`Added ${added} solves to "${name}".` + (skipped ? ` ${skipped} were already there.` : ""));
 }
-function chooseSessions(imported) {
-  if (imported.length <= 1) return Promise.resolve(imported);
-  const where = dataDOM.importTarget.value === "current" ? `to "${sessionsObj.currentSession}"` : "as new sessions";
-  dataDOM.sessionInfo.textContent = `This file has ${imported.length} sessions. Add all of them, or just one, ${where}.`;
+function askImport(imported) {
   const total = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
+  const several = imported.length > 1;
+  dataDOM.importInfo.textContent = several ? `This file has ${imported.length} sessions with ${total} solves.` : `This file has 1 session, "${imported[0].name}", with ${total} solves.`;
+  dataDOM.sessionRow.hidden = !several;
   dataDOM.sessionSelect.replaceChildren(
     new Option(`All sessions (${total} solves)`, "all"),
     ...imported.map(({ name, session: session2 }, i) => new Option(`${name} (${countSolves(session2)} solves)`, i))
   );
-  dataDOM.sessionDialog.returnValue = "";
-  dataDOM.sessionDialog.showModal();
+  dataDOM.currentOption.textContent = `Current session ("${sessionsObj.currentSession}")`;
+  dataDOM.importDialog.returnValue = "";
+  dataDOM.importDialog.showModal();
   return new Promise((resolve2) => {
-    dataDOM.sessionDialog.addEventListener("close", () => {
-      if (dataDOM.sessionDialog.returnValue !== "import") return resolve2(null);
+    dataDOM.importDialog.addEventListener("close", () => {
+      if (dataDOM.importDialog.returnValue !== "import") return resolve2(null);
       const choice = dataDOM.sessionSelect.value;
-      resolve2(choice === "all" ? imported : [imported[Number(choice)]]);
+      resolve2({
+        chosen: choice === "all" ? imported : [imported[Number(choice)]],
+        target: dataDOM.importTarget.value
+      });
     }, { once: true });
   });
 }
@@ -18734,12 +18739,17 @@ dataDOM.fileInput.addEventListener("change", async () => {
   const text = await file.text();
   dataDOM.fileInput.value = "";
   try {
-    const imported = await chooseSessions(sessionsFromFile(text));
-    if (!imported) return;
-    if (dataDOM.importTarget.value === "current") {
-      addIntoCurrentSession(imported);
+    const imported = sessionsFromFile(text);
+    if (imported.length === 0) {
+      alert("This file has no sessions.");
+      return;
+    }
+    const answer = await askImport(imported);
+    if (!answer) return;
+    if (answer.target === "current") {
+      addIntoCurrentSession(answer.chosen);
     } else {
-      addImportedSessions(imported);
+      addImportedSessions(answer.chosen);
     }
   } catch (err) {
     alert(err.message);
