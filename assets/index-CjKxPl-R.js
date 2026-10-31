@@ -395,6 +395,13 @@ function getScrambleConfig(code) {
   }
   return null;
 }
+function getCategoryOfEvent(code) {
+  for (const [category, scrambles] of scrdata) {
+    if (category.startsWith("===")) continue;
+    if (scrambles.some(([, scrambleCode]) => scrambleCode === code)) return category;
+  }
+  return null;
+}
 const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
 const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
 function isCubiszEvent(code) {
@@ -746,6 +753,17 @@ function computeAverage(solves, mode) {
     sigma
   };
 }
+function buildAverageBlock(solves, mode) {
+  const avgObj2 = computeAverage(solves, mode);
+  return {
+    mode,
+    average: avgObj2.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj2.avg),
+    worst: formatSecondsToTime(avgObj2.worst),
+    best: formatSecondsToTime(avgObj2.best),
+    sigma: formatSecondsToTime(avgObj2.sigma),
+    solves: structuredClone(solves)
+  };
+}
 function updateClassicStats$1(recomputeBest, averageObj2, classicStats2) {
   if (recomputeBest) {
     const solves2 = averageObj2.solvesArray;
@@ -901,15 +919,7 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
   const neededSolves = getNeededSolves(averageObj.mode);
   if (averageObj.solveCounter >= neededSolves) {
     const relevantSolves = averageObj.solvesArray.slice(0, neededSolves);
-    const avgObj2 = computeAverage(relevantSolves, averageObj.mode);
-    const block = {
-      mode: averageObj.mode,
-      average: avgObj2.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj2.avg),
-      worst: formatSecondsToTime(avgObj2.worst),
-      best: formatSecondsToTime(avgObj2.best),
-      sigma: formatSecondsToTime(avgObj2.sigma),
-      solves: structuredClone(relevantSolves)
-    };
+    const block = buildAverageBlock(relevantSolves, averageObj.mode);
     averageObj.solvesArray = averageObj.solvesArray.slice(neededSolves);
     averageObj.solveCounter = averageObj.solvesArray.length;
     return block;
@@ -1026,6 +1036,41 @@ function removeLastSolve$1(averageObj2, getCurrentSession2, removeSolve2) {
   } else {
     removeSolve2(target.blockIndex, target.solveIndex);
   }
+}
+function solveKey(solve) {
+  return `${solve.createdAt}|${solve.time}`;
+}
+function byDate(a, b) {
+  return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+}
+function blockDate(block) {
+  return Math.max(...block.solves.map((s) => s.createdAt ?? 0));
+}
+function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
+  ensureSessionShape(getCurrentSession2);
+  const session2 = getCurrentSession2();
+  const seen2 = new Set([
+    ...session2.averages.flatMap((block) => block.solves),
+    ...averageObj2.solvesArray
+  ].map(solveKey));
+  const newSolves = solves.filter((solve) => {
+    const key = solveKey(solve);
+    if (seen2.has(key)) return false;
+    seen2.add(key);
+    return true;
+  });
+  let inProgress = [...averageObj2.solvesArray, ...newSolves].sort(byDate);
+  if (averageObj2.mode !== "classic") {
+    const size = getNeededSolves(averageObj2.mode);
+    while (inProgress.length >= size) {
+      session2.averages.push(buildAverageBlock(inProgress.slice(0, size), averageObj2.mode));
+      inProgress = inProgress.slice(size);
+    }
+    session2.averages.sort((a, b) => blockDate(b) - blockDate(a));
+  }
+  averageObj2.solvesArray = inProgress;
+  averageObj2.solveCounter = inProgress.length;
+  return newSolves.length;
 }
 const session = getCurrentSession();
 averageObj.mode = session.mode || "ao5";
@@ -1177,6 +1222,9 @@ function removeLastSolve(removeSolve2) {
 }
 function getLastSolve() {
   return getLastSolve$1(averageObj, getCurrentSession);
+}
+function addSolvesToSession(solves) {
+  return addSolvesToSession$1(solves, averageObj, getCurrentSession);
 }
 const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
 const timerSettObj = {
@@ -18387,6 +18435,7 @@ document.addEventListener("sessionChanged", () => {
   eventSelect.dispatchEvent(new Event("change"));
   restoringSession = false;
   renderHistory();
+  showLastSolve();
 });
 const avgObj = {
   modeSelect: document.getElementById("modeSelect"),
@@ -18447,6 +18496,254 @@ document.getElementById("scramble-button").addEventListener("click", () => {
   document.querySelector(".panel-cube2").style.display = "grid";
   document.getElementById("scramble-button").style.justifySelf = "left";
   document.getElementById("scramble-button").innerHTML = "close";
+});
+function buildExportFile(sessions) {
+  return {
+    app: "Pro Timer",
+    // the import checks this to know the file is ours
+    version: 1,
+    // raise it if the file's shape ever changes
+    exportedAt: Date.now(),
+    // when the backup was made (ms since 1970)
+    sessions
+    // every session by name, the same object as in localStorage
+  };
+}
+function downloadJSON(obj, filename) {
+  const blob = new Blob([JSON.stringify(obj)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+function exportFileName() {
+  const d = /* @__PURE__ */ new Date();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `pro-timer_${d.getFullYear()}-${month}-${day}.json`;
+}
+function parseJSON(text) {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
+  }
+}
+function detectFormat(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return null;
+  if (data.app === "Pro Timer" && data.sessions && typeof data.sessions === "object") return "protimer";
+  if (Object.keys(data).some((key) => /^session\d+$/.test(key))) return "cstimer";
+  return null;
+}
+function readProTimerFile(data) {
+  if (data.version > 1) {
+    throw new Error("This file was made by a newer version of Pro Timer.");
+  }
+  return Object.entries(data.sessions).filter(([, session2]) => session2 && typeof session2 === "object").map(([name, session2]) => ({ name, session: { ...session2, averages: session2.averages || [] } }));
+}
+function sessionSolves(session2) {
+  return [
+    ...session2.averages.flatMap((block) => block.solves || []),
+    ...session2.buffer?.solvesArray || []
+  ];
+}
+function countSolves(session2) {
+  return sessionSolves(session2).length;
+}
+function uniqueSessionName(name, sessions) {
+  if (!sessions[name]) return name;
+  let n = 2;
+  while (sessions[`${name} (${n})`]) n++;
+  return `${name} (${n})`;
+}
+function buildSession(solves, event, mode, category) {
+  const sorted = [...solves].sort((a, b) => a.createdAt - b.createdAt);
+  const size = getNeededSolves(mode);
+  const averages = [];
+  let rest = sorted;
+  while (rest.length >= size) {
+    averages.push(buildAverageBlock(rest.slice(0, size), mode));
+    rest = rest.slice(size);
+  }
+  return {
+    averages: averages.reverse(),
+    // newest first, like every session
+    buffer: { mode, solveCounter: rest.length, solvesArray: rest },
+    // the leftover solves wait for more
+    category,
+    // so the top bar finds the event
+    scrambleType: event,
+    mode
+  };
+}
+const CLOCK_TIME_ONLY = ["333fm", "r3ni"];
+function unwrapJSON(value) {
+  return typeof value === "string" ? parseJSON(value) : value;
+}
+function proTimerEvent(scrType) {
+  if (!scrType || CLOCK_TIME_ONLY.includes(scrType) || !getCategoryOfEvent(scrType)) return "333";
+  return scrType;
+}
+function csTimerPhases(times) {
+  const ends = [...times].reverse();
+  return ends.map((end, i) => formatTime(end - (i === 0 ? 0 : ends[i - 1])));
+}
+function convertCsTimerSolve(record, event) {
+  const [[penalty, ...times], scramble, , unixSeconds] = record;
+  return {
+    time: Math.floor(times[0] / 10) / 100,
+    // seconds cut to hundredths, like the timer
+    penalty: penalty === -1 ? "DNF" : penalty > 0 ? penalty / 1e3 : null,
+    // -1 is DNF, 2000 is +2 (ms added)
+    scramble: scramble || "",
+    event,
+    inspection: 0,
+    // csTimer doesn't save it, like typed times
+    createdAt: unixSeconds * 1e3,
+    // csTimer saves seconds, Pro Timer ms
+    solution: null,
+    solvePhases: csTimerPhases(times)
+  };
+}
+function readCsTimerFile(data) {
+  const sessionData = unwrapJSON(data.properties?.sessionData) || {};
+  return Object.keys(data).filter((key) => /^session\d+$/.test(key)).map((key) => {
+    const number = key.slice("session".length);
+    const info = sessionData[number] || {};
+    const event = proTimerEvent(info.opt?.scrType);
+    const records = unwrapJSON(data[key]);
+    return {
+      name: String(info.name ?? number),
+      // a session never renamed is named by its number
+      event,
+      solves: (Array.isArray(records) ? records : []).filter((record) => Array.isArray(record) && Array.isArray(record[0])).map((record) => convertCsTimerSolve(record, event))
+    };
+  }).filter((session2) => session2.solves.length > 0);
+}
+const dataDOM = {
+  exportBtn: document.getElementById("exportSolvesBtn"),
+  importBtn: document.getElementById("importSolvesBtn"),
+  fileInput: document.getElementById("importFileInput"),
+  importTarget: document.getElementById("importTarget"),
+  // New sessions or Current session
+  sessionDialog: document.getElementById("importSessionDialog"),
+  // asks which of the file's sessions to import
+  sessionInfo: document.getElementById("importSessionInfo"),
+  // the line under the dialog's title
+  sessionSelect: document.getElementById("importSessionSelect")
+  // All sessions, or one of them
+};
+dataDOM.exportBtn.addEventListener("click", () => {
+  saveSessions();
+  downloadJSON(buildExportFile(sessionsObj.sessions), exportFileName());
+});
+function sessionsFromFile(text) {
+  const data = parseJSON(text);
+  const format = detectFormat(data);
+  if (format === "protimer") return readProTimerFile(data);
+  if (format === "cstimer") {
+    return readCsTimerFile(data).map(({ name, event, solves }) => ({
+      name,
+      session: buildSession(solves, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))
+    }));
+  }
+  throw new Error("This file isn't a Pro Timer or csTimer export.");
+}
+function addImportedSessions(imported) {
+  if (imported.length === 0) {
+    alert("This file has no sessions.");
+    return;
+  }
+  const solveCount = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
+  if (!confirm(`Import ${imported.length} session(s) with ${solveCount} solves?
+They're added next to your sessions; nothing is replaced.`)) return;
+  const addedNames = [];
+  imported.forEach(({ name, session: session2 }) => {
+    const freeName = uniqueSessionName(name, sessionsObj.sessions);
+    sessionsObj.sessions[freeName] = session2;
+    addedNames.push(freeName);
+  });
+  try {
+    saveSessions();
+  } catch {
+    addedNames.forEach((name) => delete sessionsObj.sessions[name]);
+    alert("Not enough space in the browser's storage for these solves. Nothing was imported.");
+    return;
+  }
+  switchSession(addedNames[0]);
+  alert(`Imported: ${addedNames.join(", ")}`);
+}
+function addIntoCurrentSession(imported) {
+  const solves = imported.flatMap(({ session: session3 }) => sessionSolves(session3));
+  if (solves.length === 0) {
+    alert("This file has no solves.");
+    return;
+  }
+  const name = sessionsObj.currentSession;
+  if (!confirm(`Add ${solves.length} solves to "${name}"?
+They're grouped into ${averageObj.mode} averages by date; solves already in "${name}" are skipped.`)) return;
+  const session2 = getCurrentSession();
+  const before = {
+    averages: structuredClone(session2.averages),
+    inProgress: structuredClone(averageObj.solvesArray)
+  };
+  const added = addSolvesToSession(solves);
+  if (averageObj.mode === "classic") updateClassicStats(true);
+  session2.classicStats = structuredClone(classicStats);
+  try {
+    saveSessions();
+  } catch {
+    session2.averages = before.averages;
+    averageObj.solvesArray = before.inProgress;
+    averageObj.solveCounter = before.inProgress.length;
+    if (averageObj.mode === "classic") updateClassicStats(true);
+    session2.classicStats = structuredClone(classicStats);
+    alert("Not enough space in the browser's storage for these solves. Nothing was imported.");
+    return;
+  }
+  renderHistory();
+  showLastSolve();
+  const skipped = solves.length - added;
+  alert(`Added ${added} solves to "${name}".` + (skipped ? ` ${skipped} were already there.` : ""));
+}
+function chooseSessions(imported) {
+  if (imported.length <= 1) return Promise.resolve(imported);
+  const where = dataDOM.importTarget.value === "current" ? `to "${sessionsObj.currentSession}"` : "as new sessions";
+  dataDOM.sessionInfo.textContent = `This file has ${imported.length} sessions. Add all of them, or just one, ${where}.`;
+  const total = imported.reduce((sum, { session: session2 }) => sum + countSolves(session2), 0);
+  dataDOM.sessionSelect.replaceChildren(
+    new Option(`All sessions (${total} solves)`, "all"),
+    ...imported.map(({ name, session: session2 }, i) => new Option(`${name} (${countSolves(session2)} solves)`, i))
+  );
+  dataDOM.sessionDialog.returnValue = "";
+  dataDOM.sessionDialog.showModal();
+  return new Promise((resolve2) => {
+    dataDOM.sessionDialog.addEventListener("close", () => {
+      if (dataDOM.sessionDialog.returnValue !== "import") return resolve2(null);
+      const choice = dataDOM.sessionSelect.value;
+      resolve2(choice === "all" ? imported : [imported[Number(choice)]]);
+    }, { once: true });
+  });
+}
+dataDOM.importBtn.addEventListener("click", () => dataDOM.fileInput.click());
+dataDOM.fileInput.addEventListener("change", async () => {
+  const file = dataDOM.fileInput.files[0];
+  if (!file) return;
+  const text = await file.text();
+  dataDOM.fileInput.value = "";
+  try {
+    const imported = await chooseSessions(sessionsFromFile(text));
+    if (!imported) return;
+    if (dataDOM.importTarget.value === "current") {
+      addIntoCurrentSession(imported);
+    } else {
+      addImportedSessions(imported);
+    }
+  } catch (err) {
+    alert(err.message);
+  }
 });
 let lastTime = null;
 function initTypingSubmission() {
@@ -18671,4 +18968,5 @@ const updateSW = registerSW({
 updateReload.addEventListener("click", () => updateSW());
 updateLater.addEventListener("click", () => updateBanner.classList.remove("open"));
 navigator.storage?.persist?.();
+showLastSolve();
 await initEvent();

@@ -1626,6 +1626,11 @@ button {
   border-radius: 8px;
 }
 
+/* Import row: its label is long, so the select and button drop to their own line */
+.import-row {
+  flex-wrap: wrap;
+}
+
 /* Setting name */
 .setting-row label {
   font-size: 14px;
@@ -1646,6 +1651,47 @@ button {
   border-radius: 6px;
   padding: 6px 10px;
   font-size: 13px;
+}
+
+/* Import session picker: a native <dialog>, so it opens on top of the settings pop-up */
+.import-dialog {
+  width: 280px;
+  max-width: calc(100vw - 32px);
+  padding: 20px 24px;
+  background: var(--bg-main);
+  color: var(--text-strong);
+  border: 1px solid var(--border-strong);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+  font-family: system-ui, sans-serif;
+}
+
+/* Darkens the settings pop-up behind it */
+.import-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.4);
+}
+
+/* Title and the line under it */
+.import-dialog h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+}
+
+.import-dialog p {
+  margin: 0 0 14px 0;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
+/* The session list takes the whole width */
+.import-dialog select {
+  width: 100%;
+}
+
+/* Cancel and Import on the right, under the list */
+.import-dialog-buttons {
+  justify-content: flex-end;
+  margin-top: 16px;
 }
 
 /* Phones: no Statistics or Session History switches, since phones never show those sidebars */

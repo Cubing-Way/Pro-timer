@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Timer v1</title>
     <!-- Imports every folder's CSS (main/style.css lists them) -->
-  <script type="module" crossorigin src="/Pro-timer/assets/index-DZWnYtSb.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-CoU3MmTk.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-CjKxPl-R.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-D78zpWXy.css">
 </head>
 <body>
     <!-- Page skeleton: each <include> is swapped for that file's HTML by the plugin in vite.config.js -->
@@ -648,6 +648,49 @@
         </div>
       </div>
 
+      <!-- Data: back up every session to a file, or load solves from Pro Timer or csTimer (importExport/) -->
+      <div class="settings-section">
+        <div class="section-title">Data</div>
+
+        <div class="setting-row">
+          <label>Export solves</label>
+          <div class="setting-control">
+            <button id="exportSolvesBtn">Export</button>
+          </div>
+        </div>
+
+        <div class="setting-row import-row">
+          <label>Import solves (Pro Timer or csTimer)</label>
+          <div class="setting-control">
+            <!-- Where the imported solves go: new sessions, or the session in use -->
+            <select id="importTarget">
+              <option value="new" selected>New sessions</option>
+              <option value="current">Current session</option>
+            </select>
+            <button id="importSolvesBtn">Import</button>
+            <input type="file" id="importFileInput" accept=".json,.txt" hidden />
+          </div>
+        </div>
+
+        <!-- Pop-up after picking a file with several sessions: import all of them, or just one (importExport/importExportController.js) -->
+        <dialog id="importSessionDialog" class="import-dialog">
+          <form method="dialog">
+            <h3>Which sessions?</h3>
+            <!-- How many sessions the file has and where they go, written by the controller -->
+            <p id="importSessionInfo"></p>
+            <div class="setting-control">
+              <!-- "All sessions", then one option per session in the file, built by the controller -->
+              <select id="importSessionSelect"></select>
+            </div>
+            <!-- The button's value becomes the dialog's returnValue when it closes it -->
+            <div class="setting-control import-dialog-buttons">
+              <button value="cancel">Cancel</button>
+              <button value="import">Import</button>
+            </div>
+          </form>
+        </dialog>
+      </div>
+      
     </div>
   </div>
 </div>
