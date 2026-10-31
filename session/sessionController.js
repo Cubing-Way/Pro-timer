@@ -245,11 +245,17 @@ function getLastSolve() {
     return solve.getLastSolve(averageObj, getCurrentSession);
 }
 
+// Adds imported solves to the current session in its average mode; returns how many were new
+function addSolvesToSession(solves) {
+    return solve.addSolvesToSession(solves, averageObj, getCurrentSession);
+}
+
 export {
     getCurrentSession,
     saveSessions,
     sessionsObj,
     renderSessionSelect,
+    switchSession,
     clearAverages,
     changedSession,
     addAverageBlock,
@@ -258,5 +264,6 @@ export {
     remove2,
     applyPenaltyToLast,
     removeLastSolve,
-    getLastSolve
+    getLastSolve,
+    addSolvesToSession
 };

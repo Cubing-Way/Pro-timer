@@ -1,4 +1,4 @@
-import { isPointsSolves } from "./avgHelper.js";
+import { isPointsSolves, formatSecondsToTime } from "./avgHelper.js";
 
 // Best and worst of a block: lowest time, or most points for Multi-Blind; a DNF (Infinity) is always the worst
 function bestAndWorst(times, higherIsBetter) {
@@ -238,4 +238,17 @@ if (mode.startsWith("ao")) {
     };
 }
 
-export { computeAverage };
+// A finished average from its solves, its numbers formatted for display (as saved in session.averages)
+function buildAverageBlock(solves, mode) {
+    const avgObj = computeAverage(solves, mode);
+    return {
+        mode,
+        average: avgObj.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj.avg),
+        worst: formatSecondsToTime(avgObj.worst),
+        best: formatSecondsToTime(avgObj.best),
+        sigma: formatSecondsToTime(avgObj.sigma),
+        solves: structuredClone(solves)
+    };
+}
+
+export { computeAverage, buildAverageBlock };

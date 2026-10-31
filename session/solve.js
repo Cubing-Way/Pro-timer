@@ -1,5 +1,5 @@
 // Changes to the solves of a session; the session controller passes in the state and save function
-import { computeAverage, formatSecondsToTime } from "../average/avgController.js";
+import { computeAverage, formatSecondsToTime, buildAverageBlock, getNeededSolves } from "../average/avgController.js";
 
 // Gives an old session an averages list if it has none
 function ensureSessionShape(getCurrentSession) {
@@ -163,6 +163,59 @@ function removeLastSolve(averageObj, getCurrentSession, removeSolve) {
     }
 }
 
+// Same solve: same date and same time (to skip solves a session already has)
+function solveKey(solve) {
+    return `${solve.createdAt}|${solve.time}`;
+}
+
+// Oldest first (old solves without createdAt count as 0)
+function byDate(a, b) {
+    return (a.createdAt ?? 0) - (b.createdAt ?? 0);
+}
+
+// When a block's newest solve was done, to keep the finished averages newest first
+function blockDate(block) {
+    return Math.max(...block.solves.map(s => s.createdAt ?? 0));
+}
+
+// Adds solves from elsewhere (an import) to the current session, in its average mode; returns how many were new
+function addSolvesToSession(solves, averageObj, getCurrentSession) {
+    ensureSessionShape(getCurrentSession);
+    const session = getCurrentSession();
+
+    // Every solve the session already has, finished or in progress
+    const seen = new Set([
+        ...session.averages.flatMap(block => block.solves),
+        ...averageObj.solvesArray
+    ].map(solveKey));
+
+    // Keep only new solves (a solve twice in the file also counts once)
+    const newSolves = solves.filter(solve => {
+        const key = solveKey(solve);
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+    });
+
+    // The new solves join the average in progress, all in date order
+    let inProgress = [...averageObj.solvesArray, ...newSolves].sort(byDate);
+
+    // Block modes: every whole block, oldest first, becomes a finished average (classic keeps them all in progress)
+    if (averageObj.mode !== "classic") {
+        const size = getNeededSolves(averageObj.mode);
+        while (inProgress.length >= size) {
+            session.averages.push(buildAverageBlock(inProgress.slice(0, size), averageObj.mode));
+            inProgress = inProgress.slice(size);
+        }
+        // Finished averages newest first, the imported ones placed by date among the old ones
+        session.averages.sort((a, b) => blockDate(b) - blockDate(a));
+    }
+
+    averageObj.solvesArray = inProgress;
+    averageObj.solveCounter = inProgress.length;
+    return newSolves.length;
+}
+
 export {
     addAverageBlock,
     getSessionAverages,
@@ -171,5 +224,6 @@ export {
     penalty2,
     remove2,
     applyPenaltyToLast,
-    removeLastSolve
+    removeLastSolve,
+    addSolvesToSession
 };

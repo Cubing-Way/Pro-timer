@@ -18,6 +18,7 @@ Its average system started as a bug: averages of 5 came out in fixed blocks of f
 - **TPS:** turns per second for a solve once its move count is known.
 - **Look:** colors for the text, backgrounds and buttons, and switches for the scramble picture, statistics, session history, scramble text, penalty bar and average preview.
 - **Saving:** sessions and settings stay in your browser.
+- **Import / export:** Settings → Data downloads every session as one backup file, and loads solves from a Pro Timer backup or a csTimer "Export to file". Imported sessions come in as new sessions, or their solves join the session in use, grouped into its averages by date and without repeating solves it already has. When a file has several sessions, you pick all of them or just one. Importing never replaces or deletes anything.
 - **Offline:** after the first visit, the app works without internet. When a new version is out, a bar asks before switching to it, so it never reloads in the middle of a solve.
 
 ## Run it
@@ -61,6 +62,7 @@ It builds, then serves `dist/` at http://localhost:4173/Pro-timer/. Open it once
 - `render/`: history list, statistics and average views
 - `stats/`: the statistics page and its charts
 - `settings/`, `topbar/`, `modal/`, `timeTyping/`: settings, top bar, pop-ups and typed-in times
+- `importExport/`: the backup file, and reading Pro Timer and csTimer files into sessions
 - `offline/`: registers the service worker that makes the app work offline, and the bar that offers new versions
 - `public/`: files served as they are: csTimer's scrambler worker (`cstimer_module.js`) and the timer warning sounds (`audio/`)
 
@@ -101,7 +103,7 @@ The pieces, in page order (a `→` means the piece is included inside the one ab
 | `scramble/desktopVisualizer.html` | Desktop scramble picture in the bottom-right corner | `event/eventController.js`, `scramble/scrVisualiser.js` |
 | `modal/detailsModal.html` | Pop-up with the details of a solve, an average or the session | `modal/modalController.js` |
 | `stats/statsPage.html` | Full-screen statistics page: period, 4 charts, overview cards, averages table | `stats/statsController.js` |
-| `settings/settingsPanel.html` | Settings pop-up: timer options, colors, layout switches | `settings/settingsController.js` |
+| `settings/settingsPanel.html` | Settings pop-up: timer options, colors, layout switches, and Data (Export, Import with its "New sessions / Current session" select, the hidden file input, and the `<dialog>` that asks which of a file's sessions to import) | `settings/settingsController.js`, `importExport/importExportController.js` (Data) |
 | → `settings/textColorOptions.html` | The 9 text colors, shared by the two text color selects | |
 | → `settings/backgroundOptions.html` | The 30 background colors, shared by the four background selects | |
 | `event/mbldModal.html` | Multi-Blind pop-up with a scramble and picture per cube | `event/eventController.js` |
@@ -131,7 +133,7 @@ The files, in import order:
 | `render/render.css` | History list blocks and the average footer |
 | `modal/modal.css` | Details pop-up |
 | `stats/stats.css` | Statistics page |
-| `settings/settings.css` | Settings pop-up |
+| `settings/settings.css` | Settings pop-up, the Import row (`.import-row` wraps its select and button under the label) and the import session picker (`.import-dialog`, a native `<dialog>`, so it opens above the settings pop-up) |
 | `offline/offline.css` | New version bar (hidden until `.open`; on phones it spans the width) |
 
 How the colors work: every color in the stylesheets is a CSS variable (`--bg-main`, `--bg-secondary`, `--bg-tertiary`, `--text-main`, `--text-strong`, `--border-main`, `--accent`…), with defaults in `main/variables.css`. The theme classes are tables of values for those variables. When you pick a background color in the settings, `settings/settingsController.js` (`getThemeVar`) adds a hidden element with that theme's class, reads one variable from it, and sets it on `<html>`, which overrides the default for the whole page. The "Secondary text" color puts a `.theme-text-<color>` class on `<body>` instead, and "Main text" sets `--times-color`, which only `.times-color-number` (times and numbers) uses. Each color setting changes one variable:
@@ -174,8 +176,10 @@ Plain JavaScript modules, no framework. Each folder's controller runs its setup 
    - `settings/settingsController.js` applies the saved colors, layout switches and timer settings.
    - `event/eventController.js` picks where scramble pictures go (`vis`: the desktop corner, or the phone pop-up when the window is 768px wide or less) and shows the timer or the typing box.
    - `topbar/topbarController.js` fills the category select, sets the category, event and mode selects to the session's (running their change handlers), wires the penalty buttons and draws the history (`renderHistory`).
+   - `importExport/importExportController.js` wires the Data section's Export and Import buttons.
    - `offline/offlineController.js` registers the service worker (in the build only) and asks the browser to keep the saved data.
-3. Last, `mainController.js` awaits `initEvent()`, which shows the first scramble and, for Fewest Moves or Multi-Blind, their layout.
+3. `mainController.js` calls `showLastSolve()` (`timer/`), so the timer shows the session's last solve instead of the "0.00" in the HTML (Fewest Moves and Multi-Blind keep their countdown).
+4. Last, it awaits `initEvent()`, which shows the first scramble and, for Fewest Moves or Multi-Blind, their layout.
 
 ### The path of one solve
 
@@ -200,7 +204,7 @@ A **solve**, as saved in `averageObj.solvesArray` and in average blocks:
 | `penalty` | `null`, a number of seconds added (2, 4 … 12), or `"DNF"` |
 | `result` | Multi-Blind only: `"4 / 5"` |
 | `scramble`, `event` | The scramble and the event code it was made for |
-| `inspection` | Seconds of inspection used (0 for typed times, FMC and Multi-Blind) |
+| `inspection` | Seconds of inspection used (0 for typed times, FMC, Multi-Blind and solves imported from csTimer) |
 | `createdAt` | When it was saved (ms since 1970), used by the date filters and to find the most recent solve |
 | `solution` | Fewest Moves solution, or one typed in the details pop-up |
 | `solvePhases` | Time of each timer phase |
@@ -214,7 +218,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `main/`
 
-- **`mainController.js`**: the entry point. Imports every controller (including `offline/offlineController.js`), then `await initEvent()`.
+- **`mainController.js`**: the entry point. Imports every controller (including `offline/offlineController.js`), puts the last solve on the timer (`showLastSolve()`), then `await initEvent()`.
 - **`cstimer.js`**: runs csTimer's scrambler (`public/cstimer_module.js`) in a web worker, so making scrambles never freezes the page. `call(type, args)` sends `[id, type, args]` to the worker and keeps the promise's `resolve` in `callbacks[id]`; when the worker answers `[id, type, result]`, `onmessage` resolves that promise. It exports `csTimer` with `getScramble(type, length)`, `getImage(scramble, type)` (an SVG picture), `setSeed(seed)` and `setGlobal(key, value)`.
 
 ### `timer/`
@@ -232,17 +236,17 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
   `onPressLost` cancels a hold when the release can't come (touch cancelled, tab hidden, window blurred). Escape cancels everything and puts the last solve back on the timer. Tab switches between Timer and Typing (`setTimeInsertion`). `setTimerDisplay(colorOrTime, content)` is the only function that writes on the timer; the other timer files get it passed in. `inspection2` is a separate seconds count used for inspection in Typing mode; when it stops (a press, or on its own at 17 s) the timer shows the last solve again.
 
-  `showLastSolve()` writes the session's most recent solve on the timer: it gets the solve from `getLastSolve` (`session/`) and formats it with its penalty using `formatDisplayTime` ("14.34 (+2)", "DNF"), or shows "0.00" when the session has no solves. On Fewest Moves and Multi-Blind (`timerSettObj.untimedEvent`) it does nothing, because the timer shows their countdown there. If the last solve is a Fewest Moves or Multi-Blind result (moves or points, not a time), it shows "0.00". Escape, the end of `inspection2` and deleting a solve (`removeSolve` in `modal/`) all call it.
+  `showLastSolve()` writes the session's most recent solve on the timer: it gets the solve from `getLastSolve` (`session/`) and formats it with its penalty using `formatDisplayTime` ("14.34 (+2)", "DNF"), or shows "0.00" when the session has no solves. On Fewest Moves and Multi-Blind (`timerSettObj.untimedEvent`) it does nothing, because the timer shows their countdown there. If the last solve is a Fewest Moves or Multi-Blind result (moves or points, not a time), it shows "0.00". Loading the page (`main/mainController.js`), Escape, the end of `inspection2`, deleting a solve (`removeSolve` in `modal/`) and switching sessions (the top bar's `sessionChanged` handler, after the event layout has written "0.00") all call it.
 - **`timerPhases.js`**: `beginHold` (red, then green after `HOLD_DELAY_MS`), `cancelHold`, `resetTimerColor`.
 - **`timer.js`**: `startTimer` updates the display every 10 ms from `performance.now()` (or shows "Solving" with "Hide while solving"); `stopTimer` writes the final time and goes back to idle.
 - **`inspection.js`**: `inspection(type, setTimerDisplay, timerObj)` counts inspection and stores the exact time in `timerObj.inspection`; WCA inspection plays the 8 and 12 second calls and stops at 17.
-- **`timeFormatting.js`**: `formatTime(ms)` for the running timer ("12.34", "1: 02.34", "1: 02: 03.45"), truncated like the WCA does.
+- **`timeFormatting.js`**: `formatTime(ms)` for the running timer ("12.34", "1: 02.34", "1: 02: 03.45"), truncated like the WCA does. It also writes each timer phase's time. `timerController.js` re-exports it for `importExport/`, which writes the phases of csTimer solves the same way.
 - **`countdownTimer.js`**: `startTimer2` (start or stop the countdown, playing the ticked warnings from `public/audio/`), `stopTimer2` (reset to one hour), `updateDisplay`.
 
 ### `average/`
 
 - **`avgState.js`**: `averageObj` (the mode and the solves of the average in progress) and `classicStats` (classic mode's `current`, `best` and `history` mo3, ao5, ao12 and ao100).
-- **`avgController.js`**: `averageOfN(time, scramble, inspection, inspectionType, isFMC, modeFlag, isMBLD, solvePhases)`. It turns the input into a value (seconds, moves or points), applies the penalties (WCA inspection: 15 s is +2, 17 s is DNF; an unsolved FMC cube or 0 points or less is DNF), saves the solve, and returns a finished block when the mode has enough solves (`getNeededSolves`), removing those solves from the buffer. With `modeFlag` it adds no solve and only re-checks the buffer after a mode change. It also re-exports the helpers below.
+- **`avgController.js`**: `averageOfN(time, scramble, inspection, inspectionType, isFMC, modeFlag, isMBLD, solvePhases)`. It turns the input into a value (seconds, moves or points), applies the penalties (WCA inspection: 15 s is +2, 17 s is DNF; an unsolved FMC cube or 0 points or less is DNF), saves the solve, and returns a finished block (`buildAverageBlock`) when the mode has enough solves (`getNeededSolves`), removing those solves from the buffer. With `modeFlag` it adds no solve and only re-checks the buffer after a mode change. It also re-exports the helpers below.
 - **`avgComput.js`**: `computeAverage(solves, mode)` returns `{ dnf, avg, best, worst, sigma }`. A DNF counts as `Infinity`, so it sorts last.
 
   | Mode | Result | It's a DNF when |
@@ -255,14 +259,22 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
   | ao12, ao100 | Drop the best and worst 5% each, rounded up (1 for ao12, 5 for ao100), mean of the rest | more DNFs than that (2 for ao12, 6 for ao100) |
 
   For Multi-Blind, more points is better, so `bestAndWorst` flips the comparison.
+
+  `buildAverageBlock(solves, mode)` makes a finished average block from its solves: it runs `computeAverage`, formats the numbers for display (`formatSecondsToTime`, "DNF" for a DNF average) and keeps a copy of the solves. `averageOfN` uses it when a block fills up, and so do the imports (`addSolvesToSession` in `session/`, `buildSession` in `importExport/`), so imported blocks look exactly like timed ones.
 - **`classicAvgs.js`**: `updateClassicStats(recomputeBest, averageObj, classicStats)`. After a new solve, it adds the rolling averages ending at that solve and updates the bests; with `recomputeBest` it rebuilds the whole history by sliding a window over every solve (after a penalty, a removed solve, a session change or switching to classic).
 - **`avgHelper.js`**: `parseTimeToSeconds` ("1:02.50" → 62.5), `formatSecondsToTime` (62.5 → "1:02.50", Infinity → "DNF"), `formatDisplayTime` (a solve with its penalty: "14.34 (+2)"), `isPointsSolves` (true for Multi-Blind solves), `getNeededSolves(mode)` (how many solves finish a block: 5 for ao5 and bo5, 12 for ao12, 3 for mo3, bo3 and ao3).
 
 ### `session/`
 
 - **`sessionState.js`**: `sessionsObj`: every session by name (from localStorage), the current session's name and the session select.
-- **`sessionController.js`**: `getCurrentSession`, `saveSessions` (copies the average in progress into the session's `buffer`, then saves all sessions), `renderSessionSelect`, and the select's New, Rename and Delete actions. `switchSession` saves, changes session and fires a `sessionChanged` event, which the top bar answers by loading the new session (`changedSession` copies its buffer and classic stats into the shared state) and setting its selects. `clearAverages` empties the session after asking. The other functions pass the session state to `solve.js`.
+- **`sessionController.js`**: `getCurrentSession`, `saveSessions` (copies the average in progress into the session's `buffer`, then saves all sessions), `renderSessionSelect`, and the select's New, Rename and Delete actions. `switchSession` saves, changes session and fires a `sessionChanged` event, which the top bar answers by loading the new session (`changedSession` copies its buffer and classic stats into the shared state) and setting its selects. `clearAverages` empties the session after asking. The other functions (including `addSolvesToSession`, used by the import) pass the session state to `solve.js`. `switchSession` is exported too, so an import can open the first session it added.
 - **`solve.js`**: `addAverageBlock`, `getSessionAverages`, `getLastSolveTarget` (the most recent solve: the last one of the average in progress or the last one of the newest saved average, whichever has the later `createdAt`; a solve saved without `createdAt` counts as 0, so the average in progress wins ties), `getLastSolve` (the solve object `getLastSolveTarget` points at, or `null`; the timer shows it), `penalty2` (change a solve's penalty; a saved solve's block is recomputed), `remove2` (remove a solve; a solve from a finished average either reopens that average or deletes it), `applyPenaltyToLast` and `removeLastSolve` (the buttons under the timer). In `penalty2` and `remove2`, a `blockIndex` of -1 means a solve of the average in progress (`averageObj.solvesArray`), and any other number is the index of a saved average in `session.averages`.
+
+  `addSolvesToSession(solves, averageObj, getCurrentSession)` adds solves from an import to the current session and returns how many were new:
+  1. It skips solves the session already has, finished or in progress. Two solves are the same when they have the same `createdAt` and `time` (`solveKey`), so importing a file twice adds nothing; a solve twice in the file counts once.
+  2. The new solves join the average in progress, and all of them are sorted oldest first (`byDate`).
+  3. In a block mode, every whole block of the current mode becomes a finished average (`buildAverageBlock`), oldest first, and the leftovers stay in progress. `session.averages` is then sorted newest first by each block's newest solve (`blockDate`), so imported averages sit among the old ones by date.
+  4. In classic mode every solve stays in progress, since classic has no blocks.
 
 ### `scramble/`
 
@@ -273,7 +285,8 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
   - `displayScramble(event, vis, length)` gets a new scramble and its SVG picture from the worker (`length` overrides the default, for the Multi-Blind cube count). If the event changed, it empties the history first, since the old scrambles are for another puzzle. Then it adds the new one at the end, points `historyIndex` at it and shows it.
   - `showScramble(entry, vis)` puts a history entry on screen: sets `currentScramble` and `currentScrambleEvent`, draws the picture, sizes it with `adjustVisualizerSize` (a scale and position per puzzle), writes the text (Megaminx one row per line), greys out Previous on the oldest entry and fits the text (`autoFitText`).
   - `previousScramble(vis)` shows the entry before the current one (nothing on the oldest). `nextScramble(event, vis, length)` shows the entry after it, or calls `displayScramble` for a new one when already on the newest.
-- **`scrHelpers.js`**: `getScrambleConfig(code)` (type and length from `scrdata`), `isCubiszEvent` (3x3 events, the only ones cubisz can check), `autoFitText` (shrinks the scramble text until it fits), `formatMegaminx`.
+  - It re-exports `isCubiszEvent` and `getCategoryOfEvent` from `scrHelpers.js`, so other folders get them through the controller.
+- **`scrHelpers.js`**: `getScrambleConfig(code)` (type and length from `scrdata`), `isCubiszEvent` (3x3 events, the only ones cubisz can check), `getCategoryOfEvent(code)` (the first category that lists an event, skipping the `===…===` dividers, so "333" gives "WCA"; `null` when Pro Timer doesn't have it), `autoFitText` (shrinks the scramble text until it fits), `formatMegaminx`.
 - **`scrVisualiser.js`**: `setVisualizerScale(scale, right, bottom, vis)` scales and places the desktop or phone picture.
 
 ### `event/`
@@ -305,7 +318,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `topbar/`
 
-- **`topbarController.js`**: fills the category select from `scrdata` and the event select from the chosen category. Changing the event saves it in the session, sets the layout, the inspection type and the WCA average mode for it (`getDefaultModeForEvent`: bo5 for 3BLD, bo3 for 4BLD, 5BLD and Multi-Blind, mo3 for 6x6 and 7x7, ao3 for FMC, ao5 otherwise), stops a running countdown and shows a new scramble. Changing the mode saves it and re-checks the average in progress. It also handles the `sessionChanged` event, the Clear, Open Session and penalty buttons (+2 steps through +2 … +12), the phone scramble button, and takes the focus off clicked buttons and selects so the space bar keeps driving the timer.
+- **`topbarController.js`**: fills the category select from `scrdata` and the event select from the chosen category. Changing the event saves it in the session, sets the layout, the inspection type and the WCA average mode for it (`getDefaultModeForEvent`: bo5 for 3BLD, bo3 for 4BLD, 5BLD and Multi-Blind, mo3 for 6x6 and 7x7, ao3 for FMC, ao5 otherwise; exported, so a csTimer import puts each session in its event's mode), stops a running countdown and shows a new scramble. Changing the mode saves it and re-checks the average in progress. It also handles the `sessionChanged` event, the Clear, Open Session and penalty buttons (+2 steps through +2 … +12), the phone scramble button, and takes the focus off clicked buttons and selects so the space bar keeps driving the timer.
 - **`topbarState.js`**: `plus2CounterObj`, the +2 button's current step.
 
 ### `modal/`
@@ -315,6 +328,58 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 ### `timeTyping/`
 
 - **`timeTypingController.js`**: the Add button and the Enter key save a typed time. `normalizeTypedTime` accepts "12.34", "1:02.50" or digits only ("1234" → 12.34, "10234" → 1:02.34); anything else flashes the box red.
+
+### `importExport/`
+
+The Data section of the settings panel. **Export** downloads every session as one `.json` file. **Import** reads a Pro Timer or csTimer file and adds its solves; it never replaces or deletes anything.
+
+How an import goes:
+
+1. **Import** clicks the hidden `<input type="file" id="importFileInput">`, which opens the browser's file picker (`.json` and `.txt` files).
+2. On the input's `change`, the controller reads the file as text (`file.text()`) and empties the input, so picking the same file again still fires `change`.
+3. `sessionsFromFile(text)` parses the text (`parseJSON`), finds which app made it (`detectFormat`) and turns it into `[{ name, session }]`, a list of sessions in Pro Timer's shape. Pro Timer files go through `readProTimerFile`; csTimer files go through `readCsTimerFile`, then `buildSession` for each session. Any other file throws an Error, and the handler shows its message in an alert.
+4. `chooseSessions(imported)`: when the file has 2 or more sessions, a pop-up asks whether to import all of them or just one. Cancel or Escape stops here.
+5. The select next to Import (`#importTarget`) picks where they go: **New sessions** calls `addImportedSessions`, **Current session** calls `addIntoCurrentSession`.
+
+- **`importExportController.js`**:
+  - `dataDOM`: the Data section's elements (the buttons, the file input, the target select, and the session picker's dialog, info line and select).
+  - Export: `saveSessions()` first, which copies the average in progress into its session's `buffer`, then `downloadJSON(buildExportFile(sessionsObj.sessions), exportFileName())`.
+  - `sessionsFromFile(text)`: step 3 above. Each csTimer session becomes `buildSession(solves, event, getDefaultModeForEvent(event), getCategoryOfEvent(event))`, so it lands in its event's WCA average mode (`topbar/`) and in the first category that lists the event (`scramble/`).
+  - `chooseSessions(imported)`: with 0 or 1 session it returns them right away. Otherwise it fills `#importSessionSelect` with "All sessions (N solves)" (value `all`) and one option per session with its solve count (value: its index in `imported`), writes how many sessions there are and where they'll go in `#importSessionInfo`, and opens `#importSessionDialog` with `showModal()`. It returns a Promise that resolves when the dialog's `close` event fires: with every session, with `[the one picked]`, or with `null` when the dialog's `returnValue` isn't `"import"`. The two buttons sit in a `<form method="dialog">`, so clicking one closes the dialog with that button's `value` as the `returnValue`. Escape closes it without a value, keeping the old one, so `returnValue` is cleared before each opening. The file handler `await`s this Promise before adding anything.
+  - `addImportedSessions(imported)`: asks first (how many sessions and solves), adds each session under a free name (`uniqueSessionName`), saves, and opens the first one with `switchSession` (`session/`), whose `sessionChanged` event makes the top bar load it and redraw. The browser keeps about 5 MB per site, and `saveSessions()` throws a `QuotaExceededError` when that's full: then the new sessions are removed again, so nothing stays half-imported.
+  - `addIntoCurrentSession(imported)`: gathers every solve of the chosen sessions (`sessionSolves`), asks first, keeps copies of `session.averages` and the average in progress, and calls `addSolvesToSession` (`session/`). Classic mode then recounts its rolling averages (`updateClassicStats(true)`), and the session keeps a copy of them. If saving throws, the copies are put back. Last, it redraws the history (`renderHistory`), shows the newest solve on the timer (`showLastSolve`) and says how many solves were added and how many were already there. The solves keep their own `event`, which the history and details pop-up read (for example to show moves for an FMC solve, or the solution box for 3x3 ones).
+- **`exportSolves.js`**: `buildExportFile(sessions)` wraps the sessions with a tag, a version and the date. `downloadJSON(obj, filename)` saves an object as a file: it puts the JSON text in a `Blob`, makes a temporary URL for it (`URL.createObjectURL`), clicks a link with the `download` attribute, then frees the URL. `exportFileName()` gives `pro-timer_YYYY-MM-DD.json` with the local date.
+- **`importSolves.js`**: the Pro Timer side and the helpers both formats use.
+  - `parseJSON(text)`: the object, or `null` when the text isn't JSON.
+  - `detectFormat(data)`: `"protimer"` (an `app: "Pro Timer"` tag and a `sessions` object), `"cstimer"` (a key like `session1`) or `null`.
+  - `readProTimerFile(data)`: `[{ name, session }]`. It throws when `version` is above 1 (a newer Pro Timer made the file and may save solves differently), skips anything that isn't a session object, and gives a session with no `averages` an empty list.
+  - `sessionSolves(session)`: every solve of a session, the finished averages' first, then the buffer's. `countSolves(session)` is its length.
+  - `uniqueSessionName(name, sessions)`: the name itself when it's free, else the first free "name (2)", "name (3)"…
+  - `buildSession(solves, event, mode, category)`: a session from loose solves. It sorts them oldest first, cuts whole blocks of `getNeededSolves(mode)` solves with `buildAverageBlock` (what `averageOfN` does while you time), puts the blocks newest first in `averages` and the leftover solves in `buffer`, and sets `category`, `scrambleType` and `mode`. `category` must be a category that lists the event, or the top bar's event select ends up empty.
+- **`csTimerImport.js`**: the csTimer side. It only converts data; the controller wires it.
+  - `readCsTimerFile(data)`: `[{ name, event, solves }]`, one entry per `sessionN` key, in the file's order. The name and scramble type come from `properties.sessionData` (key `N`). Records that aren't solves are skipped (a damaged file), and sessions with no solves are left out, since csTimer always has a `session1`.
+  - `proTimerEvent(scrType)`: Pro Timer's event codes are csTimer's scramble types (`scramble/scrData.js` is csTimer's list), so most types map as they are. It gives `"333"` when the type is missing, when Pro Timer doesn't list it (`getCategoryOfEvent` returns `null`), or when it's in `CLOCK_TIME_ONLY` (`333fm`, `r3ni`). csTimer saves clock times in those two, while Pro Timer saves moves and points there, so a time would be read as a move count or points.
+  - `convertCsTimerSolve(record, event)`: one csTimer solve as a Pro Timer solve (table below).
+  - `csTimerPhases(times)`: each phase's own time, first phase first, written with `formatTime` (`timer/`) like the timer writes them. It reverses csTimer's splits into phase end times, then takes each end minus the one before it.
+  - `unwrapJSON(value)`: csTimer saves `sessionData`, and sometimes a session's solves, as JSON text inside the JSON file. This parses text and keeps anything else as it is.
+
+**Pro Timer's file** (`pro-timer_YYYY-MM-DD.json`): `{ app: "Pro Timer", version: 1, exportedAt, sessions }`. `sessions` is `sessionsObj.sessions` as it is (see [Data](#data)), and `exportedAt` is when the backup was made (ms since 1970). Raise `version` if the shape ever changes, so an older Pro Timer refuses the file instead of misreading it.
+
+**csTimer's file** ("Export to file", `cstimer_YYYYMMDD_hhmmss.txt`, JSON inside):
+
+- `session1`, `session2`…: each session's solves, as a list or as the same list in JSON text.
+- `properties.sessionData`: JSON text, `{ "1": { name, opt: { scrType }, … }, … }`. A session never renamed has its number as its name, and no `scrType` means 3x3.
+- One solve is `[[penalty, ms, …splits], scramble, comment, unixSeconds]`, which becomes:
+
+| csTimer | Pro Timer |
+| --- | --- |
+| `penalty`: `0`, `2000` (ms added), `-1` | `penalty`: `null`, `2`, `"DNF"` |
+| `ms`, the time without the penalty | `time`: `Math.floor(ms / 10) / 100`, seconds cut to hundredths like the timer |
+| splits `[total, end of phase n-1, …, end of phase 1]` (when each phase ended, last phase first) | `solvePhases`: each phase's own time, first phase first; one entry for a solve without phases |
+| `scramble` | `scramble` (and `event` from the session's scramble type) |
+| `comment` | not kept, since Pro Timer solves have no comment |
+| `unixSeconds` | `createdAt`: × 1000 |
+| (no inspection saved) | `inspection`: 0, like typed times |
 
 ### `offline/`
 

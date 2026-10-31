@@ -375,5 +375,6 @@ document.addEventListener("keyup", (e) => {
 export {
     setTimerDisplay,
     timerDOMObj,
-    showLastSolve
+    showLastSolve,
+    formatTime
 };

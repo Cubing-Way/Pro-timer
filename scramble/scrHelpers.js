@@ -12,6 +12,16 @@ function getScrambleConfig(code) {
   return null;
 }
 
+// The first category that lists this event ("WCA" for "333"), or null when Pro Timer doesn't have it
+function getCategoryOfEvent(code) {
+  for (const [category, scrambles] of scrdata) {
+    // Dividers like ===WCA=== only hold a "blank" placeholder
+    if (category.startsWith("===")) continue;
+    if (scrambles.some(([, scrambleCode]) => scrambleCode === code)) return category;
+  }
+  return null;
+}
+
 // Events Cubisz can check (it only simulates a 3x3)
 const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
 const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
@@ -67,4 +77,10 @@ function formatMegaminx(scr) {
   return out.join("\n");
 }
 
-export { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx };
+export { 
+  getScrambleConfig, 
+  isCubiszEvent, 
+  autoFitText, 
+  formatMegaminx, 
+  getCategoryOfEvent 
+};

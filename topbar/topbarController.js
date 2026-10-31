@@ -5,7 +5,7 @@ import { renderHistory } from "../render/renderController.js";
 import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
 import { openDetailsModal, setPenalty, removeSolve } from "../modal/modalController.js";
 import { timerSettObj } from "../settings/settingsState.js";
-import { timerDOMObj } from "../timer/timerController.js";
+import { timerDOMObj, showLastSolve } from "../timer/timerController.js";
 import { applyPenaltyToLast, removeLastSolve } from "../session/sessionController.js";
 import { handleFMC } from "../event/eventController.js";
 import { timeInsertion } from "../settings/settingsController.js";
@@ -233,6 +233,8 @@ document.addEventListener("sessionChanged", () => {
     restoringSession = false;
 
     renderHistory();
+    // The new session's last solve on the timer, over the "0.00" the event layout just wrote
+    showLastSolve();
 });
 
 // Top bar and penalty bar buttons
@@ -323,4 +325,8 @@ document.getElementById("scramble-button").addEventListener("click", () => {
     document.getElementById("scramble-button").innerHTML = "close";
 });
 
-export {syncModeWithEvent, plus2CounterObj };
+export {
+    syncModeWithEvent, 
+    plus2CounterObj, 
+    getDefaultModeForEvent 
+};

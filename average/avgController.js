@@ -8,7 +8,7 @@ import {
 
 import { updateClassicStats as updateClassicStatsWith } from "./classicAvgs.js";
 import { averageObj, classicStats } from "./avgState.js";
-import { computeAverage } from "./avgComput.js";
+import { computeAverage, buildAverageBlock } from "./avgComput.js";
 import { currentScrambleEvent } from "../scramble/scrambleController.js";
 
 // Updates classic mode's rolling averages with this folder's state (recomputeBest rebuilds them from scratch)
@@ -88,17 +88,8 @@ function averageOfN(
 
         const relevantSolves = averageObj.solvesArray.slice(0, neededSolves);
 
-        const avgObj = computeAverage(relevantSolves, averageObj.mode);
-
         // The saved average, its numbers already formatted for display
-        const block = {
-            mode: averageObj.mode,
-            average: avgObj.avg === "DNF" ? "DNF" : formatSecondsToTime(avgObj.avg),
-            worst: formatSecondsToTime(avgObj.worst),
-            best: formatSecondsToTime(avgObj.best),
-            sigma: formatSecondsToTime(avgObj.sigma),
-            solves: structuredClone(relevantSolves)
-        };
+        const block = buildAverageBlock(relevantSolves, averageObj.mode);
 
         // remove only used solves
         averageObj.solvesArray = averageObj.solvesArray.slice(neededSolves);
@@ -115,6 +106,7 @@ export {
     isPointsSolves,
     formatSecondsToTime,
     computeAverage,
+    buildAverageBlock,
     formatDisplayTime,
     getNeededSolves,
     updateClassicStats,

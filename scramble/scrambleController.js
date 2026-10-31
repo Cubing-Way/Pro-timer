@@ -1,6 +1,12 @@
 import { csTimer } from "../main/cstimer.js";
 import { setVisualizerScale } from "./scrVisualiser.js";
-import { getScrambleConfig, isCubiszEvent, autoFitText, formatMegaminx } from "./scrHelpers.js";
+import { 
+    getScrambleConfig,
+     isCubiszEvent, 
+     autoFitText, 
+     formatMegaminx, 
+     getCategoryOfEvent 
+} from "./scrHelpers.js";
 
 // The scramble on screen; the next solve is saved with it
 let currentScramble = "";
@@ -154,5 +160,6 @@ export {
     displayScramble, 
     previousScramble, 
     nextScramble, 
-    isCubiszEvent 
+    isCubiszEvent,
+    getCategoryOfEvent
 };
