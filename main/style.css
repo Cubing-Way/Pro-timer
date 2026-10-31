@@ -26,3 +26,5 @@
 @import "../modal/modal.css";
 @import "../stats/stats.css";
 @import "../settings/settings.css";
+/* New version bar, above everything else */
+@import "../offline/offline.css";

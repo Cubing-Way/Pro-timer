@@ -1,0 +1,48 @@
+/* New version bar (offline/updateBanner.html) */
+
+/* Centered at the bottom, above the touch overlay and the other panels, hidden until offline/offlineController.js adds .open */
+.update-banner {
+  display: none;
+  position: fixed;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg-secondary);
+  color: var(--text-main);
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  box-shadow: 0 0 20px rgba(0,0,0,0.3);
+  z-index: 1003;
+}
+
+/* Shown */
+.update-banner.open {
+  display: flex;
+}
+
+/* Same look as the app's other buttons */
+.update-banner button {
+  background: var(--border-main);
+  color: var(--text-strong);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+
+/* Phones: full width minus a margin, with the text on its own line above the buttons */
+@media (max-width: 768px) {
+  .update-banner {
+    width: calc(100% - 32px);
+    flex-wrap: wrap;
+    justify-content: center;
+    text-align: center;
+  }
+
+  .update-banner span {
+    width: 100%;
+  }
+}

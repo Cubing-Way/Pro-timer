@@ -30,6 +30,8 @@ import "../stats/statsController.js";
 import "../modal/modalController.js";
 // Typed-in times
 import "../timeTyping/timeTypingController.js";
+// Service worker for offline use, and the new version bar
+import "../offline/offlineController.js";
 // Event layout and scrambles
 import { initEvent } from "../event/eventController.js";
 

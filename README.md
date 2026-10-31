@@ -18,6 +18,7 @@ Its average system started as a bug: averages of 5 came out in fixed blocks of f
 - **TPS:** turns per second for a solve once its move count is known.
 - **Look:** colors for the text, backgrounds and buttons, and switches for the scramble picture, statistics, session history, scramble text, penalty bar and average preview.
 - **Saving:** sessions and settings stay in your browser.
+- **Offline:** after the first visit, the app works without internet. When a new version is out, a bar asks before switching to it, so it never reloads in the middle of a solve.
 
 ## Run it
 
@@ -36,10 +37,20 @@ npm run build
 
 The site lands in `dist/`. `npm run deploy` builds it and publishes `dist/` to the `gh-pages` branch, which GitHub Pages serves.
 
+## Test offline
+
+The service worker only exists in the build (`npm run dev` doesn't register one), so test offline mode on a built copy:
+
+```bash
+npm run preview
+```
+
+It builds, then serves `dist/` at http://localhost:4173/Pro-timer/. Open it once, then in DevTools tick **Offline** in the Network tab (or stop the server) and reload. DevTools → Application → Service workers and Cache storage show what's registered and cached. To start over, click **Unregister** there and delete the `workbox-precache-…` cache.
+
 ## Folder layout
 
 - `index.html`: the page skeleton; each part of the page lives in its own folder
-- `vite.config.js`: Vite settings and the plugin that puts the page's HTML pieces together
+- `vite.config.js`: Vite settings, the plugin that puts the page's HTML pieces together, and the offline plugin
 - `main/`: entry point, the bridge to csTimer's scrambler, page-wide styles
 - `timer/`: the timer, inspection, WCA delay, phases, countdown and time formatting
 - `average/`: block and classic averages
@@ -50,6 +61,7 @@ The site lands in `dist/`. `npm run deploy` builds it and publishes `dist/` to t
 - `render/`: history list, statistics and average views
 - `stats/`: the statistics page and its charts
 - `settings/`, `topbar/`, `modal/`, `timeTyping/`: settings, top bar, pop-ups and typed-in times
+- `offline/`: registers the service worker that makes the app work offline, and the bar that offers new versions
 - `public/`: files served as they are: csTimer's scrambler worker (`cstimer_module.js`) and the timer warning sounds (`audio/`)
 
 Each folder has a `…Controller.js`. It holds the folder's state and page wiring (listeners, startup code), and it is what other folders import. The other files only export functions: when one needs state, its controller passes it in. State shared between folders lives in `…State.js` files (`avgState.js`, `sessionState.js`, `settingsState.js`, `timerState.js`, `topbarState.js`). `main/mainController.js` loads the controllers, then shows the first scramble.
@@ -94,6 +106,7 @@ The pieces, in page order (a `→` means the piece is included inside the one ab
 | → `settings/backgroundOptions.html` | The 30 background colors, shared by the four background selects | |
 | `event/mbldModal.html` | Multi-Blind pop-up with a scramble and picture per cube | `event/eventController.js` |
 | `event/warningsModal.html` | Timer warnings pop-up and its backdrop | `event/eventController.js` |
+| `offline/updateBanner.html` | Bar at the bottom offering a new version (Reload / Later) | `offline/offlineController.js` |
 
 ## Styles (CSS)
 
@@ -119,6 +132,7 @@ The files, in import order:
 | `modal/modal.css` | Details pop-up |
 | `stats/stats.css` | Statistics page |
 | `settings/settings.css` | Settings pop-up |
+| `offline/offline.css` | New version bar (hidden until `.open`; on phones it spans the width) |
 
 How the colors work: every color in the stylesheets is a CSS variable (`--bg-main`, `--bg-secondary`, `--bg-tertiary`, `--text-main`, `--text-strong`, `--border-main`, `--accent`…), with defaults in `main/variables.css`. The theme classes are tables of values for those variables. When you pick a background color in the settings, `settings/settingsController.js` (`getThemeVar`) adds a hidden element with that theme's class, reads one variable from it, and sets it on `<html>`, which overrides the default for the whole page. The "Secondary text" color puts a `.theme-text-<color>` class on `<body>` instead, and "Main text" sets `--times-color`, which only `.times-color-number` (times and numbers) uses. Each color setting changes one variable:
 
@@ -139,7 +153,14 @@ Some elements are hidden in the CSS and shown by the code: the event buttons and
 - `server.port: 3000`: the dev server address.
 - `worker.format: "es"`: web workers are built as ES modules.
 - `build.minify: false`: the built code stays readable.
-- `plugins: [htmlIncludes()]`: puts the HTML pieces together (see [The page](#the-page-html)).
+- `plugins`:
+  - `htmlIncludes()`: puts the HTML pieces together (see [The page](#the-page-html)).
+  - `VitePWA({...})` from [vite-plugin-pwa](https://vite-pwa-org.netlify.app/): writes the service worker (`dist/sw.js`, plus the Workbox library it uses) at build time (see [Offline](#offline)). Its options:
+    - `registerType: "prompt"`: a new version waits until the user clicks Reload, instead of reloading the page on its own.
+    - `injectRegister: false`: the plugin adds no registration script; `offline/offlineController.js` registers the service worker.
+    - `manifest: false`: no web app manifest yet (it needs app icons), so the app works offline but can't be installed.
+    - `workbox.globPatterns`: which files in `dist/` go in the precache list: `js`, `css`, `html` and `mp3`.
+    - `workbox.ignoreURLParametersMatching`: `main/cstimer.js` loads the scrambler as `cstimer_module.js?worker_file&type=classic`; ignoring `worker_file` and `type` lets that request find the cached `cstimer_module.js`.
 
 ## Code
 
@@ -153,6 +174,7 @@ Plain JavaScript modules, no framework. Each folder's controller runs its setup 
    - `settings/settingsController.js` applies the saved colors, layout switches and timer settings.
    - `event/eventController.js` picks where scramble pictures go (`vis`: the desktop corner, or the phone pop-up when the window is 768px wide or less) and shows the timer or the typing box.
    - `topbar/topbarController.js` fills the category select, sets the category, event and mode selects to the session's (running their change handlers), wires the penalty buttons and draws the history (`renderHistory`).
+   - `offline/offlineController.js` registers the service worker (in the build only) and asks the browser to keep the saved data.
 3. Last, `mainController.js` awaits `initEvent()`, which shows the first scramble and, for Fewest Moves or Multi-Blind, their layout.
 
 ### The path of one solve
@@ -192,7 +214,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `main/`
 
-- **`mainController.js`**: the entry point. Imports every controller, then `await initEvent()`.
+- **`mainController.js`**: the entry point. Imports every controller (including `offline/offlineController.js`), then `await initEvent()`.
 - **`cstimer.js`**: runs csTimer's scrambler (`public/cstimer_module.js`) in a web worker, so making scrambles never freezes the page. `call(type, args)` sends `[id, type, args]` to the worker and keeps the promise's `resolve` in `callbacks[id]`; when the worker answers `[id, type, result]`, `onmessage` resolves that promise. It exports `csTimer` with `getScramble(type, length)`, `getImage(scramble, type)` (an SVG picture), `setSeed(seed)` and `setGlobal(key, value)`.
 
 ### `timer/`
@@ -293,6 +315,22 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 ### `timeTyping/`
 
 - **`timeTypingController.js`**: the Add button and the Enter key save a typed time. `normalizeTypedTime` accepts "12.34", "1:02.50" or digits only ("1234" → 12.34, "10234" → 1:02.34); anything else flashes the box red.
+
+### `offline/`
+
+The app works offline through a **service worker**: a script the browser keeps running in the background for the site, which sits between the page and the network and can answer the page's requests from a local cache. Pro Timer's is generated by vite-plugin-pwa (see [Build config](#build-config-viteconfigjs)); there's no hand-written service worker code.
+
+How it works, from build to an offline visit:
+
+1. **Build:** `npm run build` writes `dist/sw.js` with a precache list of all 18 files the app needs (the page, the JS and CSS bundles, the small `workbox-window` bundle `registerSW` loads, csTimer's scrambler and the 13 sounds), each with a revision hash of its contents.
+2. **First visit (online):** `offline/offlineController.js` registers `sw.js`. The service worker downloads every file on the list into a cache (`workbox-precache-v2-…`) and takes over the next page loads.
+3. **Later visits, online or offline:** every request goes through the service worker, which answers from the cache. Opening the page itself (`/Pro-timer/` or any path under it) gets the cached `index.html`. Solves and settings don't need it: they're in localStorage, which is on the device anyway.
+4. **New version:** on a later visit online, the browser sees that `sw.js` changed (new revision hashes after a deploy), downloads only the files that changed, and leaves the new service worker **waiting**, so the open page keeps running the old version. The plugin then calls `onNeedRefresh`, which shows the bar.
+   - **Reload** calls `updateSW()`: the waiting service worker takes over and the page reloads into the new version. As it takes over, it deletes the cached files that are no longer on its list.
+   - **Later** only hides the bar. The new version starts by itself once every tab of the app is closed and it's opened again.
+
+- **`offlineController.js`**: imports `registerSW` from `virtual:pwa-register` (a module the plugin makes; in `npm run dev` it does nothing). `registerSW({ onNeedRefresh })` registers the service worker and returns `updateSW`. `onNeedRefresh` adds `.open` to `#updateBanner`; the Reload button calls `updateSW()`, and Later removes `.open`. It also calls `navigator.storage.persist()`, which asks the browser not to clear the site's storage (the saved solves and the cached app) when the device runs low on space.
+- **`updateBanner.html`** and **`offline.css`**: the bar, fixed at the bottom of the page, hidden until `.open`.
 
 ### `cubisz/` and `public/`
 

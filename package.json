@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "preview": "vite build && vite preview --port 4173",
     "predeploy": "npm run build",
     "deploy": "gh-pages -d dist"
   },
@@ -19,6 +20,7 @@
     "vite": "^7.3.1"
   },
   "devDependencies": {
-    "gh-pages": "^6.3.0"
+    "gh-pages": "^6.3.0",
+    "vite-plugin-pwa": "^2.0.0"
   }
 }
