@@ -893,23 +893,23 @@ button {
 /* One file per part of the page, in the order it appears */
 /* Top bar: settings, clear, average mode, category, event and session controls, and Previous / Next scramble */
 
-/* Full-width bar above the app; wraps when the window is too narrow for every control */
+/* Full-width bar above the app */
 .top-bar {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  justify-content: space-between;
   padding: 10px 14px;
   background: var(--bg-tertiary);
 }
 
-/* Row of controls on the left of the bar */
+/* Row of controls on the left of the bar; wraps onto another line when the window is too narrow for all of them */
 .left-controls {
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
   align-items: center;
 }
 
-/* Previous / Next row, right after the other controls */
+/* Previous / Next pair at the end of the row, kept together when it wraps */
 #scrambleNav {
   display: flex;
   gap: 8px;
