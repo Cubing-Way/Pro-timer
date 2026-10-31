@@ -892,7 +892,7 @@ const deviceSettObj = {
 function updateClassicStats(recomputeBest = false) {
   updateClassicStats$1(recomputeBest, averageObj, classicStats);
 }
-function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, modeFlag = false, isMBLD = false, solvePhases) {
+function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, modeFlag = false, isMBLD = false, solvePhases, doneWith) {
   let inspecPenalty = null;
   if (inspectionType === "WCA") {
     if (inspection3 >= 15) inspecPenalty = 2;
@@ -923,8 +923,10 @@ function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, 
       createdAt: Date.now(),
       solution,
       solvePhases,
-      doneAt: deviceSettObj.name || deviceSettObj.detected
+      doneAt: deviceSettObj.name || deviceSettObj.detected,
       // where it was done: the typed device name, else the detected model or type
+      doneWith
+      // how the time was entered; left out of the saved file when undefined (FMC, Multi-Blind)
     });
     averageObj.solveCounter++;
   }
@@ -1280,12 +1282,20 @@ function addRoundsToSession(name, rounds) {
 function isIPad(userAgent) {
   return /iPad/.test(userAgent) || /Macintosh/.test(userAgent) && navigator.maxTouchPoints > 1;
 }
+function computerType(userAgent) {
+  const system = navigator.userAgentData?.platform || userAgent;
+  if (/Windows/.test(system)) return "Windows PC";
+  if (/mac/i.test(system)) return "Mac";
+  if (/CrOS|Chrome OS|Chromium OS/.test(system)) return "Chromebook";
+  if (/Linux/.test(system)) return "Linux PC";
+  return "Computer";
+}
 function detectDeviceType() {
   const userAgent = navigator.userAgent;
   if (isIPad(userAgent)) return "Tablet";
   if (/Mobi|iPhone/.test(userAgent)) return "Cellphone";
   if (/Android/.test(userAgent)) return "Tablet";
-  return "Computer";
+  return computerType(userAgent);
 }
 async function detectDeviceModel() {
   if (navigator.userAgentData) {
@@ -18177,7 +18187,9 @@ function handleSplitOrStop() {
     false,
     false,
     false,
-    timerObj.solvePhases
+    timerObj.solvePhases,
+    "Timer"
+    // done with the timer
   );
   const session2 = getCurrentSession();
   session2.classicStats = structuredClone(classicStats);
@@ -18249,6 +18261,11 @@ function solveRowHtml(s, i, blockIndex) {
                 Done at: ${s.doneAt}
             </div>
     ` : "";
+  const doneWithRow = s.doneWith ? `
+            <div class="modal-scramble">
+                With: ${s.doneWith}
+            </div>
+    ` : "";
   return `
         <div class="modal-solve-row">
             <div class="modal-solve-main">
@@ -18275,6 +18292,7 @@ function solveRowHtml(s, i, blockIndex) {
                 Date: ${new Date(s.createdAt)}
             </div>
             ${doneAtRow}
+            ${doneWithRow}
             ${solutionRows}
         </div>
     `;
@@ -19438,7 +19456,7 @@ function initTypingSubmission() {
       }
       lastTime = formatSecondsToTime(seconds2);
       document.getElementById("timer").textContent = lastTime;
-      const block = averageOfN(seconds2, currentScramble, 0, timerSettObj.inspectionType);
+      const block = averageOfN(seconds2, currentScramble, 0, timerSettObj.inspectionType, false, false, false, void 0, "Typing");
       if (block) addAverageBlock(block);
       plus2CounterObj.penalty = 0;
       document.getElementById("penaltyPlus2Btn").textContent = "+2";
