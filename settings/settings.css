@@ -16,9 +16,10 @@
   display: flex;
 }
 
-/* The panel, scrolling when taller than the screen */
+/* The panel, scrolling when taller than the screen; wide on PC, narrower on phones (media query at the end) */
 .settings-panel {
-  width: 320px;
+  width: 560px;
+  max-width: calc(100vw - 32px);
   background: var(--bg-main);
   color: var(--text-strong);
   border-radius: 12px;
@@ -129,6 +130,67 @@
   font-size: 13px;
 }
 
+/* Layout on/off switch: a hidden checkbox with a sliding knob drawn over it; full opacity, unlike the row's name label */
+.setting-row .toggle-switch {
+  opacity: 1;
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* The real checkbox stays for clicks and the keyboard, but isn't seen (beats the shared input look) */
+.setting-control .toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* The track, in the buttons color while off */
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border-main);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+/* The round knob, on the left while off, in the panel's text color */
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-strong);
+  transition: transform 0.2s;
+}
+
+/* On: accent-colored track */
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* On: knob slides to the right */
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* Ring around the switch when reached with Tab */
+.toggle-switch input:focus-visible + .toggle-slider {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+
 /* Import pop-up: a native <dialog>, so it opens on top of the settings pop-up */
 .import-dialog {
   width: 280px;
@@ -182,8 +244,13 @@
   margin-top: 16px;
 }
 
-/* Phones: no Statistics or Session History switches, since phones never show those sidebars */
+/* Phones: the narrow panel, and no Statistics or Session History switches, since phones never show those sidebars */
 @media (max-width: 768px) {
+  /* Same width as before the PC panel got wider */
+  .settings-panel {
+    width: 320px;
+  }
+
   /* The two sidebar switch rows */
   #pc1, #pc2 {
     display: none;

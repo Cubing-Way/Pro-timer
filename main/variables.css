@@ -28,7 +28,7 @@
   /* Dimmed backdrop behind the solve details pop-up */
   --overlay-strong: rgba(0,0,0,0.75);
 
-  /* Highlight color, used on the stats page's best average card */
+  /* Highlight color, used on the stats page's best average card and the Layout switches while on */
   --accent: #4ade80;
 
   /* Difference beside the timer: faster than the previous solve, and slower */

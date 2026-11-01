@@ -19,7 +19,7 @@ closeBtn.addEventListener("click", () => {
     overlay.classList.remove("open");
 });
 
-// Layout: each select shows or hides every element with a class
+// Layout: each switch shows or hides every element with a class
 
 bindVisibilityToggle("toggle-scramble-visualizer", "panel-cube");
 bindVisibilityToggle("toggle-statistics", "right-sidebar");

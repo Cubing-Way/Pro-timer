@@ -158,84 +158,84 @@
         </div>
       </div>
 
-      <!-- Layout: each select shows or hides a part of the page (settings/layout.js) -->
+      <!-- Layout: each switch shows (on) or hides (off) a part of the page (settings/layout.js) -->
       <div class="settings-section">
         <div class="section-title">Layout</div>
 
         <!-- Desktop scramble picture -->
         <div class="setting-row">
-          <label>Scramble visualizer</label>
+          <label for="toggle-scramble-visualizer">Scramble visualizer</label>
           <div class="setting-control">
-            <select id="toggle-scramble-visualizer">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-scramble-visualizer" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Right sidebar; the row is hidden on phones (#pc1), which never show it -->
         <div class="setting-row" id="pc1">
-          <label>Statistics</label>
+          <label for="toggle-statistics">Statistics</label>
           <div class="setting-control">
-            <select id="toggle-statistics">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-statistics" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Left sidebar; the row is hidden on phones (#pc2), which never show it -->
         <div class="setting-row" id="pc2">
-          <label>Session History</label>
+          <label for="toggle-session-history">Session History</label>
           <div class="setting-control">
-            <select id="toggle-session-history">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-session-history" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Scramble text above the timer -->
         <div class="setting-row">
-          <label>Scramble text</label>
+          <label for="toggle-scramble-text">Scramble text</label>
           <div class="setting-control">
-            <select id="toggle-scramble-text">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-scramble-text" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Buttons under the timer -->
         <div class="setting-row">
-          <label>Penalty bar</label>
+          <label for="toggle-penalty-bar">Penalty bar</label>
           <div class="setting-control">
-            <select id="toggle-penalty-bar">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-penalty-bar" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Footer under the timer -->
         <div class="setting-row">
-          <label>Average preview</label>
+          <label for="toggle-average-preview">Average preview</label>
           <div class="setting-control">
-            <select id="toggle-average-preview">
-              <option value="show">Display</option>
-              <option value="hide">None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-average-preview" checked />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
 
         <!-- Difference to the previous solve beside the timer; off until turned on -->
         <div class="setting-row">
-          <label>Time difference</label>
+          <label for="toggle-time-diff">Time difference</label>
           <div class="setting-control">
-            <select id="toggle-time-diff">
-              <option value="show">Display</option>
-              <option value="hide" selected>None</option>
-            </select>
+            <label class="toggle-switch">
+              <input type="checkbox" id="toggle-time-diff" />
+              <span class="toggle-slider"></span>
+            </label>
           </div>
         </div>
       </div>
