@@ -28,6 +28,18 @@ function saveSessions() {
 
     localStorage.setItem("sessions", JSON.stringify(sessionsObj.sessions));
     localStorage.setItem("currentSession", sessionsObj.currentSession);
+    localStorage.setItem("sessionOrder", JSON.stringify(getSessionOrder()));
+}
+
+// Session names in the select's order: the saved order without deleted sessions, then any new ones (New, imports)
+function getSessionOrder() {
+    const names = Object.keys(sessionsObj.sessions);
+    // Drop the names of sessions that are gone (deleted, renamed)
+    const kept = sessionsObj.order.filter(name => names.includes(name));
+    // Sessions the order doesn't have yet go at the end
+    const added = names.filter(name => !kept.includes(name));
+    sessionsObj.order = [...kept, ...added];
+    return sessionsObj.order;
 }
 
 // The session in use, created empty if it doesn't exist yet
@@ -40,13 +52,14 @@ function getCurrentSession() {
 
 // Session select
 
-// Fills the select: one option per session, a divider, then New, Rename and Delete
+// Fills the select: one option per session, a divider, then New, Rename and Delete; greys out the arrows at the ends
 function renderSessionSelect() {
     const select = sessionsObj.selectEl;
     select.innerHTML = "";
+    const order = getSessionOrder();
 
     // Sessions
-    Object.keys(sessionsObj.sessions).forEach(name => {
+    order.forEach(name => {
         const opt = document.createElement("option");
         opt.value = name;
         opt.textContent = name;
@@ -64,6 +77,26 @@ function renderSessionSelect() {
     select.appendChild(new Option("➕ New session...", "__new__"));
     select.appendChild(new Option("✏ Rename current...", "__rename__"));
     select.appendChild(new Option("🗑 Delete current...", "__delete__"));
+
+    // The first session can't go up, and the last can't go down
+    sessionsObj.upBtn.disabled = order[0] === sessionsObj.currentSession;
+    sessionsObj.downBtn.disabled = order[order.length - 1] === sessionsObj.currentSession;
+}
+
+// Moves the current session one place up (step -1) or down (step 1) in the select, and saves the new order
+function moveSession(step) {
+    const order = getSessionOrder();
+    const from = order.indexOf(sessionsObj.currentSession);
+    const to = from + step;
+
+    // Already at the top or the bottom of the list
+    if (to < 0 || to >= order.length) return;
+
+    // Swap places with the session next to it
+    [order[from], order[to]] = [order[to], order[from]];
+
+    saveSessions();
+    renderSessionSelect();
 }
 
 // Session actions
@@ -107,7 +140,9 @@ sessionsObj.selectEl.onchange = () => {
             return;
         }
 
-        // Rebuild the sessions so the renamed one keeps its place in the list
+        // The renamed session keeps its place in the select (before the rebuild, or getSessionOrder drops the old name)
+        sessionsObj.order = getSessionOrder().map(name => name === oldName ? newName : name);
+        // Rebuild the sessions so the renamed one also keeps its place in the saved sessions (and the backup file)
         sessionsObj.sessions = Object.fromEntries(
             Object.entries(sessionsObj.sessions).map(([name, data]) => [name === oldName ? newName : name, data])
         );
@@ -136,11 +171,14 @@ sessionsObj.selectEl.onchange = () => {
         const old = sessionsObj.currentSession;
         delete sessionsObj.sessions[old];
 
-        // Move to the first session left
-        const first = Object.keys(sessionsObj.sessions)[0];
+        // Move to the first session left in the select
+        const first = getSessionOrder()[0];
 
         // Skip saving because we already deleted old session
         switchSession(first, true);
+
+        // Now save, with the new session's solves in progress loaded, or the deleted one comes back on reload
+        saveSessions();
 
         return;
     }
@@ -148,6 +186,10 @@ sessionsObj.selectEl.onchange = () => {
     // Normal switch: another session was picked
     switchSession(val);
 };
+
+// Session arrows: move the current session up or down the select
+sessionsObj.upBtn.onclick = () => moveSession(-1);
+sessionsObj.downBtn.onclick = () => moveSession(1);
 
 // Startup: fill the select and load the current session's state
 

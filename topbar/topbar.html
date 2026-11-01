@@ -19,8 +19,12 @@
     <select id="categorySelect"></select>
     <select id="eventSelect"></select>
 
-    <!-- Current session, filled by session/sessionController.js -->
-    <select id="sessionSelect"></select>
+    <!-- Current session, filled by session/sessionController.js, and the arrows that move it up or down the list -->
+    <div id="sessionNav">
+      <select id="sessionSelect"></select>
+      <button id="sessionUpBtn" title="Move session up">▲</button>
+      <button id="sessionDownBtn" title="Move session down">▼</button>
+    </div>
     <!-- Opens the session's averages in the details pop-up -->
     <button id="modal-button">Open Session</button>
     <!-- Opens the statistics page (stats/statsController.js) -->

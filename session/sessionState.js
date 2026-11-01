@@ -4,7 +4,10 @@ const sessionsObj = {
         "Default": { averages: [] }
     },
     currentSession: localStorage.getItem("currentSession") || "Default",
-    selectEl: document.getElementById("sessionSelect")   // the top bar's session select
+    order: JSON.parse(localStorage.getItem("sessionOrder")) || [],   // session names in the select's order (names missing from it go last)
+    selectEl: document.getElementById("sessionSelect"),   // the top bar's session select
+    upBtn: document.getElementById("sessionUpBtn"),   // arrow that moves the current session up the select
+    downBtn: document.getElementById("sessionDownBtn")   // arrow that moves it down
 };
 
 export { sessionsObj };
