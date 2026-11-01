@@ -5,9 +5,7 @@ const sessionsObj = {
     },
     currentSession: localStorage.getItem("currentSession") || "Default",
     order: JSON.parse(localStorage.getItem("sessionOrder")) || [],   // session names in the select's order (names missing from it go last)
-    selectEl: document.getElementById("sessionSelect"),   // the top bar's session select
-    upBtn: document.getElementById("sessionUpBtn"),   // arrow that moves the current session up the select
-    downBtn: document.getElementById("sessionDownBtn")   // arrow that moves it down
+    selectEl: document.getElementById("sessionSelect")   // the top bar's session select
 };
 
 export { sessionsObj };

@@ -52,7 +52,7 @@ function getCurrentSession() {
 
 // Session select
 
-// Fills the select: one option per session, a divider, then New, Rename and Delete; greys out the arrows at the ends
+// Fills the select: one option per session, a divider, then New, Rename, Move up, Move down and Delete
 function renderSessionSelect() {
     const select = sessionsObj.selectEl;
     select.innerHTML = "";
@@ -76,11 +76,16 @@ function renderSessionSelect() {
     // Actions
     select.appendChild(new Option("➕ New session...", "__new__"));
     select.appendChild(new Option("✏ Rename current...", "__rename__"));
-    select.appendChild(new Option("🗑 Delete current...", "__delete__"));
 
-    // The first session can't go up, and the last can't go down
-    sessionsObj.upBtn.disabled = order[0] === sessionsObj.currentSession;
-    sessionsObj.downBtn.disabled = order[order.length - 1] === sessionsObj.currentSession;
+    // Move up / down, greyed out when the current session is already first or last
+    const upOpt = new Option("▲ Move current up", "__up__");
+    upOpt.disabled = order[0] === sessionsObj.currentSession;
+    select.appendChild(upOpt);
+    const downOpt = new Option("▼ Move current down", "__down__");
+    downOpt.disabled = order[order.length - 1] === sessionsObj.currentSession;
+    select.appendChild(downOpt);
+
+    select.appendChild(new Option("🗑 Delete current...", "__delete__"));
 }
 
 // Moves the current session one place up (step -1) or down (step 1) in the select, and saves the new order
@@ -89,13 +94,13 @@ function moveSession(step) {
     const from = order.indexOf(sessionsObj.currentSession);
     const to = from + step;
 
-    // Already at the top or the bottom of the list
-    if (to < 0 || to >= order.length) return;
+    // Swap places with the session next to it, unless it's already at the top or the bottom of the list
+    if (to >= 0 && to < order.length) {
+        [order[from], order[to]] = [order[to], order[from]];
+        saveSessions();
+    }
 
-    // Swap places with the session next to it
-    [order[from], order[to]] = [order[to], order[from]];
-
-    saveSessions();
+    // Redraw, which also puts the select back on the current session
     renderSessionSelect();
 }
 
@@ -152,6 +157,12 @@ sessionsObj.selectEl.onchange = () => {
         return;
     }
 
+    // Move up / down: the current session swaps places with the one above or below it
+    if (val === "__up__" || val === "__down__") {
+        moveSession(val === "__up__" ? -1 : 1);
+        return;
+    }
+
     // Delete: never the last session, and only after asking
     if (val === "__delete__") {
         if (Object.keys(sessionsObj.sessions).length === 1) {
@@ -186,10 +197,6 @@ sessionsObj.selectEl.onchange = () => {
     // Normal switch: another session was picked
     switchSession(val);
 };
-
-// Session arrows: move the current session up or down the select
-sessionsObj.upBtn.onclick = () => moveSession(-1);
-sessionsObj.downBtn.onclick = () => moveSession(1);
 
 // Startup: fill the select and load the current session's state
 
