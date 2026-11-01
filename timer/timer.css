@@ -18,21 +18,29 @@
   gap: 20px;
 }
 
-/* The big running time */
-#timer {
-  font-size: 140px;
-  font-weight: 600;
-  letter-spacing: 2px;
+/* Timer in the middle column; both side columns get the difference's width, so the difference on the right doesn't push the timer off-center */
+.timer-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
   margin-top: auto;
 }
 
-/* Difference to the previous solve, tucked under the timer; always one line tall, so the penalty bar doesn't jump when it's empty */
+/* The big running time */
+#timer {
+  grid-column: 2;
+  font-size: 140px;
+  font-weight: 600;
+  letter-spacing: 2px;
+}
+
+/* Difference to the previous solve, on the timer's right, sitting on the same baseline */
 #time-diff {
+  grid-column: 3;
   font-size: 32px;
   font-weight: 600;
-  line-height: 1.2;
-  min-height: 1.2em;
-  margin-top: -24px;
+  padding-left: 14px;
+  white-space: nowrap;
 }
 
 /* Faster than the previous solve */
@@ -70,7 +78,7 @@
   /* Smaller difference to match the smaller timer */
   #time-diff {
     font-size: 20px;
-    margin-top: -12px;
+    padding-left: 8px;
   }
 
   /* Buttons wrap and center */

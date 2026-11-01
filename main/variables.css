@@ -31,7 +31,7 @@
   /* Highlight color, used on the stats page's best average card */
   --accent: #4ade80;
 
-  /* Difference under the timer: faster than the previous solve, and slower */
+  /* Difference beside the timer: faster than the previous solve, and slower */
   --diff-faster: #22c55e;
   --diff-slower: #ef4444;
 

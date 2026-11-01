@@ -8,7 +8,7 @@ function comparableSeconds(solve) {
     return solve.time + (typeof solve.penalty === "number" ? solve.penalty : 0);
 }
 
-// HTML of the line under the timer: how much slower ("+0.52", red) or faster ("-1.20", green) the last solve was than the previous one
+// HTML of the text beside the timer: how much slower ("+0.52", red) or faster ("-1.20", green) the last solve was than the previous one
 function renderTimeDiff([previous, last]) {
     // Fewer than two solves: nothing to compare
     if (!previous || !last) return "";

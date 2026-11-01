@@ -75,7 +75,7 @@ function renderHistory() {
         todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue)
     }
 
-    // Under the timer: the last solve compared with the previous one
+    // Beside the timer: the last solve compared with the previous one
     if (timeDiffContainer) {
         timeDiffContainer.innerHTML = renderTimeDiff(getLastTwoSolves());
     }

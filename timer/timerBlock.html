@@ -2,14 +2,16 @@
 <div class="timer-block">
   <!-- Row that holds the timer and, depending on the event, the FMC panel or the typing box -->
   <div id="timerins">
-    <!-- The running time -->
-    <div id="timer">0.00</div>
+    <!-- The time with the difference beside it; the timer stays centered in it (timer/timer.css) -->
+    <div class="timer-wrap">
+      <!-- The running time -->
+      <div id="timer">0.00</div>
+      <!-- The last solve compared with the previous one ("+0.52" / "-1.20"), filled by renderHistory (render/renderController.js) -->
+      <div id="time-diff"></div>
+    </div>
     <include src="../event/fmcPanel.html"></include>
     <include src="../timeTyping/typingBox.html"></include>
   </div>
-
-  <!-- The last solve compared with the previous one ("+0.52" / "-1.20"), filled by renderHistory (render/renderController.js) -->
-  <div id="time-diff"></div>
 
   <!-- Buttons under the timer; event/eventLayout.js shows the ones the current event uses -->
   <div class="penalty-bar">
