@@ -55,6 +55,13 @@
   opacity: 0.9;
 }
 
+/* Best / worst / σ line under the average's result */
+.modal-average-stats {
+  margin-top: 4px;
+  font-size: 13px;
+  opacity: 0.8;
+}
+
 /* List of the average's solves */
 .modal-solves {
   display: flex;

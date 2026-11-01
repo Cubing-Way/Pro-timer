@@ -1,5 +1,5 @@
 import { getSessionAverages, getCurrentSession, penalty2, remove2 } from "../session/sessionController.js";
-import { computeAverage, formatSecondsToTime } from "../average/avgController.js";
+import { computeAverage, formatSecondsToTime, parseTimeToSeconds } from "../average/avgController.js";
 import { averageObj, classicStats, updateClassicStats, getNeededSolves } from "../average/avgController.js";
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
@@ -20,11 +20,29 @@ const closeModalBtn = document.getElementById("closeModalBtn");
 let modalBlocks = [];
 const modalPenaltyCounters = {};
 
+// The box that scrolls (the modal itself is the dimmed backdrop)
+const modalContent = modal.querySelector(".modal-content");
+
+// Cards and solves drawn per batch
+const MODAL_BATCH_SIZE = 30;
+// How close to the bottom of the box (px) scrolling draws the next batch
+const MODAL_LOAD_DISTANCE = 300;
+
+// Everything the modal can show, in order: { type: "card", html } or { type: "solve", s, i, blockIndex }
+let modalItems = [];
+// How many of modalItems are on screen
+let modalDrawnCount = 0;
+// Solves list of the last card drawn, where the next solves go
+let currentSolvesList = null;
+
 // Close with the button, or by clicking the dimmed backdrop around the box
 closeModalBtn.onclick = () => modal.classList.add("hidden");
 modal.onclick = e => {
     if (e.target === modal) modal.classList.add("hidden");
 };
+
+// Scrolling near the bottom draws the next solves
+modalContent.addEventListener("scroll", drawWhileNearBottom);
 
 // Buttons inside the modal (it is rebuilt on every change)
 modalBody.addEventListener("click", (e) => {
@@ -123,17 +141,41 @@ function solveRowHtml(s, i, blockIndex) {
     `;
 }
 
-// Builds the modal's HTML: one card per saved average (newest first) with its solves, then opens it
-function openDetailsModal() {
-    const averages = getSessionAverages();
+// HTML of the best / worst / σ line under an average's result
+function statsLineHtml(best, worst, sigma) {
+    return `
+        <div class="modal-average-stats">
+            Best: ${formatStatValue(best)} | Worst: ${formatStatValue(worst)} | &sigma;: ${formatStatValue(sigma)}
+        </div>
+    `;
+}
 
-    let html = `<h3 class="modal-title">Session averages</h3>`;
+// HTML of an average card with its header and stats line, and an empty solves list the solves are drawn into
+function cardHtml(headerText, statsLine, extraClass = "") {
+    return `
+        <div class="modal-average-card${extraClass}">
+            <div class="modal-average-header">
+                <b>${headerText}</b>
+                ${statsLine}
+            </div>
+
+            <div class="modal-solves"></div>
+        </div>
+    `;
+}
+
+// Lists every card and solve the modal can show: the average in progress first, then the saved ones newest first
+function buildModalItems() {
+    const averages = getSessionAverages();
+    const items = [];
     modalBlocks = averages;
 
     // The average in progress (the session's buffer) goes first, above the finished ones
     const bufferSolves = averageObj.solvesArray;
     if (bufferSolves.length > 0) {
         let bufferHeader;
+        // Classic's buffer is the whole session (the sidebar already has its stats), so it gets no stats line
+        let bufferStats = "";
         if (averageObj.mode === "classic") {
             // Classic keeps every solve in the buffer, so just count them
             bufferHeader = `classic: ${wrapTimesValue(bufferSolves.length)} solves`;
@@ -146,24 +188,14 @@ function openDetailsModal() {
                 // Two DNFs already make both of them a DNF
                 bufferHeader += ` (bpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.bpAo5)}, wpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.wpA05)})`;
             }
+            // Best, worst and σ of the solves so far, like the footer
+            const liveAvg = computeAverage(bufferSolves, averageObj.mode);
+            bufferStats = statsLineHtml(liveAvg.best, liveAvg.worst, liveAvg.sigma);
         }
 
         // Same card as a finished average; blockIndex -1 tells the buttons it's the average in progress
-        html += `
-            <div class="modal-average-card modal-buffer-card">
-                <div class="modal-average-header">
-                    <b>${bufferHeader}</b>
-                </div>
-
-                <div class="modal-solves">
-        `;
-        bufferSolves.forEach((s, i) => {
-            html += solveRowHtml(s, i, -1);
-        });
-        html += `
-                </div>
-            </div>
-        `;
+        items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, " modal-buffer-card") });
+        bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1 }));
     }
 
     averages.forEach((block, blockIndex) => {
@@ -183,29 +215,69 @@ function openDetailsModal() {
             headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (ao5: ${wrapTimesValue(ao5Value)})`;
         }
 
-        // Card opening: header, then the solves list
-        html += `
-            <div class="modal-average-card">
-                <div class="modal-average-header">
-                    <b>${headerText}</b>
-                </div>
+        // The block's saved best, worst and σ (formatted strings, parsed back to seconds like the footer does)
+        const blockStats = statsLineHtml(parseTimeToSeconds(block.best), parseTimeToSeconds(block.worst), parseTimeToSeconds(block.sigma));
 
-                <div class="modal-solves">
-        `;
-
-        block.solves.forEach((s, i) => {
-            html += solveRowHtml(s, i, blockIndex);
-        });
-
-        // Close the solves list and the card
-        html += `
-                </div>
-            </div>
-        `;
+        // The card, then one item per solve
+        items.push({ type: "card", html: cardHtml(headerText, blockStats) });
+        block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex }));
     });
 
-    modalBody.innerHTML = html;
+    return items;
+}
+
+// Draws modalItems until count of them are on screen: a card goes into the modal, a solve into the last card drawn
+function drawItemsUpTo(count) {
+    const end = Math.min(count, modalItems.length);
+    while (modalDrawnCount < end) {
+        const item = modalItems[modalDrawnCount];
+        if (item.type === "card") {
+            modalBody.insertAdjacentHTML("beforeend", item.html);
+            // The next solves belong to this card
+            currentSolvesList = modalBody.lastElementChild.querySelector(".modal-solves");
+        } else {
+            currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex));
+        }
+        modalDrawnCount++;
+    }
+}
+
+// Draws more batches while the bottom of the box is close (also fills a box the first batch didn't)
+function drawWhileNearBottom() {
+    // Hidden, the box has no height, so it would draw everything
+    if (modal.classList.contains("hidden")) return;
+    while (modalDrawnCount < modalItems.length) {
+        // Space left below what's visible
+        const distanceToBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight;
+        if (distanceToBottom > MODAL_LOAD_DISTANCE) return;
+        drawItemsUpTo(modalDrawnCount + MODAL_BATCH_SIZE);
+    }
+}
+
+// Rebuilds the items from the session and draws the first count of them under the title
+function drawModal(count) {
+    modalItems = buildModalItems();
+    modalDrawnCount = 0;
+    modalBody.innerHTML = `<h3 class="modal-title">Session averages</h3>`;
+    drawItemsUpTo(count);
+}
+
+// Opens the modal at the top, with only the first batch drawn (Open Session button)
+function openDetailsModal() {
+    // Shown first, so drawWhileNearBottom can measure the box
     modal.classList.remove("hidden");
+    drawModal(MODAL_BATCH_SIZE);
+    modalContent.scrollTop = 0;
+    drawWhileNearBottom();
+}
+
+// Redraws the open modal after a change, with as many solves drawn and the same scroll position
+function refreshDetailsModal() {
+    if (modal.classList.contains("hidden")) return;
+    const scrollTop = modalContent.scrollTop;
+    drawModal(modalDrawnCount);
+    modalContent.scrollTop = scrollTop;
+    drawWhileNearBottom();
 }
 
 // Sets a saved solve's penalty (null, a number of seconds or "DNF"); cycleMode makes +2 step through +2 … +12
@@ -243,9 +315,7 @@ function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
     saveSessions();
     renderHistory();
     // Rebuild the modal if it's open, so it shows the new numbers
-    if (!modal.classList.contains("hidden")) {
-        openDetailsModal();
-    }
+    refreshDetailsModal();
 }
 
 // Deletes a saved solve from its average, then recounts, saves and redraws
@@ -257,9 +327,8 @@ function removeSolve(blockIndex, solveIndex) {
     saveSessions();
     renderHistory();
     showLastSolve();
-    if (!modal.classList.contains("hidden")) {
-        openDetailsModal();
-    }
+    // Rebuild the modal if it's open, without the removed solve
+    refreshDetailsModal();
 }
 
 // Checks a typed solution on cubisz: scramble, apply the moves, count them, and work out TPS
