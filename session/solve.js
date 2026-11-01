@@ -52,6 +52,16 @@ function getLastSolve(averageObj, getCurrentSession) {
     return getSessionAverages(getCurrentSession)[target.blockIndex].solves[target.solveIndex];
 }
 
+// The two most recent solves, oldest first ([previous, last]); fewer when the session has fewer
+function getLastTwoSolves(averageObj, getCurrentSession) {
+    // Newest finished average, undefined when there's none
+    const newestBlock = getSessionAverages(getCurrentSession)[0];
+    // The two newest solves can only be at the end of the newest finished average or of the buffer
+    const candidates = [...(newestBlock?.solves.slice(-2) ?? []), ...averageObj.solvesArray.slice(-2)];
+    // Oldest first; on a tie the buffer stays last, like getLastSolveTarget
+    return candidates.sort(byDate).slice(-2);
+}
+
 // Sets a solve's penalty: in the average in progress (blockIndex -1), or in a saved average, which is then recomputed
 function penalty2(blockIndex, solveIndex, penalty, averageObj, getCurrentSession, saveSessions) {
     // Solve of the average in progress: just change it (there are no stored numbers to recompute)
@@ -275,6 +285,7 @@ export {
     getSessionAverages,
     getLastSolveTarget,
     getLastSolve,
+    getLastTwoSolves,
     penalty2,
     remove2,
     applyPenaltyToLast,

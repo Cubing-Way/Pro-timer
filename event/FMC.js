@@ -29,6 +29,8 @@ function handleFMC(display, currentScramble, countdownObj) {
     document.getElementById("open-mbld-modal").style.display = "none";
 
     document.getElementById("openConfig").style.display = "block";
+    // No difference to the previous solve: the timer shows the countdown, not a time
+    document.getElementById("time-diff").style.display = "none";
 
 
     // Smaller timer showing the 1-hour countdown; no touch timing, so the form can be used

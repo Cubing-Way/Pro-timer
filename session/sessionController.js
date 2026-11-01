@@ -294,6 +294,11 @@ function getLastSolve() {
     return solve.getLastSolve(averageObj, getCurrentSession);
 }
 
+// The two most recent solves, oldest first ([previous, last])
+function getLastTwoSolves() {
+    return solve.getLastTwoSolves(averageObj, getCurrentSession);
+}
+
 // Adds imported solves to the current session in its average mode; returns how many were new
 function addSolvesToSession(solves) {
     return solve.addSolvesToSession(solves, averageObj, getCurrentSession);
@@ -334,6 +339,7 @@ export {
     applyPenaltyToLast,
     removeLastSolve,
     getLastSolve,
+    getLastTwoSolves,
     addSolvesToSession,
     addRoundsToSession
 };

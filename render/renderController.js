@@ -1,5 +1,5 @@
 import { averageObj, classicStats } from "../average/avgController.js";
-import { getSessionAverages } from "../session/sessionController.js";
+import { getSessionAverages, getLastTwoSolves } from "../session/sessionController.js";
 import { getStatistics, getStatisticsByDate } from "../stats/statsController.js";
 import { getCurrentSession } from "../session/sessionController.js";
 import { formatStatValue as formatStatValueWith, wrapTimesValue } from "./renderHelpers.js";
@@ -7,6 +7,7 @@ import { renderAvgStats } from "./renderBufferAvgStats.js";
 import { renderCurrentAverage } from "./renderAvgBuffer.js";
 import { renderHistoryList } from "./renderHistoryList.js";
 import { renderStats } from "./statistics.js";
+import { renderTimeDiff } from "./renderTimeDiff.js";
 
 
 // formatStatValue with the current session filled in
@@ -26,6 +27,7 @@ function renderHistory() {
     const doneContainer = document.getElementById("current-stats");
     const statisticsContainer = document.getElementById("stats");
     const todayStatsContainer = document.getElementById("today-stats");
+    const timeDiffContainer = document.getElementById("time-diff");
 
     // What the footer shows: the average in progress if it has solves, else the newest saved one
     let currentType = null; // "live" | "saved"
@@ -72,14 +74,20 @@ function renderHistory() {
         statisticsContainer.innerHTML = renderStats(stats, formatStatValue);
         todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue)
     }
+
+    // Under the timer: the last solve compared with the previous one
+    if (timeDiffContainer) {
+        timeDiffContainer.innerHTML = renderTimeDiff(getLastTwoSolves());
+    }
 }
 
 
 export { 
     renderCurrentAverage, 
     renderHistoryList,
-    renderStats, 
+    renderStats,
     renderAvgStats,
+    renderTimeDiff,
     renderHistory,
     formatStatValue,
     wrapTimesValue

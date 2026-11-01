@@ -31,6 +31,10 @@
   /* Highlight color, used on the stats page's best average card */
   --accent: #4ade80;
 
+  /* Difference under the timer: faster than the previous solve, and slower */
+  --diff-faster: #22c55e;
+  --diff-slower: #ef4444;
+
   /* Scrollbar track, thumb and hovered thumb colors */
   --scrollbar-track: #0f0f0f;
   --scrollbar-thumb: #2a2a2a;

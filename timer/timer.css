@@ -26,6 +26,30 @@
   margin-top: auto;
 }
 
+/* Difference to the previous solve, tucked under the timer; always one line tall, so the penalty bar doesn't jump when it's empty */
+#time-diff {
+  font-size: 32px;
+  font-weight: 600;
+  line-height: 1.2;
+  min-height: 1.2em;
+  margin-top: -24px;
+}
+
+/* Faster than the previous solve */
+.time-diff-faster {
+  color: var(--diff-faster);
+}
+
+/* Slower than the previous solve */
+.time-diff-slower {
+  color: var(--diff-slower);
+}
+
+/* Same time as the previous solve */
+.time-diff-same {
+  color: var(--text-muted);
+}
+
 /* Penalty and event buttons under the timer, above the touch overlay so they stay clickable */
 .penalty-bar {
   display: flex;
@@ -41,6 +65,12 @@
   #timer {
     font-size: 72px;
     letter-spacing: 1px;
+  }
+
+  /* Smaller difference to match the smaller timer */
+  #time-diff {
+    font-size: 20px;
+    margin-top: -12px;
   }
 
   /* Buttons wrap and center */
