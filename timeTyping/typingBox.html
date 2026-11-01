@@ -1,8 +1,8 @@
 <!-- Typed-in times box, shown instead of the timer when "Time insertion" is Typing (timeTyping/timeTypingController.js) -->
 <div id="typing-container" style="display:none;">
-  <!-- Time input and the button that saves it -->
+  <!-- Time input and the button that saves it; phones open the number keyboard, and the time is formatted while typing -->
   <div class="typing-controls">
-    <input id="typed-time">
+    <input id="typed-time" inputmode="numeric" autocomplete="off">
     <button id="typed-time-add">Add</button>
   </div>
   <!-- Starts WCA inspection before typing the time (timer/timerController.js) -->

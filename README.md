@@ -355,7 +355,7 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `timeTyping/`
 
-- **`timeTypingController.js`**: the Add button and the Enter key save a typed time. `normalizeTypedTime` accepts "12.34", "1:02.50" or digits only ("1234" → 12.34, "10234" → 1:02.34); anything else flashes the box red. The time is shown on the timer with `formatSeconds` (from `timer/timerController.js`) and the "Timer decimals" setting, like a timed solve, and goes to `averageOfN` with `doneWith` "Typing".
+- **`timeTypingController.js`**: the Add button and the Enter key save a typed time. The box only takes digits and formats them while typing, like Twisty Timer: its `input` listener keeps the digits (no leading zeros, at most 6, so up to 99:59.99) and writes them back through `normalizeTypedTime` ("1" → 0.01, "123" → 1.23, "12345" → 1:23.45). Typing "1.23" or pasting "1:23.45" gives the same time, since the "." and ":" are dropped and the digits put back in place. Deleting every digit empties the box. On phones, `inputmode="numeric"` on `#typed-time` (`typingBox.html`) opens the number keyboard. `normalizeTypedTime` also accepts "12.34" or "1:02.50" as they are; an empty box flashes red on Add. The time is shown on the timer with `formatSeconds` (from `timer/timerController.js`) and the "Timer decimals" setting, like a timed solve, and goes to `averageOfN` with `doneWith` "Typing".
 
 ### `importExport/`
 

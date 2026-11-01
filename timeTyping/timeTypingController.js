@@ -62,6 +62,14 @@ function initTypingSubmission() {
             input.value = "";
         });
 
+        // Formats the time while typing, so "123" shows as 1.23 and "12345" as 1:23.45
+        input.addEventListener("input", () => {
+            // Keep the digits only, without leading zeros, and at most 6 of them (99:59.99)
+            const digits = input.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 6);
+            // No digits left (all deleted): empty box instead of 0.00
+            input.value = digits ? normalizeTypedTime(digits) : "";
+        });
+
         // Enter in the box works like the Add button
         input.addEventListener("keydown", (ev) => {
             if (ev.key === "Enter") {
