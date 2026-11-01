@@ -25,8 +25,8 @@ function handleMBLD(display, countdownObj) {
     document.getElementById("fmc-label-form").textContent = "Solved / Total: ";
     document.getElementById("open-mbld-modal").style.display = "block";
     document.getElementById("openConfig").style.display = "block";
-    // No difference to the previous solve: the timer shows the countdown, not a time
-    document.getElementById("time-diff").style.display = "none";
+    // No difference to the previous solve: the timer shows the countdown, not a time (hidden, so the "Time difference" setting's display isn't touched)
+    document.getElementById("time-diff").hidden = true;
     updateDisplay(countdownObj, display);
 }
 

@@ -27,6 +27,7 @@ bindVisibilityToggle("toggle-session-history", "left-sidebar");
 bindVisibilityToggle("toggle-scramble-text", "scramble-container");
 bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
 bindVisibilityToggle("toggle-average-preview", "main-footer");
+bindVisibilityToggle("toggle-time-diff", "time-diff");
 
 // Reads one CSS variable from a theme class by putting a hidden element with that class on the page for a moment
 function getThemeVar(themeClass, variable) {

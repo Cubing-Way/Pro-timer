@@ -34,7 +34,7 @@
   letter-spacing: 2px;
 }
 
-/* Difference to the previous solve, on the timer's right, sitting on the same baseline */
+/* Difference to the previous solve, on the timer's right, sitting on the same baseline; no display here, or the hidden attribute FMC / MBLD use stops working */
 #time-diff {
   grid-column: 3;
   font-size: 32px;

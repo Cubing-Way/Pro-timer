@@ -17,8 +17,8 @@ function showTimerLayout(vis) {
     document.getElementById("timerins").style.marginTop = "0px";
     document.getElementById("open-mbld-modal").style.display = "none";
     document.getElementById("openConfig").style.display = "none";
-    // The difference to the previous solve is back (Fewest Moves and Multi-Blind hide it)
-    document.getElementById("time-diff").style.display = "block";
+    // The difference to the previous solve is back (Fewest Moves and Multi-Blind hide it); hidden, not display, which the "Time difference" setting uses
+    document.getElementById("time-diff").hidden = false;
 
     // Full-size timer again (Fewest Moves and Multi-Blind shrink it): big on desktop, smaller on phones
     if (vis === document.querySelector("#scrambleVis")) {
