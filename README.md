@@ -13,7 +13,7 @@ Its average system started as a bug: averages of 5 came out in fixed blocks of f
 - **Sessions:** separate sessions with their solve history, +2 and DNF penalties, and the details of every solve and average, including the one in progress.
 - **Done at:** every solve remembers where it was done: the name you give this device in Settings → Data (or, without one, its model, like "Pixel 8" or "iPhone", its system on a computer, like "Windows PC" or "Mac", or else Cellphone or Tablet), the competition for WCA results, or the app for solves imported from other timers. The solve details show it.
 - **With:** solves timed or typed in the app also remember how the time was entered, Timer or Typing. The solve details show it.
-- **Statistics:** per session, over all time, the year, the semester, the month or the week.
+- **Statistics:** per session, over all time, the year, the semester, the month, the week or the day. The page opens on the smallest of those periods that has solves (today if you solved today), so it never opens empty.
 - **Timer:** WCA inspection and delay flag, timer phases, typed-in times, hide the time while solving, and timer warnings for long attempts (such as a 1-hour limit).
 - **Fewest Moves:** write your solution, test it on the cube and submit it; cubisz checks it and counts the moves.
 - **Multi-Blind:** pick how many cubes and get a scramble for each.
@@ -320,8 +320,8 @@ A **session** (in `sessionsObj.sessions`, by name): `averages` (finished blocks,
 
 ### `stats/`
 
-- **`statsController.js`**: `getStatistics()` and `getStatisticsByDate(range)` (the sidebar's "All time" and "Today"), and `renderStatsPage()`, which fills the statistics page for the chosen period: the overview cards, four Chart.js charts (solve times; averages compared with the closest earlier period that has averages; σ per average; how many solves fall under each time) and the averages table (one row per average finished in the period, newest first, or one per solve of the period with its rolling averages in classic mode).
-- **`statsHelpers.js`**: `getAllSolvesFromSession`, `getStatisticsFromSolves` (best single, mean, σ, best average, solve count), the date ranges (`getRangeTimestamps` for the current day, week, month, semester or year in local time; `filterSolvesByRange`, `filterAveragesByRange`, `getAveragesInRange`, `getLastRangeWithData`), and the chart data (`getSigmaGraphData`, `generateSmartThresholds`, `getTimeDistribution`, `getDistributionLabels`, `filterEmptyBuckets`, `buildAvgMaps`).
+- **`statsController.js`**: `getStatistics()` and `getStatisticsByDate(range)` (the sidebar's "All time" and "Today"), the open button (sets the period dropdown with `getNarrowestRangeWithSolves`, then draws the page), and `renderStatsPage()`, which fills the statistics page for the chosen period: the overview cards, four Chart.js charts (solve times; averages compared with the closest earlier period that has averages; σ per average; how many solves fall under each time) and the averages table (one row per average finished in the period, newest first, or one per solve of the period with its rolling averages in classic mode).
+- **`statsHelpers.js`**: `getAllSolvesFromSession`, `getStatisticsFromSolves` (best single, mean, σ, best average, solve count), the date ranges (`getRangeTimestamps` for the current day, week, month, semester or year in local time; `filterSolvesByRange`, `getNarrowestRangeWithSolves` (the smallest of day, week, month, semester and year that has solves, else all time; used when the page opens), `filterAveragesByRange`, `getAveragesInRange`, `getLastRangeWithData`), and the chart data (`getSigmaGraphData`, `generateSmartThresholds`, `getTimeDistribution`, `getDistributionLabels`, `filterEmptyBuckets`, `buildAvgMaps`).
 
 ### `settings/`
 

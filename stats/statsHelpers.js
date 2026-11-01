@@ -169,6 +169,16 @@ function filterSolvesByRange(solves, range) {
   return solves.filter(s => s.createdAt >= start && s.createdAt <= end);
 }
 
+// Smallest range (day, week, month, semester, year) that has solves, or all time, so the stats page doesn't open empty
+function getNarrowestRangeWithSolves(solves) {
+  // Smallest first, the same order as the period dropdown from the bottom up
+  const ranges = ["day", "week", "month", "semester", "year"];
+  // The first range with at least one solve
+  const found = ranges.find(range => filterSolvesByRange(solves, range).length > 0);
+  // No solves this year (or none at all): all time
+  return found ?? "all";
+}
+
 // Averages whose last solve is in the current range, oldest first
 function filterAveragesByRange(session, range) {
   const { start, end } = getRangeTimestamps(range);
@@ -369,6 +379,7 @@ export {
   getStatisticsFromSolves,
   getRangeTimestamps,
   filterSolvesByRange,
+  getNarrowestRangeWithSolves,
   filterAveragesByRange,
   getAveragesInRange,
   getLastRangeWithData,

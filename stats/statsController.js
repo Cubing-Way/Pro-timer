@@ -8,6 +8,7 @@ import {
   getStatisticsFromSolves,
   getRangeTimestamps,
   filterSolvesByRange,
+  getNarrowestRangeWithSolves,
   filterAveragesByRange,
   getAveragesInRange,
   getLastRangeWithData,
@@ -31,6 +32,10 @@ const openStatsBtn = document.getElementById("open-stats-btn");
 const closeStatsBtn = document.getElementById("close-stats-btn");
 
 openStatsBtn.addEventListener("click", () => {
+  // Every solve of the current session, to find which periods have any
+  const allSolves = getAllSolvesFromSession(getCurrentSession(), averageObj);
+  // Open on the smallest period with solves (setting .value doesn't fire "change", so it's drawn once)
+  document.getElementById("date-filter").value = getNarrowestRangeWithSolves(allSolves);
   renderStatsPage();
   statsPage.classList.add("open");
 });
