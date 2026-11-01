@@ -22,6 +22,18 @@ function getCategoryOfEvent(code) {
   return null;
 }
 
+// An event's name in the menu ("3x3x3" for "333"), or the code itself when Pro Timer doesn't list it
+function getEventName(code) {
+  for (const [category, scrambles] of scrdata) {
+    // Dividers like ===WCA=== only hold a "blank" placeholder
+    if (category.startsWith("===")) continue;
+    // The first category that lists it gives its name (WCA's "3x3x3", not "random state (WCA)")
+    const found = scrambles.find(([, scrambleCode]) => scrambleCode === code);
+    if (found) return found[0];
+  }
+  return code;
+}
+
 // Events Cubisz can check (it only simulates a 3x3)
 const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
 const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
@@ -81,6 +93,7 @@ export {
   getScrambleConfig, 
   isCubiszEvent, 
   autoFitText, 
-  formatMegaminx, 
-  getCategoryOfEvent 
+  formatMegaminx,
+  getCategoryOfEvent,
+  getEventName
 };

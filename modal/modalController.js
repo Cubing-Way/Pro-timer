@@ -5,6 +5,7 @@ import { formatStatValue, renderHistory, wrapTimesValue } from "../render/render
 import { saveSessions } from "../session/sessionController.js";
 import { isCubiszEvent } from "../scramble/scrambleController.js";
 import { showLastSolve } from "../timer/timerController.js";
+import { shortDate, droppedIndexes, averageShareText, solveShareText, shareOrCopy } from "./shareText.js";
 import {
   applyScramble,
   applySolution,
@@ -19,6 +20,11 @@ const closeModalBtn = document.getElementById("closeModalBtn");
 // Averages shown in the modal, and the penalty counter of each solve (key: "blockIndex-solveIndex")
 let modalBlocks = [];
 const modalPenaltyCounters = {};
+// Each card's header and stats HTML by blockIndex (-1 for the average in progress), for its Share button
+let modalCardHeaders = {};
+
+// How long a Share button shows how it went ("Copied") before going back to "Share" (ms)
+const SHARE_FEEDBACK_TIME = 1500;
 
 // The box that scrolls (the modal itself is the dimmed backdrop)
 const modalContent = modal.querySelector(".modal-content");
@@ -58,10 +64,40 @@ modalBody.addEventListener("click", (e) => {
     if (button.dataset.action === "dnf") setPenalty(blockIndex, solveIndex, "DNF");
     if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
     if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
+    if (button.dataset.action === "share-average") shareAverage(button, blockIndex);
+    if (button.dataset.action === "share-solve") shareSolve(button, blockIndex, solveIndex);
 });
 
-// HTML of one solve row: time, penalty buttons, scramble, inspection, date, done at (when it has one) and, for 3x3, the solution box
-function solveRowHtml(s, i, blockIndex) {
+// The solves of a card: the average in progress's for -1, else the saved average's
+function blockSolves(blockIndex) {
+    return blockIndex === -1 ? averageObj.solvesArray : modalBlocks[blockIndex].solves;
+}
+
+// Shows how a share went on its button for a moment, then puts "Share" back; closing the share sheet changes nothing
+function showShareResult(button, result) {
+    const labels = { shared: "Shared", copied: "Copied", failed: "Couldn't copy" };
+    if (!labels[result]) return;
+    button.textContent = labels[result];
+    setTimeout(() => button.textContent = "Share", SHARE_FEEDBACK_TIME);
+}
+
+// Shares an average: its card's header and stats, then every solve with all its details
+async function shareAverage(button, blockIndex) {
+    const { title, stats } = modalCardHeaders[blockIndex];
+    // The mode decides which solves go in parentheses
+    const mode = blockIndex === -1 ? averageObj.mode : modalBlocks[blockIndex].mode;
+    const text = averageShareText(title, stats, blockSolves(blockIndex), mode);
+    showShareResult(button, await shareOrCopy(text));
+}
+
+// Shares one solve with all its details
+async function shareSolve(button, blockIndex, solveIndex) {
+    const text = solveShareText(blockSolves(blockIndex)[solveIndex]);
+    showShareResult(button, await shareOrCopy(text));
+}
+
+// HTML of one solve row: a line with its number, time and scramble that opens to its buttons, scramble, inspection, date, done at, with and, for 3x3, the solution box
+function solveRowHtml(s, i, blockIndex, dropped) {
     // Start this solve's +2 counter at its current penalty
     const counterKey = `${blockIndex}-${i}`;
     let counter = 0;
@@ -108,18 +144,24 @@ function solveRowHtml(s, i, blockIndex) {
             </div>
     ` : "";
 
-    // Solve row: time, penalty buttons, scramble, inspection, date, done at, done with, solution
-    return `
-        <div class="modal-solve-row">
-            <div class="modal-solve-main">
-                <span>#${i + 1}: ${formatStatValue(s)}</span>
+    // The time, in parentheses when its average drops it (best and worst of an ao5)
+    const timeHtml = dropped ? `(${formatStatValue(s)})` : formatStatValue(s);
 
-                <div class="modal-solve-actions">
-                    <button data-action="ok" ${solveData}>OK</button>
-                    <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
-                    <button data-action="dnf" ${solveData}>DNF</button>
-                    <button data-action="remove" ${solveData}>✖</button>
-                </div>
+    // Solve row: a <details> whose <summary> line opens and closes it; data-key finds it again after a redraw (see refreshDetailsModal)
+    return `
+        <details class="modal-solve-row" data-key="${s.createdAt}|${s.time}">
+            <summary class="modal-solve-main">
+                <span class="modal-solve-number">#${i + 1}</span>
+                <span class="modal-solve-time">${timeHtml}</span>
+                <span class="modal-solve-preview">${s.scramble}</span>
+            </summary>
+
+            <div class="modal-solve-actions">
+                <button data-action="ok" ${solveData}>OK</button>
+                <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
+                <button data-action="dnf" ${solveData}>DNF</button>
+                <button data-action="remove" ${solveData}>✖</button>
+                <button data-action="share-solve" ${solveData}>Share</button>
             </div>
 
             <div class="modal-scramble">
@@ -130,14 +172,13 @@ function solveRowHtml(s, i, blockIndex) {
                 Inspection: ${s.inspection}
             </div>
 
-
             <div class="modal-scramble">
-                Date: ${new Date(s.createdAt)}
+                Date: ${shortDate(s.createdAt)}
             </div>
             ${doneAtRow}
             ${doneWithRow}
             ${solutionRows}
-        </div>
+        </details>
     `;
 }
 
@@ -150,13 +191,18 @@ function statsLineHtml(best, worst, sigma) {
     `;
 }
 
-// HTML of an average card with its header and stats line, and an empty solves list the solves are drawn into
-function cardHtml(headerText, statsLine, extraClass = "") {
+// HTML of an average card with its header, stats line and Share button, and an empty solves list the solves are drawn into
+function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
+    // Saved for the Share button, which shares the header as shown
+    modalCardHeaders[blockIndex] = { title: headerText, stats: statsLine };
     return `
         <div class="modal-average-card${extraClass}">
             <div class="modal-average-header">
-                <b>${headerText}</b>
-                ${statsLine}
+                <div>
+                    <b>${headerText}</b>
+                    ${statsLine}
+                </div>
+                <button class="modal-share-btn" data-action="share-average" data-block="${blockIndex}">Share</button>
             </div>
 
             <div class="modal-solves"></div>
@@ -169,6 +215,8 @@ function buildModalItems() {
     const averages = getSessionAverages();
     const items = [];
     modalBlocks = averages;
+    // cardHtml fills it again for the cards of this build
+    modalCardHeaders = {};
 
     // The average in progress (the session's buffer) goes first, above the finished ones
     const bufferSolves = averageObj.solvesArray;
@@ -194,8 +242,10 @@ function buildModalItems() {
         }
 
         // Same card as a finished average; blockIndex -1 tells the buttons it's the average in progress
-        items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, " modal-buffer-card") });
-        bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1 }));
+        items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, -1, " modal-buffer-card") });
+        // An average in progress drops nothing yet, but droppedIndexes checks that itself
+        const bufferDropped = droppedIndexes(bufferSolves, averageObj.mode);
+        bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1, dropped: bufferDropped.has(i) }));
     }
 
     averages.forEach((block, blockIndex) => {
@@ -219,8 +269,10 @@ function buildModalItems() {
         const blockStats = statsLineHtml(parseTimeToSeconds(block.best), parseTimeToSeconds(block.worst), parseTimeToSeconds(block.sigma));
 
         // The card, then one item per solve
-        items.push({ type: "card", html: cardHtml(headerText, blockStats) });
-        block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex }));
+        items.push({ type: "card", html: cardHtml(headerText, blockStats, blockIndex) });
+        // Solves the average drops, shown in parentheses
+        const dropped = droppedIndexes(block.solves, block.mode);
+        block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex, dropped: dropped.has(i) }));
     });
 
     return items;
@@ -236,7 +288,7 @@ function drawItemsUpTo(count) {
             // The next solves belong to this card
             currentSolvesList = modalBody.lastElementChild.querySelector(".modal-solves");
         } else {
-            currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex));
+            currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex, item.dropped));
         }
         modalDrawnCount++;
     }
@@ -271,11 +323,15 @@ function openDetailsModal() {
     drawWhileNearBottom();
 }
 
-// Redraws the open modal after a change, with as many solves drawn and the same scroll position
+// Redraws the open modal after a change, with as many solves drawn, the same rows open and the same scroll position
 function refreshDetailsModal() {
     if (modal.classList.contains("hidden")) return;
     const scrollTop = modalContent.scrollTop;
+    // Solve rows open before the redraw (a +2 is clicked inside an open row), by date and time so they're found even if their average moved
+    const openKeys = [...modalBody.querySelectorAll("details[open]")].map(row => row.dataset.key);
     drawModal(modalDrawnCount);
+    // Open them again, before scrolling back, since open rows are taller
+    openKeys.forEach(key => modalBody.querySelector(`details[data-key="${key}"]`)?.setAttribute("open", ""));
     modalContent.scrollTop = scrollTop;
     drawWhileNearBottom();
 }
@@ -334,9 +390,7 @@ function removeSolve(blockIndex, solveIndex) {
 // Checks a typed solution on cubisz: scramble, apply the moves, count them, and work out TPS
 function submitSolution(blockIndex, solveIndex) {
     // A solve of the average in progress (blockIndex -1) is in the buffer, the others in their saved average
-    const solve = blockIndex === -1
-        ? averageObj.solvesArray[solveIndex]
-        : modalBlocks[blockIndex].solves[solveIndex];
+    const solve = blockSolves(blockIndex)[solveIndex];
 
     const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
     const value = input.value;

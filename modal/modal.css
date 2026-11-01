@@ -47,12 +47,21 @@
   margin-bottom: 14px;
 }
 
-/* Average result line at the top of the card */
+/* Average result and stats on the left, its Share button on the right */
 .modal-average-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
   margin-bottom: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid #222;
   opacity: 0.9;
+}
+
+/* Share button of an average: kept at its size next to a long header */
+.modal-share-btn {
+  flex-shrink: 0;
 }
 
 /* Best / worst / σ line under the average's result */
@@ -69,26 +78,71 @@
   gap: 8px;
 }
 
-/* One solve */
+/* One solve: a one-line summary that opens to its buttons and details (a <details> element) */
 .modal-solve-row {
   background: var(--bg-main);
   border: 1px solid var(--border-main);
   border-radius: 8px;
-  padding: 8px;
+  padding: 0 8px;
 }
 
-/* Solve time on the left, its buttons on the right */
+/* An open solve keeps some space under its details */
+.modal-solve-row[open] {
+  padding-bottom: 8px;
+}
+
+/* Summary line: number, time and the start of the scramble, with an arrow on the right */
 .modal-solve-main {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+  list-style: none;
 }
 
-/* OK / +2 / DNF / remove buttons of a solve */
+/* Hides the browser's own triangle (Safari needs its own rule) */
+.modal-solve-main::-webkit-details-marker {
+  display: none;
+}
+
+/* Arrow: down when closed, up when open */
+.modal-solve-main::after {
+  content: "▾";
+  opacity: 0.6;
+}
+.modal-solve-row[open] .modal-solve-main::after {
+  content: "▴";
+}
+
+/* Divider between an open solve's summary and its details */
+.modal-solve-row[open] .modal-solve-main {
+  border-bottom: 1px solid var(--border-main);
+}
+
+/* Solve number, faded */
+.modal-solve-number {
+  min-width: 28px;
+  opacity: 0.6;
+}
+
+/* Start of the scramble, cut with "…" where it doesn't fit */
+.modal-solve-preview {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+/* OK / +2 / DNF / remove / Share buttons of an open solve, wrapping on narrow screens */
 .modal-solve-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 /* Small faded scramble under the solve */

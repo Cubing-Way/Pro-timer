@@ -5,7 +5,8 @@ import {
      isCubiszEvent, 
      autoFitText, 
      formatMegaminx, 
-     getCategoryOfEvent 
+     getCategoryOfEvent,
+     getEventName
 } from "./scrHelpers.js";
 
 // The scramble on screen; the next solve is saved with it
@@ -161,5 +162,6 @@ export {
     previousScramble, 
     nextScramble, 
     isCubiszEvent,
-    getCategoryOfEvent
+    getCategoryOfEvent,
+    getEventName
 };
