@@ -18215,10 +18215,17 @@ const modalBody = document.getElementById("modalBody");
 const closeModalBtn = document.getElementById("closeModalBtn");
 let modalBlocks = [];
 const modalPenaltyCounters = {};
+const modalContent = modal.querySelector(".modal-content");
+const MODAL_BATCH_SIZE = 30;
+const MODAL_LOAD_DISTANCE = 300;
+let modalItems = [];
+let modalDrawnCount = 0;
+let currentSolvesList = null;
 closeModalBtn.onclick = () => modal.classList.add("hidden");
 modal.onclick = (e) => {
   if (e.target === modal) modal.classList.add("hidden");
 };
+modalContent.addEventListener("scroll", drawWhileNearBottom);
 modalBody.addEventListener("click", (e) => {
   const button = e.target.closest("button[data-action]");
   if (!button) return;
@@ -18297,13 +18304,33 @@ function solveRowHtml(s, i, blockIndex) {
         </div>
     `;
 }
-function openDetailsModal() {
+function statsLineHtml(best, worst, sigma) {
+  return `
+        <div class="modal-average-stats">
+            Best: ${formatStatValue(best)} | Worst: ${formatStatValue(worst)} | &sigma;: ${formatStatValue(sigma)}
+        </div>
+    `;
+}
+function cardHtml(headerText, statsLine, extraClass = "") {
+  return `
+        <div class="modal-average-card${extraClass}">
+            <div class="modal-average-header">
+                <b>${headerText}</b>
+                ${statsLine}
+            </div>
+
+            <div class="modal-solves"></div>
+        </div>
+    `;
+}
+function buildModalItems() {
   const averages = getSessionAverages();
-  let html = `<h3 class="modal-title">Session averages</h3>`;
+  const items = [];
   modalBlocks = averages;
   const bufferSolves = averageObj.solvesArray;
   if (bufferSolves.length > 0) {
     let bufferHeader;
+    let bufferStats = "";
     if (averageObj.mode === "classic") {
       bufferHeader = `classic: ${wrapTimesValue(bufferSolves.length)} solves`;
     } else {
@@ -18312,22 +18339,11 @@ function openDetailsModal() {
         const ao5Avg = computeAverage(bufferSolves, "ao5");
         bufferHeader += ` (bpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.bpAo5)}, wpAo5: ${formatStatValue(ao5Avg.dnf ? "DNF" : ao5Avg.wpA05)})`;
       }
+      const liveAvg = computeAverage(bufferSolves, averageObj.mode);
+      bufferStats = statsLineHtml(liveAvg.best, liveAvg.worst, liveAvg.sigma);
     }
-    html += `
-            <div class="modal-average-card modal-buffer-card">
-                <div class="modal-average-header">
-                    <b>${bufferHeader}</b>
-                </div>
-
-                <div class="modal-solves">
-        `;
-    bufferSolves.forEach((s, i) => {
-      html += solveRowHtml(s, i, -1);
-    });
-    html += `
-                </div>
-            </div>
-        `;
+    items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, " modal-buffer-card") });
+    bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1 }));
   }
   averages.forEach((block, blockIndex) => {
     let headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)}`;
@@ -18340,24 +18356,51 @@ function openDetailsModal() {
       const ao5Value = ao5Avg.avg === "DNF" ? "DNF" : formatSecondsToTime(ao5Avg.avg);
       headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (ao5: ${wrapTimesValue(ao5Value)})`;
     }
-    html += `
-            <div class="modal-average-card">
-                <div class="modal-average-header">
-                    <b>${headerText}</b>
-                </div>
-
-                <div class="modal-solves">
-        `;
-    block.solves.forEach((s, i) => {
-      html += solveRowHtml(s, i, blockIndex);
-    });
-    html += `
-                </div>
-            </div>
-        `;
+    const blockStats = statsLineHtml(parseTimeToSeconds(block.best), parseTimeToSeconds(block.worst), parseTimeToSeconds(block.sigma));
+    items.push({ type: "card", html: cardHtml(headerText, blockStats) });
+    block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex }));
   });
-  modalBody.innerHTML = html;
+  return items;
+}
+function drawItemsUpTo(count) {
+  const end = Math.min(count, modalItems.length);
+  while (modalDrawnCount < end) {
+    const item = modalItems[modalDrawnCount];
+    if (item.type === "card") {
+      modalBody.insertAdjacentHTML("beforeend", item.html);
+      currentSolvesList = modalBody.lastElementChild.querySelector(".modal-solves");
+    } else {
+      currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex));
+    }
+    modalDrawnCount++;
+  }
+}
+function drawWhileNearBottom() {
+  if (modal.classList.contains("hidden")) return;
+  while (modalDrawnCount < modalItems.length) {
+    const distanceToBottom = modalContent.scrollHeight - modalContent.scrollTop - modalContent.clientHeight;
+    if (distanceToBottom > MODAL_LOAD_DISTANCE) return;
+    drawItemsUpTo(modalDrawnCount + MODAL_BATCH_SIZE);
+  }
+}
+function drawModal(count) {
+  modalItems = buildModalItems();
+  modalDrawnCount = 0;
+  modalBody.innerHTML = `<h3 class="modal-title">Session averages</h3>`;
+  drawItemsUpTo(count);
+}
+function openDetailsModal() {
   modal.classList.remove("hidden");
+  drawModal(MODAL_BATCH_SIZE);
+  modalContent.scrollTop = 0;
+  drawWhileNearBottom();
+}
+function refreshDetailsModal() {
+  if (modal.classList.contains("hidden")) return;
+  const scrollTop = modalContent.scrollTop;
+  drawModal(modalDrawnCount);
+  modalContent.scrollTop = scrollTop;
+  drawWhileNearBottom();
 }
 function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
   let finalPenalty = penalty;
@@ -18383,9 +18426,7 @@ function setPenalty(blockIndex, solveIndex, penalty, cycleMode = false) {
   session2.classicStats = structuredClone(classicStats);
   saveSessions();
   renderHistory();
-  if (!modal.classList.contains("hidden")) {
-    openDetailsModal();
-  }
+  refreshDetailsModal();
 }
 function removeSolve(blockIndex, solveIndex) {
   remove2(blockIndex, solveIndex);
@@ -18395,9 +18436,7 @@ function removeSolve(blockIndex, solveIndex) {
   saveSessions();
   renderHistory();
   showLastSolve();
-  if (!modal.classList.contains("hidden")) {
-    openDetailsModal();
-  }
+  refreshDetailsModal();
 }
 function submitSolution(blockIndex, solveIndex) {
   const solve = blockIndex === -1 ? averageObj.solvesArray[solveIndex] : modalBlocks[blockIndex].solves[solveIndex];
