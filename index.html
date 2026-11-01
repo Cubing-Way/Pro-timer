@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Timer v1</title>
     <!-- Imports every folder's CSS (main/style.css lists them) -->
-  <script type="module" crossorigin src="/Pro-timer/assets/index-Bwmhmg0Y.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-Ci8oWFNL.css">
+  <script type="module" crossorigin src="/Pro-timer/assets/index-D_I8iCZP.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BFEv9kbG.css">
 </head>
 <body>
     <!-- Page skeleton: each <include> is swapped for that file's HTML by the plugin in vite.config.js -->
@@ -32,12 +32,8 @@
     <select id="categorySelect"></select>
     <select id="eventSelect"></select>
 
-    <!-- Current session, filled by session/sessionController.js, and the arrows that move it up or down the list -->
-    <div id="sessionNav">
-      <select id="sessionSelect"></select>
-      <button id="sessionUpBtn" title="Move session up">▲</button>
-      <button id="sessionDownBtn" title="Move session down">▼</button>
-    </div>
+    <!-- Current session and its actions (New, Rename, Move up / down, Delete), filled by session/sessionController.js -->
+    <select id="sessionSelect"></select>
     <!-- Opens the session's averages in the details pop-up -->
     <button id="modal-button">Open Session</button>
     <!-- Opens the statistics page (stats/statsController.js) -->

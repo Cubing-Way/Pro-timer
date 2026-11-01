@@ -951,12 +951,8 @@ const sessionsObj = {
   currentSession: localStorage.getItem("currentSession") || "Default",
   order: JSON.parse(localStorage.getItem("sessionOrder")) || [],
   // session names in the select's order (names missing from it go last)
-  selectEl: document.getElementById("sessionSelect"),
+  selectEl: document.getElementById("sessionSelect")
   // the top bar's session select
-  upBtn: document.getElementById("sessionUpBtn"),
-  // arrow that moves the current session up the select
-  downBtn: document.getElementById("sessionDownBtn")
-  // arrow that moves it down
 };
 function ensureSessionShape(getCurrentSession2) {
   const session2 = getCurrentSession2();
@@ -1176,17 +1172,22 @@ function renderSessionSelect() {
   select.appendChild(sep);
   select.appendChild(new Option("➕ New session...", "__new__"));
   select.appendChild(new Option("✏ Rename current...", "__rename__"));
+  const upOpt = new Option("▲ Move current up", "__up__");
+  upOpt.disabled = order[0] === sessionsObj.currentSession;
+  select.appendChild(upOpt);
+  const downOpt = new Option("▼ Move current down", "__down__");
+  downOpt.disabled = order[order.length - 1] === sessionsObj.currentSession;
+  select.appendChild(downOpt);
   select.appendChild(new Option("🗑 Delete current...", "__delete__"));
-  sessionsObj.upBtn.disabled = order[0] === sessionsObj.currentSession;
-  sessionsObj.downBtn.disabled = order[order.length - 1] === sessionsObj.currentSession;
 }
 function moveSession(step) {
   const order = getSessionOrder();
   const from2 = order.indexOf(sessionsObj.currentSession);
   const to2 = from2 + step;
-  if (to2 < 0 || to2 >= order.length) return;
-  [order[from2], order[to2]] = [order[to2], order[from2]];
-  saveSessions();
+  if (to2 >= 0 && to2 < order.length) {
+    [order[from2], order[to2]] = [order[to2], order[from2]];
+    saveSessions();
+  }
   renderSessionSelect();
 }
 function switchSession(name, skipSave = false) {
@@ -1226,6 +1227,10 @@ sessionsObj.selectEl.onchange = () => {
     switchSession(newName);
     return;
   }
+  if (val === "__up__" || val === "__down__") {
+    moveSession(val === "__up__" ? -1 : 1);
+    return;
+  }
   if (val === "__delete__") {
     if (Object.keys(sessionsObj.sessions).length === 1) {
       alert("You must have at least one session.");
@@ -1246,8 +1251,6 @@ sessionsObj.selectEl.onchange = () => {
   }
   switchSession(val);
 };
-sessionsObj.upBtn.onclick = () => moveSession(-1);
-sessionsObj.downBtn.onclick = () => moveSession(1);
 renderSessionSelect();
 changedSession();
 function clearAverages() {
