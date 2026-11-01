@@ -7,11 +7,11 @@ import { beginHold, cancelHold, resetTimerColor } from "./timerPhases.js";
 import { inspection } from "./inspection.js";
 import { getThemeVar } from "../settings/settingsController.js";
 import { startTimer, stopTimer } from "./timer.js";
-import { averageOfN, classicStats, formatDisplayTime } from "../average/avgController.js";
+import { averageOfN, classicStats } from "../average/avgController.js";
 import { renderHistory } from "../render/renderController.js";
 import { addAverageBlock } from "../session/sessionController.js";
 import { saveSessions, getCurrentSession, getLastSolve } from "../session/sessionController.js";
-import { formatTime } from "./timeFormatting.js";
+import { formatTime, formatSeconds, formatSolveTime } from "./timeFormatting.js";
 import { timeInsertion, setTimeInsertion } from "../settings/settingsController.js";
 import { plus2CounterObj } from "../topbar/topbarState.js";
 import { startTimer2, stopTimer2 } from "./countdownTimer.js";
@@ -38,13 +38,13 @@ function setTimerDisplay(colorOrTime, content) {
     }
 }
 
-// Shows the most recent solve on the timer, or "0.00" when there's none; FMC and Multi-Blind keep their countdown
+// Shows the most recent solve on the timer with the chosen decimals, or zero when there's none; FMC and Multi-Blind keep their countdown
 function showLastSolve() {
     if (timerSettObj.untimedEvent) return;
     const last = getLastSolve();
     // A Fewest Moves or Multi-Blind solve in the session is moves / points, not a time
     const isTime = last && last.event !== "333fm" && last.event !== "r3ni";
-    setTimerDisplay('time', isTime ? formatDisplayTime(last) : "0.00");
+    setTimerDisplay('time', isTime ? formatSolveTime(last, timerSettObj.timerDecimals) : formatTime(0, timerSettObj.timerDecimals));
 }
 
 // Inspection for typed-in times: a plain seconds count, separate from the solve timer
@@ -223,6 +223,12 @@ document.addEventListener("keydown", (event) => {
     }
 });
 
+// A new "Timer decimals" choice shows right away; settingsController.js's listener was added first, so it's already saved
+document.getElementById("timer-decimals").addEventListener("change", () => {
+    // Only while idle: inspection, a running solve and the typed-time count keep what they show
+    if (timerObj.timerPhase === PHASE.IDLE && !running) showLastSolve();
+});
+
 // Phone: lifting the fingers is a release
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
     // If the touch ended inside an input or the typing UI, ignore it
@@ -338,10 +344,10 @@ function handleSplitOrStop() {
     // Last phase: reset the +2 button for the new solve, then stop
     plus2CounterObj.penalty = 0;
     document.getElementById("penaltyPlus2Btn").textContent = "+2";
-    stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
+    stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime, totalElapsed);
 
-    // The time as shown ("12.34" or "1: 02.50"), parsed again by averageOfN
-    const finalTime = document.getElementById("timer").innerHTML;
+    // The time to save, always 2 decimals like the WCA ("12.34" or "1: 02.50"), whatever the timer shows; parsed again by averageOfN
+    const finalTime = formatTime(totalElapsed);
 
     // Add the solve; a block comes back when it completes an average
     const block = averageOfN(
@@ -390,5 +396,6 @@ export {
     setTimerDisplay,
     timerDOMObj,
     showLastSolve,
-    formatTime
+    formatTime,
+    formatSeconds
 };

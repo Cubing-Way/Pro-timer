@@ -1,4 +1,5 @@
-import { averageOfN, parseTimeToSeconds, formatSecondsToTime } from "../average/avgController.js";
+import { averageOfN, parseTimeToSeconds } from "../average/avgController.js";
+import { formatSeconds } from "../timer/timerController.js";
 import { currentScramble, displayScramble } from "../scramble/scrambleController.js";
 import { vis, eventObj } from "../event/eventController.js";
 import { plus2CounterObj } from "../topbar/topbarState.js";
@@ -44,8 +45,8 @@ function initTypingSubmission() {
                 return;
             }
 
-            // Show the time on the timer, in the same format as a timed solve
-            lastTime = formatSecondsToTime(seconds);
+            // Show the time on the timer, in the same format and decimals as a timed solve
+            lastTime = formatSeconds(seconds, timerSettObj.timerDecimals);
             document.getElementById("timer").textContent = lastTime;
 
             // Typed times have no tracked inspection, so 0 instead of the timer's last inspection time; no phases, and done with Typing

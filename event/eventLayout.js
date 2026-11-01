@@ -1,5 +1,5 @@
-// Layout for every event timed with the timer (Fewest Moves and Multi-Blind have handleFMC and handleMBLD instead)
-function showTimerLayout(vis) {
+// Layout for every event timed with the timer (Fewest Moves and Multi-Blind have handleFMC and handleMBLD instead); zeroTime is "0.00" with the chosen decimals
+function showTimerLayout(vis, zeroTime) {
     // Penalty buttons on, Fewest Moves / Multi-Blind controls off, touch timing on
     document.getElementById("penaltyOkBtn").style.display = "block";
     document.getElementById("penaltyPlus2Btn").style.display = "block";
@@ -27,7 +27,7 @@ function showTimerLayout(vis) {
         document.getElementById("timer").style.fontSize = "72px";
     }
 
-    document.getElementById("timer").textContent = "0.00";
+    document.getElementById("timer").textContent = zeroTime;
 }
 
 // Typed-in times or the timer: Fewest Moves and Multi-Blind never use the timer

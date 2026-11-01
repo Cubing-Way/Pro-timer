@@ -1,4 +1,5 @@
 import { PHASE } from "./timerState.js";
+import { timerSettObj } from "../settings/settingsState.js";
 
 // Starts timing a solve: resets the timer color and updates the display every 10 ms
 function startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
@@ -19,15 +20,16 @@ function startTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
         if (displayMode === "Hide") {
             setTimerDisplay("time", "Solving");
         } else {
-            setTimerDisplay('time', formatTime(performance.now() - startTime));
+            setTimerDisplay('time', formatTime(performance.now() - startTime, timerSettObj.timerDecimals));
         }
     }, 10);
 }
 
-// Stops the solve: shows the exact final time (read back from the display by the caller) and goes back to idle
-function stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime) {
+// Stops the solve: shows the final time (ms measured at the press) with the chosen decimals and goes back to idle
+function stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime, elapsed) {
     clearInterval(timerObj.interval);
-    setTimerDisplay('time', formatTime(performance.now() - timerObj.startTime));
+    // Same ms as the saved time, so the timer and the history never disagree
+    setTimerDisplay('time', formatTime(elapsed, timerSettObj.timerDecimals));
     timerObj.timerPhase = PHASE.IDLE;
 }
 

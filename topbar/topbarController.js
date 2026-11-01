@@ -5,7 +5,7 @@ import { renderHistory } from "../render/renderController.js";
 import { displayScramble, currentScramble } from "../scramble/scrambleController.js";
 import { openDetailsModal, setPenalty, removeSolve } from "../modal/modalController.js";
 import { timerSettObj } from "../settings/settingsState.js";
-import { timerDOMObj, showLastSolve } from "../timer/timerController.js";
+import { timerDOMObj, showLastSolve, formatTime } from "../timer/timerController.js";
 import { applyPenaltyToLast, removeLastSolve } from "../session/sessionController.js";
 import { handleFMC } from "../event/eventController.js";
 import { timeInsertion } from "../settings/settingsController.js";
@@ -139,8 +139,8 @@ eventSelect.addEventListener("change", async (e) => {
     // A running Fewest Moves / Multi-Blind attempt ends with its event, or its countdown keeps writing over the timer
     if (countdownObj.intervalId !== null) stopTimer2(countdownObj);
 
-    // Fewest Moves and Multi-Blind switch to their own layout after the scramble below
-    showTimerLayout(vis);
+    // Fewest Moves and Multi-Blind switch to their own layout after the scramble below; the timer shows zero with the chosen decimals
+    showTimerLayout(vis, formatTime(0, timerSettObj.timerDecimals));
 
     // Inspection to None for BLD events, the saved inspection type for the others
     setEventInspection(eventObj.event, timerSettObj);

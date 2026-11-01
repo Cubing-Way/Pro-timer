@@ -268,6 +268,14 @@ document.getElementById("timer-display").addEventListener("change", () => {
     localStorage.setItem("timerDisplay", timerDisplay);
 });
 
+// Timer decimals (1, 2 or 3), loaded by settingsState.js; timer/timer.js reads timerSettObj on every update
+document.getElementById("timer-decimals").value = timerSettObj.timerDecimals;
+document.getElementById("timer-decimals").addEventListener("change", () => {
+    // The select's values are text ("1", "2", "3"), so turn them into a number
+    timerSettObj.timerDecimals = Number(document.getElementById("timer-decimals").value);
+    localStorage.setItem("timerDecimals", timerSettObj.timerDecimals);
+});
+
 // Number of timer phases per solve, kept in timerObj.totalSolvePhases
 const phaseInput = document.getElementById("phase-count");
 
