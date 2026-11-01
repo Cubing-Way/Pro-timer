@@ -909,6 +909,13 @@ button {
   align-items: center;
 }
 
+/* Session select and its arrows, kept together when it wraps */
+#sessionNav {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
 /* Previous / Next pair at the end of the row, kept together when it wraps */
 #scrambleNav {
   display: flex;
@@ -916,7 +923,8 @@ button {
   align-items: center;
 }
 
-/* Previous is greyed out when there's no older scramble */
+/* Previous is greyed out when there's no older scramble, and a session arrow at the top or bottom of the list */
+#sessionNav button:disabled,
 #scrambleNav button:disabled {
   opacity: 0.4;
   cursor: default;
@@ -942,6 +950,12 @@ button {
     flex: 1 1;
     min-width: 100px;
     min-height: 10px;
+  }
+
+  /* Session group grows like a select, with room for a 100px select and both arrows */
+  #sessionNav {
+    flex: 1 1;
+    min-width: 174px;
   }
 }
 /* Scramble text above the timer and the scramble pictures (desktop corner and phone pop-up) */

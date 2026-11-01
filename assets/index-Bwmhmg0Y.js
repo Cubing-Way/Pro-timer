@@ -949,8 +949,14 @@ const sessionsObj = {
     "Default": { averages: [] }
   },
   currentSession: localStorage.getItem("currentSession") || "Default",
-  selectEl: document.getElementById("sessionSelect")
+  order: JSON.parse(localStorage.getItem("sessionOrder")) || [],
+  // session names in the select's order (names missing from it go last)
+  selectEl: document.getElementById("sessionSelect"),
   // the top bar's session select
+  upBtn: document.getElementById("sessionUpBtn"),
+  // arrow that moves the current session up the select
+  downBtn: document.getElementById("sessionDownBtn")
+  // arrow that moves it down
 };
 function ensureSessionShape(getCurrentSession2) {
   const session2 = getCurrentSession2();
@@ -1005,29 +1011,39 @@ function remove2$1(blockIndex, solveIndex, averageObj2, getCurrentSession2, save
   const modal3 = document.getElementById("detailsModal");
   if (blockIndex === -1) {
     if (solveIndex < 0 || solveIndex >= averageObj2.solvesArray.length) return;
-    averageObj2.solvesArray.splice(solveIndex, 1);
-    averageObj2.solveCounter--;
-    if (averageObj2.solveCounter < 0) averageObj2.solveCounter = 0;
+    const inProgressCount2 = averageObj2.solvesArray.length;
+    const inProgressText = inProgressCount2 === 1 ? "the 1 solve in progress" : `all ${inProgressCount2} solves in progress`;
+    const removeOnlyThis = confirm(
+      `This solve belongs to the average in progress.
+
+OK = Remove this solve
+Cancel = Delete ${inProgressText}`
+    );
+    if (removeOnlyThis) {
+      averageObj2.solvesArray.splice(solveIndex, 1);
+      averageObj2.solveCounter--;
+      if (averageObj2.solveCounter < 0) averageObj2.solveCounter = 0;
+      return;
+    }
+    if (!confirm(`Delete ${inProgressText}? This cannot be undone.`)) return;
+    averageObj2.solvesArray = [];
+    averageObj2.solveCounter = 0;
     return;
   }
   const block = averages[blockIndex];
-  if (blockIndex === 0 && averageObj2.solvesArray.length === 0) {
-    const newSolves = block.solves.filter((_, i) => i !== solveIndex);
-    averageObj2.solvesArray = structuredClone(newSolves);
-    averageObj2.solveCounter = newSolves.length;
-    averages.splice(blockIndex, 1);
-    modal3.classList.add("hidden");
-    saveSessions2();
-    return;
-  }
+  const inProgressCount = averageObj2.solvesArray.length;
+  let inProgressNote = "";
+  if (inProgressCount === 1) inProgressNote = "\n\nThe 1 solve in progress is kept; the average's other solves join it by date.";
+  if (inProgressCount > 1) inProgressNote = `
+
+The ${inProgressCount} solves in progress are kept; the average's other solves join them by date.`;
   const choice = confirm(
-    "This solve belongs to a finished average.\n\nOK = Replace this solve (reopen average)\nCancel = Delete the whole average"
+    "This solve belongs to a finished average.\n\nOK = Replace this solve (reopen average)\nCancel = Delete the whole average" + inProgressNote
   );
   if (choice) {
     const newSolves = block.solves.filter((_, i) => i !== solveIndex);
-    averageObj2.solvesArray = structuredClone(newSolves);
-    averageObj2.solveCounter = newSolves.length;
     averages.splice(blockIndex, 1);
+    joinInProgress(structuredClone(newSolves), averageObj2, getCurrentSession2());
     modal3.classList.add("hidden");
     saveSessions2();
     return;
@@ -1077,7 +1093,11 @@ function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
     seen2.add(key);
     return true;
   });
-  let inProgress = [...averageObj2.solvesArray, ...newSolves].sort(byDate);
+  joinInProgress(newSolves, averageObj2, session2);
+  return newSolves.length;
+}
+function joinInProgress(solves, averageObj2, session2) {
+  let inProgress = [...averageObj2.solvesArray, ...solves].sort(byDate);
   if (averageObj2.mode !== "classic") {
     const size = getNeededSolves(averageObj2.mode);
     while (inProgress.length >= size) {
@@ -1088,7 +1108,6 @@ function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
   }
   averageObj2.solvesArray = inProgress;
   averageObj2.solveCounter = inProgress.length;
-  return newSolves.length;
 }
 function addRoundsToSession$1(rounds, averageObj2, getSession) {
   ensureSessionShape(getSession);
@@ -1125,6 +1144,14 @@ function saveSessions() {
   };
   localStorage.setItem("sessions", JSON.stringify(sessionsObj.sessions));
   localStorage.setItem("currentSession", sessionsObj.currentSession);
+  localStorage.setItem("sessionOrder", JSON.stringify(getSessionOrder()));
+}
+function getSessionOrder() {
+  const names2 = Object.keys(sessionsObj.sessions);
+  const kept = sessionsObj.order.filter((name) => names2.includes(name));
+  const added = names2.filter((name) => !kept.includes(name));
+  sessionsObj.order = [...kept, ...added];
+  return sessionsObj.order;
 }
 function getCurrentSession() {
   if (!sessionsObj.sessions[sessionsObj.currentSession]) {
@@ -1135,7 +1162,8 @@ function getCurrentSession() {
 function renderSessionSelect() {
   const select = sessionsObj.selectEl;
   select.innerHTML = "";
-  Object.keys(sessionsObj.sessions).forEach((name) => {
+  const order = getSessionOrder();
+  order.forEach((name) => {
     const opt = document.createElement("option");
     opt.value = name;
     opt.textContent = name;
@@ -1149,6 +1177,17 @@ function renderSessionSelect() {
   select.appendChild(new Option("➕ New session...", "__new__"));
   select.appendChild(new Option("✏ Rename current...", "__rename__"));
   select.appendChild(new Option("🗑 Delete current...", "__delete__"));
+  sessionsObj.upBtn.disabled = order[0] === sessionsObj.currentSession;
+  sessionsObj.downBtn.disabled = order[order.length - 1] === sessionsObj.currentSession;
+}
+function moveSession(step) {
+  const order = getSessionOrder();
+  const from2 = order.indexOf(sessionsObj.currentSession);
+  const to2 = from2 + step;
+  if (to2 < 0 || to2 >= order.length) return;
+  [order[from2], order[to2]] = [order[to2], order[from2]];
+  saveSessions();
+  renderSessionSelect();
 }
 function switchSession(name, skipSave = false) {
   if (!skipSave) {
@@ -1179,6 +1218,7 @@ sessionsObj.selectEl.onchange = () => {
       renderSessionSelect();
       return;
     }
+    sessionsObj.order = getSessionOrder().map((name) => name === oldName ? newName : name);
     sessionsObj.sessions = Object.fromEntries(
       Object.entries(sessionsObj.sessions).map(([name, data]) => [name === oldName ? newName : name, data])
     );
@@ -1199,12 +1239,15 @@ sessionsObj.selectEl.onchange = () => {
     saveSessions();
     const old = sessionsObj.currentSession;
     delete sessionsObj.sessions[old];
-    const first = Object.keys(sessionsObj.sessions)[0];
+    const first = getSessionOrder()[0];
     switchSession(first, true);
+    saveSessions();
     return;
   }
   switchSession(val);
 };
+sessionsObj.upBtn.onclick = () => moveSession(-1);
+sessionsObj.downBtn.onclick = () => moveSession(1);
 renderSessionSelect();
 changedSession();
 function clearAverages() {
@@ -16167,6 +16210,11 @@ function filterSolvesByRange(solves, range) {
   if (!start) return solves;
   return solves.filter((s) => s.createdAt >= start && s.createdAt <= end);
 }
+function getNarrowestRangeWithSolves(solves) {
+  const ranges = ["day", "week", "month", "semester", "year"];
+  const found = ranges.find((range) => filterSolvesByRange(solves, range).length > 0);
+  return found ?? "all";
+}
 function filterAveragesByRange(session2, range) {
   const { start, end } = getRangeTimestamps(range);
   if (!start) return session2.averages;
@@ -16302,6 +16350,8 @@ const statsPage = document.getElementById("stats-page");
 const openStatsBtn = document.getElementById("open-stats-btn");
 const closeStatsBtn = document.getElementById("close-stats-btn");
 openStatsBtn.addEventListener("click", () => {
+  const allSolves = getAllSolvesFromSession(getCurrentSession(), averageObj);
+  document.getElementById("date-filter").value = getNarrowestRangeWithSolves(allSolves);
   renderStatsPage();
   statsPage.classList.add("open");
 });
