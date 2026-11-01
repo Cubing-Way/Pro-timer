@@ -76,54 +76,66 @@ function penalty2(blockIndex, solveIndex, penalty, averageObj, getCurrentSession
     saveSessions();
 }
 
-// Removes a solve: from the average in progress (blockIndex -1), or from a saved average, which then reopens or goes away
+// Removes a solve: from the average in progress (blockIndex -1), which keeps waiting or is cleared, or from a saved average, which then reopens or goes away
 function remove2(blockIndex, solveIndex, averageObj, getCurrentSession, saveSessions) {
     const averages = getSessionAverages(getCurrentSession);
     const modal = document.getElementById("detailsModal");
 
-    // Solve of the average in progress: just remove it (no dialog)
+    // Solve of the average in progress: ask whether to remove only it or every solve in progress, like a finished average
     if (blockIndex === -1) {
         if (solveIndex < 0 || solveIndex >= averageObj.solvesArray.length) return;
 
-        averageObj.solvesArray.splice(solveIndex, 1);
-        averageObj.solveCounter--;
+        // The solves the second choice would delete (in classic, the whole buffer), like "all 3 solves in progress"
+        const inProgressCount = averageObj.solvesArray.length;
+        const inProgressText = inProgressCount === 1 ? "the 1 solve in progress" : `all ${inProgressCount} solves in progress`;
+        const removeOnlyThis = confirm(
+            "This solve belongs to the average in progress.\n\n" +
+            "OK = Remove this solve\n" +
+            `Cancel = Delete ${inProgressText}`
+        );
 
-        if (averageObj.solveCounter < 0) averageObj.solveCounter = 0;
+        // Remove only it: the average in progress waits for a replacement solve
+        if (removeOnlyThis) {
+            averageObj.solvesArray.splice(solveIndex, 1);
+            averageObj.solveCounter--;
 
+            if (averageObj.solveCounter < 0) averageObj.solveCounter = 0;
+
+            return;
+        }
+
+        // Delete every solve in progress, after a second confirmation
+        if (!confirm(`Delete ${inProgressText}? This cannot be undone.`)) return;
+
+        averageObj.solvesArray = [];
+        averageObj.solveCounter = 0;
         return;
     }
 
     const block = averages[blockIndex];
 
-    // Newest average and nothing in progress: reopen it without the solve, no question asked
-    if (blockIndex === 0 && averageObj.solvesArray.length === 0) {
-        const newSolves = block.solves.filter((_, i) => i !== solveIndex);
+    // With solves in progress, say they're kept and the reopened solves join them
+    const inProgressCount = averageObj.solvesArray.length;
+    let inProgressNote = "";
+    if (inProgressCount === 1) inProgressNote = "\n\nThe 1 solve in progress is kept; the average's other solves join it by date.";
+    if (inProgressCount > 1) inProgressNote = `\n\nThe ${inProgressCount} solves in progress are kept; the average's other solves join them by date.`;
 
-        averageObj.solvesArray = structuredClone(newSolves);
-        averageObj.solveCounter = newSolves.length;
-
-        averages.splice(blockIndex, 1);
-
-        modal.classList.add("hidden");
-        saveSessions();
-        return;
-    }
-
-    // Older average: ask whether to reopen it or delete it whole
+    // Finished average (the newest one too): ask whether to reopen it or delete it whole
     const choice = confirm(
         "This solve belongs to a finished average.\n\n" +
         "OK = Replace this solve (reopen average)\n" +
-        "Cancel = Delete the whole average"
+        "Cancel = Delete the whole average" +
+        inProgressNote
     );
 
-    // Reopen: its other solves become the average in progress, waiting for a replacement solve
+    // Reopen: its other solves join the average in progress, which waits for a replacement solve
     if (choice) {
         const newSolves = block.solves.filter((_, i) => i !== solveIndex);
 
-        averageObj.solvesArray = structuredClone(newSolves);
-        averageObj.solveCounter = newSolves.length;
-
         averages.splice(blockIndex, 1);
+
+        // Among the solves in progress by date instead of over them; a block that fills up closes as a finished average
+        joinInProgress(structuredClone(newSolves), averageObj, getCurrentSession());
 
         modal.classList.add("hidden");
         saveSessions();
@@ -197,8 +209,14 @@ function addSolvesToSession(solves, averageObj, getCurrentSession) {
         return true;
     });
 
-    // The new solves join the average in progress, all in date order
-    let inProgress = [...averageObj.solvesArray, ...newSolves].sort(byDate);
+    joinInProgress(newSolves, averageObj, session);
+    return newSolves.length;
+}
+
+// Puts solves among the solves in progress by date (none is replaced); in a block mode, every whole block becomes a finished average
+function joinInProgress(solves, averageObj, session) {
+    // The solves join the average in progress, all in date order
+    let inProgress = [...averageObj.solvesArray, ...solves].sort(byDate);
 
     // Block modes: every whole block, oldest first, becomes a finished average (classic keeps them all in progress)
     if (averageObj.mode !== "classic") {
@@ -207,13 +225,12 @@ function addSolvesToSession(solves, averageObj, getCurrentSession) {
             session.averages.push(buildAverageBlock(inProgress.slice(0, size), averageObj.mode));
             inProgress = inProgress.slice(size);
         }
-        // Finished averages newest first, the imported ones placed by date among the old ones
+        // Finished averages newest first, the new ones placed by date among the old ones
         session.averages.sort((a, b) => blockDate(b) - blockDate(a));
     }
 
     averageObj.solvesArray = inProgress;
     averageObj.solveCounter = inProgress.length;
-    return newSolves.length;
 }
 
 
