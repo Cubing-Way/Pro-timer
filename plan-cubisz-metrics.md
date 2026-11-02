@@ -17,7 +17,7 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - **Only `333` gets metrics** (`isMetricsEvent`). The speed model is for two hands, and the method is CFOP, so one-handed, feet, BLD and Fewest Moves would give wrong numbers.
 - **Method: picked in Settings → Cubisz review**, from the list Cubisz sends (20 methods, without its "Computer fastest" ones, which take minutes). Until one is picked, it's CFOP level 3, the one the site starts on. It's saved in `metrics.method`, so statistics can group by it.
 - **Submit is the send button.** Submitting again with another method reviews again, and the old metrics stay until the new ones arrive.
-- **"Full analysis on Cubisz" link** next to the metrics: it opens the site with the same solve and method, and `review=1` starts the review there. That review is a second one, so it costs the server again.
+- **"Full analysis on Cubisz" link** next to the metrics: it opens the site with the same solve, method and saved engine runs (`metrics.runs`), and the site rebuilds the review from them with no engine call (`seedRuns`). Only the runs need the engine, so saving them (1.9 KB) is what makes reopening free.
 
 ## What I found
 
@@ -26,7 +26,8 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - Other methods, timed on this PC with one CFOP solve: ZZ (EOLine) 1 s, Roux 10 s, CFOP level 2 19 s, CFOP level 4 43 s, Beginner 117 s, CFOP with ZBLL 121 s. Only CFOP levels 2 and 3 have answer files on the server, so other methods' AWS cost isn't known yet and may be several times higher. A slower device could pass `REVIEW_LIMIT` (5 minutes) with the slowest ones.
 - Both give the same metrics. Check the spend with the server's GET rarely: each one is a call, and waking a cold container costs about 6.5 GB-seconds.
 - Without the engine, splitting a solution into steps and scoring your own moves takes about 250 ms, but it needs Puzzly's code, so it also goes through the engine page.
-- A full review is 185 KB; `solveMetrics` (`cubisz/metrics.js`) brings it to about 1.3 KB per solve. localStorage holds about 5 MB and also has every time, so thousands of reviewed solves would need another home.
+- A full review is 185 KB; `solveMetrics` (`cubisz/metrics.js`) brings it to about 3 KB per solve with CFOP level 3, 1.9 KB of it the engine runs. localStorage holds about 5 MB and also has every time, so more than a thousand or so reviewed solves would need another home, and `saveSessions` has no handling for a full localStorage yet.
+- Rebuilding a review from saved runs was proven on 2026-11-02: 102 ms, no engine call, and byte for byte the same as the real review (189,840 bytes). Saved runs would also let later statistics recompute metrics without the engine if the scoring changes.
 - Every field is listed in Cubisz's README, under "Engine for other apps". `version` is in the metrics so statistics can handle older ones.
 - `averageOfN` copies solves when an average finishes, so solves are found again by `createdAt|time` (`findSolve`).
 
@@ -37,7 +38,7 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - [x] Cubisz: `engine.html`, `engine.js`, `engine-worker.js`, `metrics.js`, second page in `vite.config.js`
 - [x] Pro Timer: `metrics/` (client, controller, view, CSS), `isMetricsEvent`, Submit sends the solution
 - [x] Fixes the solution check needed: `S` turning backwards, Fewest Moves mode staying on after leaving the event
-- [x] The engine method setting (`requestMethods`, `reviewSettObj`, `APP_METHODS`) and the full analysis link (`analysisLink`, `loadSolveFromLink`)
+- [x] The engine method setting (`requestMethods`, `reviewSettObj`, `APP_METHODS`) and the full analysis link (`analysisLink`, `loadSolveFromLink`, `seedRuns`), which needs no new engine run
 - [x] READMEs
 
 ### Part 2: ship it
@@ -57,7 +58,6 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 
 ### Part 4: later
 
-- [ ] Share engine runs between Pro Timer's review and a Cubisz tab, so the full analysis link doesn't pay for the same runs twice (on the live sites they're the same site, so IndexedDB could hold them)
 - [ ] Decide what to do for OH, feet and BLD
 - [ ] Add metrics to the share text (`modal/shareText.js`)
 - [ ] Paid plan: the boundary to gate is `metricsClient.js` and the engine page

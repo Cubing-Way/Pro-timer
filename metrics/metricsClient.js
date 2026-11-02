@@ -125,9 +125,9 @@ async function requestMethods() {
     });
 }
 
-// The address of a solve's full analysis on Cubisz's site; the solve goes after the #, so it stays in the browser, and review=1 starts the review there
-function analysisLink({ scramble, solution, time, method }) {
-    const link = new URLSearchParams({ scramble, solution, time, method, review: "1" });
+// The address of a solve's full analysis on Cubisz's site; the solve goes after the #, so it stays in the browser, and its saved engine runs (JSON text) let the site rebuild the review with no engine call
+function analysisLink({ scramble, solution, time, method, runs }) {
+    const link = new URLSearchParams({ scramble, solution, time, method, runs });
     return `${SITE_URL}#${link}`;
 }
 

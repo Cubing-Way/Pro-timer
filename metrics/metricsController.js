@@ -84,11 +84,12 @@ function updateMetrics(solve, solution, onChange, keepOld = false) {
     onChange(key);
 }
 
-// HTML of a solve's metrics, with the link to the same review in full on Cubisz's site
+// HTML of a solve's metrics, with the link to the same review in full on Cubisz's site, rebuilt there from the engine runs saved with them
 function savedMetricsHtml(solve) {
     if (!solve.metrics) return "";
-    const { method, time } = solve.metrics;
-    return metricsHtml(solve.metrics, analysisLink({ scramble: solve.scramble, solution: solve.solution, time: time ?? solve.time, method }));
+    const { method, time, runs } = solve.metrics;
+    const link = analysisLink({ scramble: solve.scramble, solution: solve.solution, time: time ?? solve.time, method, runs: JSON.stringify(runs) });
+    return metricsHtml(solve.metrics, link);
 }
 
 // HTML of what a solve has to show: its review under way, why the last one failed, and its metrics (nothing = never reviewed)
