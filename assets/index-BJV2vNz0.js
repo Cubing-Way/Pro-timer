@@ -1,414 +1,187 @@
-(function polyfill() {
-  const relList = document.createElement("link").relList;
-  if (relList && relList.supports && relList.supports("modulepreload")) return;
-  for (const link of document.querySelectorAll('link[rel="modulepreload"]')) processPreload(link);
-  new MutationObserver((mutations) => {
-    for (const mutation of mutations) {
-      if (mutation.type !== "childList") continue;
-      for (const node of mutation.addedNodes) if (node.tagName === "LINK" && node.rel === "modulepreload") processPreload(node);
+import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
+async function loadCubing() {
+  const [{ randomScrambleForEvent }, { setSearchDebug }] = await Promise.all([
+    __vitePreload(() => import("./index-BhF7j1GY.js").then((n) => n.q), true ? [] : void 0),
+    __vitePreload(() => import("./index-BNYZJfXW.js"), true ? [] : void 0)
+  ]);
+  setSearchDebug({ prioritizeEsbuildWorkaroundForWorkerInstantiation: true, logPerf: false });
+  return randomScrambleForEvent;
+}
+const cubingLoaded = loadCubing();
+__vitePreload(() => import("./index-DeYO63xS.js").then((n) => n.i), true ? [] : void 0);
+async function getScramble(eventId) {
+  const randomScrambleForEvent = await cubingLoaded;
+  const alg = await randomScrambleForEvent(eventId);
+  return alg.toString().replace(/\s+/g, " ").trim();
+}
+const cubing = {
+  // Scramble of a cubing.js event ("333", "minx"…)
+  getScramble,
+  // One numbered scramble per cube ("1) … 2) …"), the text parseMBLDScramble reads
+  getMultiBlindScramble: async (cubes) => {
+    const scrambles = [];
+    for (let i = 1; i <= cubes; i++) {
+      scrambles.push(`${i}) ${await getScramble("333mbf")}`);
     }
-  }).observe(document, {
-    childList: true,
-    subtree: true
-  });
-  function getFetchOpts(link) {
-    const fetchOpts = {};
-    if (link.integrity) fetchOpts.integrity = link.integrity;
-    if (link.referrerPolicy) fetchOpts.referrerPolicy = link.referrerPolicy;
-    if (link.crossOrigin === "use-credentials") fetchOpts.credentials = "include";
-    else if (link.crossOrigin === "anonymous") fetchOpts.credentials = "omit";
-    else fetchOpts.credentials = "same-origin";
-    return fetchOpts;
-  }
-  function processPreload(link) {
-    if (link.ep) return;
-    link.ep = true;
-    const fetchOpts = getFetchOpts(link);
-    fetch(link.href, fetchOpts);
-  }
-})();
-const worker = new Worker(
-  `${"/Pro-timer/"}cstimer_module.js?worker_file&type=classic`
-);
-let msgid = 0;
-const callbacks = {};
-worker.onmessage = (e) => {
-  const [id, , result] = e.data;
-  callbacks[id]?.(result);
-  delete callbacks[id];
+    return scrambles.join("\n");
+  },
+  // HTML of a flat picture of a puzzle ("3x3x3", "megaminx"…) after a scramble; it fills the box it's put in
+  getPicture: (scramble, puzzle) => `<twisty-player puzzle="${puzzle}" experimental-setup-alg="${scramble}" visualization="2D" hint-facelets="none" control-panel="none" background="none"></twisty-player>`
 };
-function call(type, args = []) {
-  return new Promise((resolve2) => {
-    msgid++;
-    callbacks[msgid] = resolve2;
-    worker.postMessage([msgid, type, args]);
-  });
-}
-const csTimer = {
-  // Scramble of a csTimer type ("333", "pll"…); len is the length for types that take one
-  getScramble: (type, len = 0) => call("scramble", [type, len]),
-  // SVG picture of a scrambled puzzle
-  getImage: (scramble, type) => call("image", [scramble, type]),
-  // Seed for the random scrambles
-  setSeed: (seed) => call("seed", [seed]),
-  // Changes one of csTimer's global options
-  setGlobal: (key, value) => call("set", [key, value])
+const cubingEvents = {
+  "333": { eventId: "333", puzzle: "3x3x3" },
+  "222so": { eventId: "222", puzzle: "2x2x2" },
+  "444wca": { eventId: "444", puzzle: "4x4x4" },
+  "555wca": { eventId: "555", puzzle: "5x5x5" },
+  "666wca": { eventId: "666", puzzle: "6x6x6" },
+  "777wca": { eventId: "777", puzzle: "7x7x7" },
+  "333ni": { eventId: "333bf", puzzle: "3x3x3" },
+  "333fm": { eventId: "333fm", puzzle: "3x3x3" },
+  "333oh": { eventId: "333oh", puzzle: "3x3x3" },
+  "333ft": { eventId: "333ft", puzzle: "3x3x3" },
+  "clkwca": { eventId: "clock", puzzle: "clock" },
+  "mgmp": { eventId: "minx", puzzle: "megaminx" },
+  "pyrso": { eventId: "pyram", puzzle: "pyraminx" },
+  "skbso": { eventId: "skewb", puzzle: "skewb" },
+  "sqrs": { eventId: "sq1", puzzle: "square1" },
+  "444bld": { eventId: "444bf", puzzle: "4x4x4" },
+  "555bld": { eventId: "555bf", puzzle: "5x5x5" },
+  "r3ni": { eventId: "333mbf", puzzle: "3x3x3" },
+  "ftoso": { eventId: "fto", puzzle: "fto" },
+  "baby_fto": { eventId: "baby_fto", puzzle: "baby_fto" },
+  "klmso": { eventId: "kilominx", puzzle: "kilominx" },
+  "mpyrso": { eventId: "master_tetraminx", puzzle: "master_tetraminx" },
+  "rediso": { eventId: "redi_cube", puzzle: "redi_cube" }
 };
-function setVisualizerScale(scale, right, bottom, vis2) {
-  let wrapper = null;
-  if (vis2.id === "scrambleVis") {
-    wrapper = document.querySelector(".panel-cube");
-    wrapper.style.transformOrigin = "bottom right";
-    wrapper.style.transform = `scale(${scale})`;
-    wrapper.style.position = "absolute";
-    wrapper.style.right = `${right}px`;
-    wrapper.style.bottom = `${bottom}px`;
-    const canvas = document.getElementById("scrambleVis");
-    const originalWidth = canvas.width || 600;
-    const originalHeight = canvas.height || 400;
-    wrapper.style.width = originalWidth * scale + "px";
-    wrapper.style.height = originalHeight * scale + "px";
-  } else {
-    bottom += 50;
-    wrapper = document.querySelector(".panel-cube2");
-    wrapper.style.transformOrigin = "bottom center";
-    wrapper.style.transform = `scale(${scale})`;
-    wrapper.style.right = `${right}px`;
-    wrapper.style.bottom = `${bottom}px`;
-    const canvas = document.getElementById("scrambleVis");
-    const originalWidth = canvas.width || 600;
-    const originalHeight = canvas.height || 400;
-    wrapper.style.width = originalWidth * scale + "px";
-    wrapper.style.height = originalHeight * scale + "px";
-  }
-}
 const scrdata = [
   ["WCA", [
-    ["3x3x3", "333", 0],
-    ["2x2x2", "222so", 0],
-    ["4x4x4", "444wca", 0],
-    ["5x5x5", "555wca", 60],
-    ["6x6x6", "666wca", 80],
-    ["7x7x7", "777wca", 100],
-    ["3x3 bld", "333ni", 0],
-    ["3x3 fm", "333fm", 0],
-    ["3x3 oh", "333oh", 0],
-    ["clock", "clkwca", 0],
-    ["megaminx", "mgmp", 70],
-    ["pyraminx", "pyrso", 10],
-    ["skewb", "skbso", 0],
-    ["sq1", "sqrs", 0],
-    ["4x4 bld", "444bld", 40],
-    ["5x5 bld", "555bld", 60],
-    ["3x3 mbld", "r3ni", 5]
-  ]],
-  ["===WCA===", [
-    ["--", "blank", 0]
+    ["3x3x3", "333"],
+    ["2x2x2", "222so"],
+    ["4x4x4", "444wca"],
+    ["5x5x5", "555wca"],
+    ["6x6x6", "666wca"],
+    ["7x7x7", "777wca"],
+    ["3x3 bld", "333ni"],
+    ["3x3 fm", "333fm"],
+    ["3x3 oh", "333oh"],
+    ["clock", "clkwca"],
+    ["megaminx", "mgmp"],
+    ["pyraminx", "pyrso"],
+    ["skewb", "skbso"],
+    ["sq1", "sqrs"],
+    ["4x4 bld", "444bld"],
+    ["5x5 bld", "555bld"],
+    ["3x3 mbld", "r3ni"]
   ]],
   ["3x3x3", [
-    ["random state (WCA)", "333", 0],
-    ["random move", "333o", 25],
-    ["edges only", "edges", 0],
-    ["corners only", "corners", 0],
-    ["3x3 ft", "333ft", 0]
-  ]],
-  ["3x3x3 CFOP", [
-    ["PLL", "pll", 0],
-    ["OLL", "oll", 0],
-    ["last slot + last layer", "lsll2", 0],
-    ["last layer", "ll", 0],
-    ["ZBLL", "zbll", 0],
-    ["COLL", "coll", 0],
-    ["CLL", "cll", 0],
-    ["ELL", "ell", 0],
-    ["2GLL", "2gll", 0],
-    ["ZZLL", "zzll", 0],
-    ["ZBLS", "zbls", 0],
-    ["EOLS", "eols", 0],
-    ["WVLS", "wvls", 0],
-    ["VLS", "vls", 0],
-    ["cross solved", "f2l", 0],
-    ["EOLine", "eoline", 0],
-    ["easy cross", "easyc", 3],
-    ["easy xcross", "easyxc", 4]
-  ]],
-  ["3x3x3 Roux", [
-    ["2nd Block", "sbrx", 0],
-    ["CMLL", "cmll", 0],
-    ["LSE", "lse", 0],
-    ["LSE &lt;M, U&gt;", "lsemu", 0]
-  ]],
-  ["3x3x3 Mehta", [
-    ["3QB", "mt3qb", 0],
-    ["EOLE", "mteole", 0],
-    ["TDR", "mttdr", 0],
-    ["6CP", "mt6cp", 0],
-    ["CDRLL", "mtcdrll", 0],
-    ["L5EP", "mtl5ep", 0],
-    ["TTLL", "ttll", 0]
+    ["random state (WCA)", "333"],
+    ["3x3 ft", "333ft"]
   ]],
   ["2x2x2", [
-    ["random state (WCA)", "222so", 0],
-    ["optimal", "222o", 0],
-    ["3-gen", "2223", 25],
-    ["EG", "222eg", 0],
-    ["CLL", "222eg0", 0],
-    ["EG1", "222eg1", 0],
-    ["EG2", "222eg2", 0],
-    ["TCLL+", "222tcp", 0],
-    ["TCLL-", "222tcn", 0],
-    ["TCLL", "222tc", 0],
-    ["LS", "222lsall", 0],
-    ["No Bar", "222nb", 0]
+    ["random state (WCA)", "222so"]
   ]],
   ["4x4x4", [
-    ["WCA", "444wca", -40],
-    ["random move", "444m", 40],
-    ["SiGN", "444", 40],
-    ["YJ", "444yj", 40],
-    ["4x4x4 edges", "4edge", 0],
-    ["R,r,U,u", "RrUu", 40],
-    ["Last layer", "444ll", 0],
-    ["ELL", "444ell", 0],
-    ["Edge only", "444edo", 0],
-    ["Center only", "444cto", 0]
-  ]],
-  ["4x4x4 Yau/Hoya", [
-    ["UD center solved", "444ctud", 0],
-    ["UD+3E solved", "444ud3c", 0],
-    ["Last 8 dedges", "444l8e", 0],
-    ["RL center solved", "444ctrl", 0],
-    ["RLDX center solved", "444rlda", 0],
-    ["RLDX cross solved", "444rlca", 0]
+    ["WCA", "444wca"]
   ]],
   ["5x5x5", [
-    ["WCA", "555wca", 60],
-    ["SiGN", "555", 60],
-    ["5x5x5 edges", "5edge", 8]
+    ["WCA", "555wca"]
   ]],
   ["6x6x6", [
-    ["WCA", "666wca", 80],
-    ["SiGN", "666si", 80],
-    ["prefix", "666p", 80],
-    ["suffix", "666s", 80],
-    ["6x6x6 edges", "6edge", 8]
+    ["WCA", "666wca"]
   ]],
   ["7x7x7", [
-    ["WCA", "777wca", 100],
-    ["SiGN", "777si", 100],
-    ["prefix", "777p", 100],
-    ["suffix", "777s", 100],
-    ["7x7x7 edges", "7edge", 8]
+    ["WCA", "777wca"]
   ]],
   ["Clock", [
-    ["WCA", "clkwca", 0],
-    ["wca (old)", "clkwcab", 0],
-    ["WCA w/o y2", "clknf", 0],
-    ["jaap", "clk", 0],
-    ["optimal", "clko", 0],
-    ["concise", "clkc", 0],
-    ["efficient pin order", "clke", 0]
+    ["WCA", "clkwca"]
   ]],
   ["Megaminx", [
-    ["WCA", "mgmp", 70],
-    ["Carrot", "mgmc", 70],
-    ["old style", "mgmo", 70],
-    ["2-generator R,U", "minx2g", 30],
-    ["last slot + last layer", "mlsll", 0],
-    ["PLL", "mgmpll", 0],
-    ["Last Layer", "mgmll", 0]
+    ["WCA", "mgmp"]
   ]],
   ["Pyraminx", [
-    ["random state (WCA)", "pyrso", 10],
-    ["optimal", "pyro", 0],
-    ["random move", "pyrm", 25],
-    ["L4E", "pyrl4e", 0],
-    ["4 tips", "pyr4c", 0],
-    ["No bar", "pyrnb", 0]
+    ["random state (WCA)", "pyrso"]
   ]],
   ["Skewb", [
-    ["random state (WCA)", "skbso", 0],
-    ["optimal", "skbo", 0],
-    ["random move", "skb", 25],
-    ["No bar", "skbnb", 0]
+    ["random state (WCA)", "skbso"]
   ]],
   ["Square-1", [
-    ["random state (WCA)", "sqrs", 0],
-    ["CSP", "sqrcsp", 0],
-    ["PLL", "sq1pll", 0],
-    ["face turn metric", "sq1h", 40],
-    ["twist metric", "sq1t", 20]
-  ]],
-  ["===OTHER===", [
-    ["--", "blank", 0]
-  ]],
-  ["15 puzzle", [
-    ["random state URLD", "15prp", 0],
-    ["random state ^<>v", "15prap", 0],
-    ["random state Blank", "15prmp", 0],
-    ["random move URLD", "15p", 80],
-    ["random move ^<>v", "15pat", 80],
-    ["random move Blank", "15pm", 80]
-  ]],
-  ["8 puzzle", [
-    ["random state URLD", "8prp", 0],
-    ["random state ^<>v", "8prap", 0],
-    ["random state Blank", "8prmp", 0]
-  ]],
-  ["LxMxN", [
-    ["1x3x3 (Floppy Cube)", "133", 0],
-    ["2x2x3 (Tower Cube)", "223", 0],
-    ["2x3x3 (Domino)", "233", 25],
-    ["3x3x4", "334", 40],
-    ["3x3x5", "335", 25],
-    ["3x3x6", "336", 40],
-    ["3x3x7", "337", 40],
-    ["8x8x8", "888", 120],
-    ["9x9x9", "999", 120],
-    ["10x10x10", "101010", 120],
-    ["11x11x11", "111111", 120],
-    ["NxNxN", "cubennn", 12]
-  ]],
-  ["Gear Cube", [
-    ["random state", "gearso", 0],
-    ["optimal", "gearo", 0],
-    ["random move", "gear", 10]
+    ["random state (WCA)", "sqrs"]
   ]],
   ["Kilominx", [
-    ["random state", "klmso", 0],
-    ["Pochmann", "klmp", 30]
-  ]],
-  ["Gigaminx", [
-    ["Pochmann", "giga", 300]
-  ]],
-  ["Crazy Puzzle", [
-    ["Crazy 3x3x3", "crz3a", 30]
-  ]],
-  ["Cmetrick", [
-    ["Cmetrick", "cm3", 25],
-    ["Cmetrick Mini", "cm2", 25]
-  ]],
-  ["Helicopter Cube", [
-    ["Heli copter", "heli", 40],
-    ["Curvy copter", "helicv", 40],
-    ["2x2 Heli random move", "heli2x2", 70],
-    ["2x2 Heli by group", "heli2x2g", 5]
-  ]],
-  ["Redi Cube", [
-    ["random state", "rediso", 0],
-    ["MoYu", "redim", 8],
-    ["random move", "redi", 20]
-  ]],
-  ["Ivy cube", [
-    ["random state", "ivyso", 0],
-    ["optimal", "ivyo", 0],
-    ["random move", "ivy", 10]
+    ["random state", "klmso"]
   ]],
   ["Master Pyraminx", [
-    ["random state", "mpyrso", 0],
-    ["random move", "mpyr", 42]
+    ["random state", "mpyrso"]
   ]],
-  ["Pyraminx Crystal", [
-    ["Pochmann", "prcp", 70],
-    ["old style", "prco", 70]
-  ]],
-  ["Siamese Cube", [
-    ["1x1x3 block", "sia113", 25],
-    ["1x2x3 block", "sia123", 25],
-    ["2x2x2 block", "sia222", 25]
-  ]],
-  ["Square", [
-    ["Square-2", "sq2", 20],
-    ["Super Square-1", "ssq1t", 20]
-  ]],
-  ["Super Floppy", [
-    [" ", "sfl", 25]
-  ]],
-  ["UFO", [
-    ["Jaap style", "ufo", 25]
+  ["Redi Cube", [
+    ["random state", "rediso"]
   ]],
   ["FTO", [
-    ["random state", "ftoso", 0],
-    ["random move", "fto", 30],
-    ["L3T", "ftol3t", 0],
-    ["L3T+LBT", "ftol4t", 0]
+    ["random state", "ftoso"]
   ]],
-  ["Icosahedron", [
-    ["Icosamate random move", "ctico", 60]
-  ]],
-  ["===SPECIAL===", [
-    ["--", "blank", 0]
-  ]],
-  ["3x3x3 subsets", [
-    ["2-generator R,U", "2gen", 0],
-    ["2-generator L,U", "2genl", 0],
-    ["Roux-generator M,U", "roux", 25],
-    ["3-generator F,R,U", "3gen_F", 0],
-    ["3-generator R,U,L", "3gen_L", 0],
-    ["3-generator R,r,U", "RrU", 25],
-    ["Domino Subgroup", "333drud", 0],
-    ["half turns only", "half", 0],
-    ["last slot + last layer (old)", "lsll", 15]
-  ]],
-  ["Bandaged Cube", [
-    ["Bicube", "bic", 30],
-    ["Square-1 /,(1,0)", "bsq", 25]
-  ]],
-  ["Relays", [
-    ["lots of 3x3x3s", "r3", 5],
-    ["234 relay", "r234", 0],
-    ["2345 relay", "r2345", 0],
-    ["23456 relay", "r23456", 0],
-    ["234567 relay", "r234567", 0],
-    ["234 relay (WCA)", "r234w", 0],
-    ["2345 relay (WCA)", "r2345w", 0],
-    ["23456 relay (WCA)", "r23456w", 0],
-    ["234567 relay (WCA)", "r234567w", 0],
-    ["Mini Guildford", "rmngf", 0]
-  ]],
-  ["===JOKES===", [
-    ["--", "blank", 0]
-  ]],
-  ["1x1x1", [
-    ["x y z", "111", 25]
-  ]],
-  ["-1x-1x-1", [
-    [" ", "-1", 25]
-  ]],
-  ["1x1x2", [
-    [" ", "112", 25]
-  ]],
-  ["LOL", [
-    [" ", "lol", 25]
-  ]],
-  ["Derrick Eide", [
-    [" ", "eide", 25]
+  ["Baby FTO", [
+    ["random state", "baby_fto"]
   ]]
 ];
-function getScrambleConfig(code) {
-  for (const [, scrambles] of scrdata) {
-    for (const [, scrambleCode, length] of scrambles) {
-      if (scrambleCode === code) {
-        return [scrambleCode, length || 0];
-      }
-    }
-  }
-  return null;
-}
 function getCategoryOfEvent(code) {
   for (const [category, scrambles] of scrdata) {
-    if (category.startsWith("===")) continue;
     if (scrambles.some(([, scrambleCode]) => scrambleCode === code)) return category;
   }
   return null;
 }
-const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
-const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
+function getEventName(code) {
+  for (const [category, scrambles] of scrdata) {
+    const found = scrambles.find(([, scrambleCode]) => scrambleCode === code);
+    if (found) return found[0];
+  }
+  return code;
+}
+const CUBISZ_EVENTS = ["333", "333ni", "333fm", "333oh", "333ft"];
+const OLD_3X3_EVENTS = [
+  "333o",
+  "edges",
+  "corners",
+  "pll",
+  "oll",
+  "lsll2",
+  "ll",
+  "zbll",
+  "coll",
+  "cll",
+  "ell",
+  "2gll",
+  "zzll",
+  "zbls",
+  "eols",
+  "wvls",
+  "vls",
+  "f2l",
+  "eoline",
+  "easyc",
+  "easyxc",
+  "sbrx",
+  "cmll",
+  "lse",
+  "lsemu",
+  "mt3qb",
+  "mteole",
+  "mttdr",
+  "mt6cp",
+  "mtcdrll",
+  "mtl5ep",
+  "ttll",
+  "2gen",
+  "2genl",
+  "roux",
+  "3gen_F",
+  "3gen_L",
+  "RrU",
+  "333drud",
+  "half",
+  "lsll"
+];
 function isCubiszEvent(code) {
-  if (CUBISZ_WCA_EVENTS.includes(code)) return true;
-  return scrdata.some(
-    ([category, scrambles]) => CUBISZ_CATEGORIES.includes(category) && scrambles.some(([, scrambleCode]) => scrambleCode === code)
-  );
+  return CUBISZ_EVENTS.includes(code) || OLD_3X3_EVENTS.includes(code);
 }
 function autoFitText(vis2) {
   const container = document.getElementById("scrambleContainer");
@@ -438,20 +211,27 @@ function formatMegaminx(scr) {
   if (line.length) out.push(line.join(" "));
   return out.join("\n");
 }
+function parseMBLDScramble(scrambleText) {
+  return scrambleText.split(/\d+\)/g).map((s) => s.trim()).filter((s) => s.length > 0);
+}
 let currentScramble = "";
 let currentScrambleEvent = "";
 let scrambleHistory = [];
 let historyIndex = -1;
 const MAX_HISTORY = 100;
-async function displayScramble(event = "333", vis2, length) {
-  const config = getScrambleConfig(event);
-  if (!config) return;
-  const [type, rawLength] = config;
-  const finalLength = length ?? rawLength;
-  let scramble = await csTimer.getScramble(type, finalLength);
-  const svg = await csTimer.getImage(scramble, type);
+const MBLD_DEFAULT_CUBES = 5;
+const SLOW_SCRAMBLE_MS = 200;
+async function displayScramble(event = "333", vis2, cubes = MBLD_DEFAULT_CUBES) {
+  const cubingEvent = cubingEvents[event];
+  if (!cubingEvent) return;
+  const slowNotice = setTimeout(() => {
+    document.getElementById("scrambleDisplay").textContent = "Scrambling…";
+    vis2.innerHTML = "";
+  }, SLOW_SCRAMBLE_MS);
+  const scramble = event === "r3ni" ? await cubing.getMultiBlindScramble(cubes) : await cubing.getScramble(cubingEvent.eventId);
+  clearTimeout(slowNotice);
   if (event !== currentScrambleEvent) scrambleHistory = [];
-  scrambleHistory.push({ scramble, event, svg });
+  scrambleHistory.push({ scramble, event });
   if (scrambleHistory.length > MAX_HISTORY) scrambleHistory.shift();
   historyIndex = scrambleHistory.length - 1;
   showScramble(scrambleHistory[historyIndex], vis2);
@@ -459,8 +239,8 @@ async function displayScramble(event = "333", vis2, length) {
 function showScramble(entry, vis2) {
   currentScramble = entry.scramble;
   currentScrambleEvent = entry.event;
-  vis2.innerHTML = entry.svg;
-  adjustVisualizerSize(entry.event, vis2);
+  const pictureScramble = entry.event === "r3ni" ? parseMBLDScramble(entry.scramble)[0] : entry.scramble;
+  vis2.innerHTML = cubing.getPicture(pictureScramble, cubingEvents[entry.event].puzzle);
   const textEl = document.getElementById("scrambleDisplay");
   if (entry.event === "mgmp") {
     textEl.textContent = formatMegaminx(entry.scramble);
@@ -475,68 +255,13 @@ function previousScramble(vis2) {
   historyIndex--;
   showScramble(scrambleHistory[historyIndex], vis2);
 }
-async function nextScramble(event, vis2, length) {
+async function nextScramble(event, vis2, cubes) {
   if (historyIndex < scrambleHistory.length - 1) {
     historyIndex++;
     showScramble(scrambleHistory[historyIndex], vis2);
   } else {
-    await displayScramble(event, vis2, length);
+    await displayScramble(event, vis2, cubes);
   }
-}
-function adjustVisualizerSize(event, vis2) {
-  const category = document.getElementById("categorySelect").value;
-  if (category === "WCA") {
-    if (["333", "333ni", "333oh", "333fm"].includes(event)) {
-      setVisualizerScale(0.45, 75, 70, vis2);
-    } else if (event === "222so") {
-      setVisualizerScale(0.6, -43, -10, vis2);
-    } else if (event === "pyrso") {
-      setVisualizerScale(0.4, 55, 70, vis2);
-    } else if (["444wca", "444bld"].includes(event)) {
-      setVisualizerScale(0.35, 130, 110, vis2);
-    } else if (event === "skbso") {
-      setVisualizerScale(0.4, 65, 75, vis2);
-    } else if (["555wca", "555bld"].includes(event)) {
-      setVisualizerScale(0.3, 165, 135, vis2);
-    } else if (event === "666wca") {
-      setVisualizerScale(0.25, 180, 150, vis2);
-    } else if (event === "777wca") {
-      setVisualizerScale(0.22, 195, 155, vis2);
-    } else if (event === "mgmp") {
-      setVisualizerScale(0.5, 105, 40, vis2);
-    } else if (event === "clkwca") {
-      setVisualizerScale(0.5, 60, 15, vis2);
-    } else if (event === "sqrs") {
-      setVisualizerScale(0.4, 105, 55, vis2);
-    } else if (event === "r3ni") {
-      setVisualizerScale(0.45, 105, 140, vis2);
-    }
-  }
-  if ([
-    "3x3x3",
-    "3x3x3 CFOP",
-    "3x3x3 Roux",
-    "3x3x3 Mehta",
-    "Crazy Puzzle",
-    "Helicopter Cube",
-    "Redi Cube",
-    "3x3x3 subsets"
-  ].includes(category)) setVisualizerScale(0.45, 75, 70, vis2);
-  if (category === "2x2x2") setVisualizerScale(0.6, -43, -10, vis2);
-  if (["4x4x4", "4x4x4 Yau/Hoya"].includes(category)) setVisualizerScale(0.35, 130, 110, vis2);
-  if (category === "5x5x5") setVisualizerScale(0.3, 165, 135, vis2);
-  if (category === "6x6x6") setVisualizerScale(0.25, 180, 150, vis2);
-  if (category === "7x7x7") setVisualizerScale(0.22, 195, 155, vis2);
-  if (category === "Clock") setVisualizerScale(0.5, 60, 15, vis2);
-  if (["Megaminx", "Kilominx", "Gigaminx", "Pyraminx Crystal"].includes(category)) setVisualizerScale(0.5, 105, 40, vis2);
-  if (["Pyraminx", "Master Pyraminx"].includes(category)) setVisualizerScale(0.4, 55, 70, vis2);
-  if (category === "Skewb") setVisualizerScale(0.4, 65, 75, vis2);
-  if (["Square-1", "Square"].includes(category)) setVisualizerScale(0.4, 105, 55, vis2);
-  if (category === "15 puzzle") setVisualizerScale(0.4, 20, 55, vis2);
-  if (category === "8 puzzle") setVisualizerScale(0.5, -30, 20, vis2);
-  if (category === "FTO") setVisualizerScale(0.35, 125, 70, vis2);
-  if (category === "Icosahedron") setVisualizerScale(0.55, 105, 25, vis2);
-  if (category === "Relays") setVisualizerScale(0.45, 105, 140, vis2);
 }
 function parseTimeToSeconds(str) {
   if (str == null) {
@@ -876,12 +601,15 @@ const classicStats = {
   }
 };
 const inspection$1 = localStorage.getItem("inspectionType") || "WCA";
+const decimals = Number(localStorage.getItem("timerDecimals")) || 2;
 const timerSettObj = {
   inspectionType: inspection$1,
   timerFlag: false,
   // true when the timer is off (Typing mode, Fewest Moves or Multi-Blind)
-  untimedEvent: false
+  untimedEvent: false,
   // true on Fewest Moves and Multi-Blind, set by showTimeInsertion
+  timerDecimals: decimals
+  // decimals the timer shows (1, 2 or 3); solves are still saved with 2
 };
 const deviceSettObj = {
   name: localStorage.getItem("deviceName") || "",
@@ -986,6 +714,11 @@ function getLastSolve$1(averageObj2, getCurrentSession2) {
   if (target.type === "current") return averageObj2.solvesArray[target.solveIndex];
   return getSessionAverages$1(getCurrentSession2)[target.blockIndex].solves[target.solveIndex];
 }
+function getLastTwoSolves$1(averageObj2, getCurrentSession2) {
+  const newestBlock = getSessionAverages$1(getCurrentSession2)[0];
+  const candidates = [...newestBlock?.solves.slice(-2) ?? [], ...averageObj2.solvesArray.slice(-2)];
+  return candidates.sort(byDate).slice(-2);
+}
 function penalty2$1(blockIndex, solveIndex, penalty, averageObj2, getCurrentSession2, saveSessions2) {
   if (blockIndex === -1) {
     averageObj2.solvesArray[solveIndex].penalty = penalty;
@@ -1079,14 +812,14 @@ function blockDate(block) {
 function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
   ensureSessionShape(getCurrentSession2);
   const session2 = getCurrentSession2();
-  const seen2 = new Set([
+  const seen = new Set([
     ...session2.averages.flatMap((block) => block.solves),
     ...averageObj2.solvesArray
   ].map(solveKey));
   const newSolves = solves.filter((solve) => {
     const key = solveKey(solve);
-    if (seen2.has(key)) return false;
-    seen2.add(key);
+    if (seen.has(key)) return false;
+    seen.add(key);
     return true;
   });
   joinInProgress(newSolves, averageObj2, session2);
@@ -1108,14 +841,14 @@ function joinInProgress(solves, averageObj2, session2) {
 function addRoundsToSession$1(rounds, averageObj2, getSession) {
   ensureSessionShape(getSession);
   const session2 = getSession();
-  const seen2 = new Set([
+  const seen = new Set([
     ...session2.averages.flatMap((block) => block.solves),
     ...averageObj2.solvesArray
   ].map(solveKey));
   let added = 0;
   const loose = [];
   rounds.forEach((round2) => {
-    const newSolves = round2.solves.filter((solve) => !seen2.has(solveKey(solve)));
+    const newSolves = round2.solves.filter((solve) => !seen.has(solveKey(solve)));
     if (round2.mode && newSolves.length === round2.solves.length) {
       session2.averages.push(buildAverageBlock(round2.solves, round2.mode));
       added += newSolves.length;
@@ -1153,7 +886,12 @@ function getCurrentSession() {
   if (!sessionsObj.sessions[sessionsObj.currentSession]) {
     sessionsObj.sessions[sessionsObj.currentSession] = { averages: [] };
   }
-  return sessionsObj.sessions[sessionsObj.currentSession];
+  const session2 = sessionsObj.sessions[sessionsObj.currentSession];
+  if (session2.scrambleType && !getCategoryOfEvent(session2.scrambleType)) {
+    session2.scrambleType = "333";
+    session2.category = "WCA";
+  }
+  return session2;
 }
 function renderSessionSelect() {
   const select = sessionsObj.selectEl;
@@ -1309,6 +1047,9 @@ function removeLastSolve(removeSolve2) {
 function getLastSolve() {
   return getLastSolve$1(averageObj, getCurrentSession);
 }
+function getLastTwoSolves() {
+  return getLastTwoSolves$1(averageObj, getCurrentSession);
+}
 function addSolvesToSession(solves) {
   return addSolvesToSession$1(solves, averageObj, getCurrentSession);
 }
@@ -1394,23 +1135,26 @@ const countdownObj = {
   intervalId: null
   // setInterval id while an attempt is running, null otherwise
 };
-function bindVisibilityToggle(selectId, targetClass) {
-  const select = document.getElementById(selectId);
+function bindVisibilityToggle(checkboxId, targetClass) {
+  const checkbox = document.getElementById(checkboxId);
   const targets = document.querySelectorAll(`.${targetClass}`);
-  if (!select || targets.length === 0) return;
-  const storageKey = `visibility-${selectId}`;
+  if (!checkbox || targets.length === 0) return;
+  const storageKey = `visibility-${checkboxId}`;
   const savedValue = localStorage.getItem(storageKey);
   if (savedValue) {
-    select.value = savedValue;
+    checkbox.checked = savedValue === "show";
   }
   function apply() {
-    const isShown = select.value === "show";
+    const isShown = checkbox.checked;
     targets.forEach((el) => {
       el.style.display = isShown ? "" : "none";
     });
-    localStorage.setItem(storageKey, select.value);
+    localStorage.setItem(storageKey, isShown ? "show" : "hide");
   }
-  select.addEventListener("change", apply);
+  checkbox.addEventListener("change", () => {
+    apply();
+    checkbox.blur();
+  });
   apply();
 }
 const overlay$1 = document.getElementById("settingsOverlay");
@@ -1428,6 +1172,7 @@ bindVisibilityToggle("toggle-session-history", "left-sidebar");
 bindVisibilityToggle("toggle-scramble-text", "scramble-container");
 bindVisibilityToggle("toggle-penalty-bar", "penalty-bar");
 bindVisibilityToggle("toggle-average-preview", "main-footer");
+bindVisibilityToggle("toggle-time-diff", "time-diff");
 function getThemeVar(themeClass, variable) {
   const temp = document.createElement("div");
   temp.className = themeClass;
@@ -1584,6 +1329,11 @@ document.getElementById("timer-display").value = timerDisplay;
 document.getElementById("timer-display").addEventListener("change", () => {
   timerDisplay = document.getElementById("timer-display").value;
   localStorage.setItem("timerDisplay", timerDisplay);
+});
+document.getElementById("timer-decimals").value = timerSettObj.timerDecimals;
+document.getElementById("timer-decimals").addEventListener("change", () => {
+  timerSettObj.timerDecimals = Number(document.getElementById("timer-decimals").value);
+  localStorage.setItem("timerDecimals", timerSettObj.timerDecimals);
 });
 const phaseInput = document.getElementById("phase-count");
 phaseInput.value = timerObj.totalSolvePhases;
@@ -4606,9 +4356,9 @@ class Animator {
     this._lastDate = void 0;
   }
   _notify(chart, anims, date, type) {
-    const callbacks2 = anims.listeners[type];
+    const callbacks = anims.listeners[type];
     const numSteps = anims.duration;
-    callbacks2.forEach((fn) => fn({
+    callbacks.forEach((fn) => fn({
       chart,
       initial: anims.initial,
       numSteps,
@@ -13766,9 +13516,9 @@ function createTooltipContext(parent, tooltip, tooltipItems) {
     type: "tooltip"
   });
 }
-function overrideCallbacks(callbacks2, context) {
+function overrideCallbacks(callbacks, context) {
   const override = context && context.dataset && context.dataset.tooltip && context.dataset.tooltip.callbacks;
-  return override ? callbacks2.override(override) : callbacks2;
+  return override ? callbacks.override(override) : callbacks;
 }
 const defaultCallbacks = {
   beforeTitle: noop,
@@ -13833,8 +13583,8 @@ const defaultCallbacks = {
   footer: noop,
   afterFooter: noop
 };
-function invokeCallbackWithFallback(callbacks2, name, ctx, arg) {
-  const result = callbacks2[name].call(ctx, arg);
+function invokeCallbackWithFallback(callbacks, name, ctx, arg) {
+  const result = callbacks[name].call(ctx, arg);
   if (typeof result === "undefined") {
     return defaultCallbacks[name].call(ctx, arg);
   }
@@ -13895,10 +13645,10 @@ class Tooltip extends Element {
     return this.$context || (this.$context = createTooltipContext(this.chart.getContext(), this, this._tooltipItems));
   }
   getTitle(context, options) {
-    const { callbacks: callbacks2 } = options;
-    const beforeTitle = invokeCallbackWithFallback(callbacks2, "beforeTitle", this, context);
-    const title = invokeCallbackWithFallback(callbacks2, "title", this, context);
-    const afterTitle = invokeCallbackWithFallback(callbacks2, "afterTitle", this, context);
+    const { callbacks } = options;
+    const beforeTitle = invokeCallbackWithFallback(callbacks, "beforeTitle", this, context);
+    const title = invokeCallbackWithFallback(callbacks, "title", this, context);
+    const afterTitle = invokeCallbackWithFallback(callbacks, "afterTitle", this, context);
     let lines = [];
     lines = pushOrConcat(lines, splitNewlines(beforeTitle));
     lines = pushOrConcat(lines, splitNewlines(title));
@@ -13909,7 +13659,7 @@ class Tooltip extends Element {
     return getBeforeAfterBodyLines(invokeCallbackWithFallback(options.callbacks, "beforeBody", this, tooltipItems));
   }
   getBody(tooltipItems, options) {
-    const { callbacks: callbacks2 } = options;
+    const { callbacks } = options;
     const bodyItems = [];
     each(tooltipItems, (context) => {
       const bodyItem = {
@@ -13917,7 +13667,7 @@ class Tooltip extends Element {
         lines: [],
         after: []
       };
-      const scoped = overrideCallbacks(callbacks2, context);
+      const scoped = overrideCallbacks(callbacks, context);
       pushOrConcat(bodyItem.before, splitNewlines(invokeCallbackWithFallback(scoped, "beforeLabel", this, context)));
       pushOrConcat(bodyItem.lines, invokeCallbackWithFallback(scoped, "label", this, context));
       pushOrConcat(bodyItem.after, splitNewlines(invokeCallbackWithFallback(scoped, "afterLabel", this, context)));
@@ -13929,10 +13679,10 @@ class Tooltip extends Element {
     return getBeforeAfterBodyLines(invokeCallbackWithFallback(options.callbacks, "afterBody", this, tooltipItems));
   }
   getFooter(tooltipItems, options) {
-    const { callbacks: callbacks2 } = options;
-    const beforeFooter = invokeCallbackWithFallback(callbacks2, "beforeFooter", this, tooltipItems);
-    const footer = invokeCallbackWithFallback(callbacks2, "footer", this, tooltipItems);
-    const afterFooter = invokeCallbackWithFallback(callbacks2, "afterFooter", this, tooltipItems);
+    const { callbacks } = options;
+    const beforeFooter = invokeCallbackWithFallback(callbacks, "beforeFooter", this, tooltipItems);
+    const footer = invokeCallbackWithFallback(callbacks, "footer", this, tooltipItems);
+    const afterFooter = invokeCallbackWithFallback(callbacks, "afterFooter", this, tooltipItems);
     let lines = [];
     lines = pushOrConcat(lines, splitNewlines(beforeFooter));
     lines = pushOrConcat(lines, splitNewlines(footer));
@@ -16886,6 +16636,22 @@ function renderStats(stats, formatStatValue2) {
         Solves: ${stats.solveCounter ? wrapTimesValue(stats.solveCounter) : wrapTimesValue("-")}
     `;
 }
+function comparableSeconds(solve) {
+  if (solve.time == null || solve.penalty === "DNF") return null;
+  if (solve.event === "333fm" || solve.event === "r3ni") return null;
+  return solve.time + (typeof solve.penalty === "number" ? solve.penalty : 0);
+}
+function renderTimeDiff([previous, last]) {
+  if (!previous || !last) return "";
+  const prevSeconds = comparableSeconds(previous);
+  const lastSeconds = comparableSeconds(last);
+  if (prevSeconds === null || lastSeconds === null) return "";
+  const diff = Math.round((lastSeconds - prevSeconds) * 100) / 100;
+  if (diff === 0) return `<span class="time-diff-same">${formatSecondsToTime(0)}</span>`;
+  const sign2 = diff > 0 ? "+" : "-";
+  const cssClass = diff > 0 ? "time-diff-slower" : "time-diff-faster";
+  return `<span class="${cssClass}">${sign2}${formatSecondsToTime(Math.abs(diff))}</span>`;
+}
 function formatStatValue(value) {
   return formatStatValue$1(value, getCurrentSession);
 }
@@ -16898,6 +16664,7 @@ function renderHistory() {
   const doneContainer = document.getElementById("current-stats");
   const statisticsContainer = document.getElementById("stats");
   const todayStatsContainer = document.getElementById("today-stats");
+  const timeDiffContainer = document.getElementById("time-diff");
   let currentType = null;
   let currentBlock = null;
   if (averageObj.solvesArray.length > 0) {
@@ -16929,6 +16696,9 @@ function renderHistory() {
   if (statisticsContainer) {
     statisticsContainer.innerHTML = renderStats(stats, formatStatValue);
     todayStatsContainer.innerHTML = renderStats(todayStats, formatStatValue);
+  }
+  if (timeDiffContainer) {
+    timeDiffContainer.innerHTML = renderTimeDiff(getLastTwoSolves());
   }
 }
 const cube = {
@@ -17610,6 +17380,7 @@ function handleFMC$1(display, currentScramble2, countdownObj2) {
   document.getElementById("fmc-label-form").textContent = "Solution: ";
   document.getElementById("open-mbld-modal").style.display = "none";
   document.getElementById("openConfig").style.display = "block";
+  document.getElementById("time-diff").hidden = true;
   document.getElementById("timer").style.fontSize = "50px";
   document.getElementById("touchOverlay").style.display = "none";
   updateDisplay(countdownObj2, display);
@@ -17639,6 +17410,7 @@ function handleMBLD$1(display, countdownObj2) {
   document.getElementById("fmc-label-form").textContent = "Solved / Total: ";
   document.getElementById("open-mbld-modal").style.display = "block";
   document.getElementById("openConfig").style.display = "block";
+  document.getElementById("time-diff").hidden = true;
   updateDisplay(countdownObj2, display);
 }
 function calculateMBLDPoints(resultStr) {
@@ -17661,16 +17433,10 @@ function calculateMBLDPoints(resultStr) {
     result: `${solved} / ${total}`
   };
 }
-function parseMBLDScramble(scrambleText) {
-  return scrambleText.split(/\d+\)/g).map((s) => s.trim()).filter((s) => s.length > 0);
-}
-async function renderMBLDGrid(grid2, countInput2, currentScramble2) {
+function renderMBLDGrid(grid2, countInput2, currentScramble2) {
   grid2.innerHTML = "";
   const scrambles = parseMBLDScramble(currentScramble2);
   const limit = Math.min(Number(countInput2.value), scrambles.length);
-  const images = await Promise.all(
-    scrambles.slice(0, limit).map((s) => csTimer.getImage(s, "333"))
-  );
   for (let i = 0; i < limit; i++) {
     const indexEl = document.createElement("div");
     indexEl.className = "mbld-index mbld-row";
@@ -17680,15 +17446,13 @@ async function renderMBLDGrid(grid2, countInput2, currentScramble2) {
     scrambleEl.textContent = scrambles[i];
     const visualEl = document.createElement("div");
     visualEl.className = "mbld-visual mbld-row";
-    visualEl.innerHTML = images[i];
-    visualEl.style.transformOrigin = "top";
-    visualEl.style.transform = "scale(0.5)";
+    visualEl.innerHTML = cubing.getPicture(scrambles[i], "3x3x3");
     grid2.appendChild(indexEl);
     grid2.appendChild(scrambleEl);
     grid2.appendChild(visualEl);
   }
 }
-function showTimerLayout(vis2) {
+function showTimerLayout(vis2, zeroTime) {
   document.getElementById("penaltyOkBtn").style.display = "block";
   document.getElementById("penaltyPlus2Btn").style.display = "block";
   document.getElementById("penaltyDnfBtn").style.display = "block";
@@ -17704,12 +17468,13 @@ function showTimerLayout(vis2) {
   document.getElementById("timerins").style.marginTop = "0px";
   document.getElementById("open-mbld-modal").style.display = "none";
   document.getElementById("openConfig").style.display = "none";
+  document.getElementById("time-diff").hidden = false;
   if (vis2 === document.querySelector("#scrambleVis")) {
     document.getElementById("timer").style.fontSize = "140px";
   } else {
     document.getElementById("timer").style.fontSize = "72px";
   }
-  document.getElementById("timer").textContent = "0.00";
+  document.getElementById("timer").textContent = zeroTime;
 }
 function showTimeInsertion(event, timeInsertion2, timerSettObj2) {
   timerSettObj2.untimedEvent = event === "333fm" || event === "r3ni";
@@ -17990,31 +17755,43 @@ function startTimer(setTimerDisplay2, getThemeVar2, timerObj2, formatTime2) {
     if (displayMode === "Hide") {
       setTimerDisplay2("time", "Solving");
     } else {
-      setTimerDisplay2("time", formatTime2(performance.now() - startTime));
+      setTimerDisplay2("time", formatTime2(performance.now() - startTime, timerSettObj.timerDecimals));
     }
   }, 10);
 }
-function stopTimer(setTimerDisplay2, getThemeVar2, timerObj2, formatTime2) {
+function stopTimer(setTimerDisplay2, getThemeVar2, timerObj2, formatTime2, elapsed) {
   clearInterval(timerObj2.interval);
-  setTimerDisplay2("time", formatTime2(performance.now() - timerObj2.startTime));
+  setTimerDisplay2("time", formatTime2(elapsed, timerSettObj.timerDecimals));
   timerObj2.timerPhase = PHASE.IDLE;
 }
-function truncate2(n) {
-  return (Math.floor(n * 100) / 100).toFixed(2);
+function truncate(n, decimals2) {
+  const factor = 10 ** decimals2;
+  return (Math.floor(n * factor + 1e-6) / factor).toFixed(decimals2);
 }
-function formatTime(milisseconds) {
+function formatTime(milisseconds, decimals2 = 2) {
   let seconds2 = milisseconds / 1e3;
   let minutes = Math.floor(seconds2 / 60);
   const hours = Math.floor(minutes / 60);
   if (minutes < 1) {
-    return truncate2(seconds2);
+    return truncate(seconds2, decimals2);
   }
   seconds2 = seconds2 - 60 * minutes;
   if (hours >= 1) {
     minutes = minutes - 60 * hours;
-    return `${hours}: ${minutes < 10 ? "0" : ""}${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
+    return `${hours}: ${minutes < 10 ? "0" : ""}${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate(seconds2, decimals2)}`;
   }
-  return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate2(seconds2)}`;
+  return `${minutes}: ${seconds2 < 10 ? "0" : ""}${truncate(seconds2, decimals2)}`;
+}
+function formatSeconds(seconds2, decimals2) {
+  return formatTime(Math.round(seconds2 * 1e3), decimals2);
+}
+function formatSolveTime(solveObj, decimals2) {
+  if (solveObj.time == null) return "-";
+  if (solveObj.penalty === "DNF") return "DNF";
+  if (typeof solveObj.penalty === "number") {
+    return `${formatSeconds(solveObj.time + solveObj.penalty, decimals2)} (+${solveObj.penalty})`;
+  }
+  return formatSeconds(solveObj.time, decimals2);
 }
 const plus2CounterObj = { penalty: 0 };
 const startBtn = document.getElementById("countdown");
@@ -18035,7 +17812,7 @@ function showLastSolve() {
   if (timerSettObj.untimedEvent) return;
   const last = getLastSolve();
   const isTime = last && last.event !== "333fm" && last.event !== "r3ni";
-  setTimerDisplay("time", isTime ? formatDisplayTime(last) : "0.00");
+  setTimerDisplay("time", isTime ? formatSolveTime(last, timerSettObj.timerDecimals) : formatTime(0, timerSettObj.timerDecimals));
 }
 let seconds = 0;
 let interval = null;
@@ -18162,6 +17939,9 @@ document.addEventListener("keydown", (event) => {
     restoreUI();
   }
 });
+document.getElementById("timer-decimals").addEventListener("change", () => {
+  if (timerObj.timerPhase === PHASE.IDLE && !running) showLastSolve();
+});
 document.getElementById("touchOverlay").addEventListener("touchend", (e) => {
   const touchTarget = e.target;
   if (touchTarget && touchTarget.closest && (touchTarget.closest("input") || touchTarget.closest("#typing-container"))) {
@@ -18230,8 +18010,8 @@ function handleSplitOrStop() {
   }
   plus2CounterObj.penalty = 0;
   document.getElementById("penaltyPlus2Btn").textContent = "+2";
-  stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime);
-  const finalTime = document.getElementById("timer").innerHTML;
+  stopTimer(setTimerDisplay, getThemeVar, timerObj, formatTime, totalElapsed);
+  const finalTime = formatTime(totalElapsed);
   const block = averageOfN(
     finalTime,
     currentScramble,
@@ -18263,11 +18043,97 @@ document.addEventListener("keyup", (e) => {
   if (e.repeat) return;
   onPressEnd();
 });
+function htmlToText(html) {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  return doc.body.textContent.replace(/\s+/g, " ").trim();
+}
+function shortDate(ms) {
+  if (ms == null) return "-";
+  return new Date(ms).toLocaleString(void 0, {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit"
+  });
+}
+function droppedIndexes(solves, mode) {
+  if (!mode.startsWith("ao") || solves.length < getNeededSolves(mode)) return /* @__PURE__ */ new Set();
+  const trimCount = Math.ceil(solves.length * 0.05);
+  const values = solves.map((s) => {
+    if (s.penalty === "DNF") return Infinity;
+    if (typeof s.penalty === "number") return s.time + s.penalty;
+    return s.time;
+  });
+  const order = solves.map((s, i) => i).sort((a, b) => values[a] - values[b] || 0);
+  return /* @__PURE__ */ new Set([...order.slice(0, trimCount), ...order.slice(-trimCount)]);
+}
+function introLine(s) {
+  return `Pro Timer · ${getEventName(s?.event ?? getCurrentSession().scrambleType)}`;
+}
+function solveLines(s, firstLine) {
+  const lines = [
+    firstLine,
+    `Scramble: ${s.scramble}`,
+    `Inspection: ${s.inspection}`,
+    `Date: ${shortDate(s.createdAt)}`
+  ];
+  if (s.doneAt) lines.push(`Done at: ${s.doneAt}`);
+  if (s.doneWith) lines.push(`With: ${s.doneWith}`);
+  if (s.solution) {
+    lines.push(`Solution: ${s.solution}`);
+    lines.push(`Status: ${s.status || "-"} | Moves: ${s.moves || "-"} | TPS: ${s.tps ? s.tps.toFixed(2) : "-"}`);
+  }
+  return lines.join("\n");
+}
+function averageShareText(titleHtml, statsHtml, solves, mode) {
+  const dropped = droppedIndexes(solves, mode);
+  const header = [introLine(solves[0]), htmlToText(titleHtml), htmlToText(statsHtml)].filter(Boolean).join("\n");
+  const solveTexts = solves.map((s, i) => {
+    const time = htmlToText(formatStatValue(s));
+    return solveLines(s, `${i + 1}. ${dropped.has(i) ? `(${time})` : time}`);
+  });
+  return [header, ...solveTexts].join("\n\n");
+}
+function solveShareText(s) {
+  return solveLines(s, `${introLine(s)}
+${htmlToText(formatStatValue(s))}`);
+}
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    const box = document.createElement("textarea");
+    box.value = text;
+    box.style.position = "fixed";
+    box.style.opacity = "0";
+    document.body.appendChild(box);
+    box.select();
+    const copied = document.execCommand("copy");
+    box.remove();
+    return copied;
+  }
+}
+async function shareOrCopy(text) {
+  const isTouchDevice = matchMedia("(pointer: coarse)").matches;
+  if (isTouchDevice && navigator.share) {
+    try {
+      await navigator.share({ text });
+      return "shared";
+    } catch (err) {
+      if (err.name === "AbortError") return "cancelled";
+    }
+  }
+  return await copyText(text) ? "copied" : "failed";
+}
 const modal = document.getElementById("detailsModal");
 const modalBody = document.getElementById("modalBody");
 const closeModalBtn = document.getElementById("closeModalBtn");
 let modalBlocks = [];
 const modalPenaltyCounters = {};
+let modalCardHeaders = {};
+const SHARE_FEEDBACK_TIME = 1500;
 const modalContent = modal.querySelector(".modal-content");
 const MODAL_BATCH_SIZE = 30;
 const MODAL_LOAD_DISTANCE = 300;
@@ -18289,8 +18155,29 @@ modalBody.addEventListener("click", (e) => {
   if (button.dataset.action === "dnf") setPenalty(blockIndex, solveIndex, "DNF");
   if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
   if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
+  if (button.dataset.action === "share-average") shareAverage(button, blockIndex);
+  if (button.dataset.action === "share-solve") shareSolve(button, blockIndex, solveIndex);
 });
-function solveRowHtml(s, i, blockIndex) {
+function blockSolves(blockIndex) {
+  return blockIndex === -1 ? averageObj.solvesArray : modalBlocks[blockIndex].solves;
+}
+function showShareResult(button, result) {
+  const labels = { shared: "Shared", copied: "Copied", failed: "Couldn't copy" };
+  if (!labels[result]) return;
+  button.textContent = labels[result];
+  setTimeout(() => button.textContent = "Share", SHARE_FEEDBACK_TIME);
+}
+async function shareAverage(button, blockIndex) {
+  const { title, stats } = modalCardHeaders[blockIndex];
+  const mode = blockIndex === -1 ? averageObj.mode : modalBlocks[blockIndex].mode;
+  const text = averageShareText(title, stats, blockSolves(blockIndex), mode);
+  showShareResult(button, await shareOrCopy(text));
+}
+async function shareSolve(button, blockIndex, solveIndex) {
+  const text = solveShareText(blockSolves(blockIndex)[solveIndex]);
+  showShareResult(button, await shareOrCopy(text));
+}
+function solveRowHtml(s, i, blockIndex, dropped) {
   const counterKey = `${blockIndex}-${i}`;
   let counter = 0;
   if (typeof s.penalty === "number" && s.penalty > 0) {
@@ -18326,17 +18213,21 @@ function solveRowHtml(s, i, blockIndex) {
                 With: ${s.doneWith}
             </div>
     ` : "";
+  const timeHtml = dropped ? `(${formatStatValue(s)})` : formatStatValue(s);
   return `
-        <div class="modal-solve-row">
-            <div class="modal-solve-main">
-                <span>#${i + 1}: ${formatStatValue(s)}</span>
+        <details class="modal-solve-row" data-key="${s.createdAt}|${s.time}">
+            <summary class="modal-solve-main">
+                <span class="modal-solve-number">#${i + 1}</span>
+                <span class="modal-solve-time">${timeHtml}</span>
+                <span class="modal-solve-preview">${s.scramble}</span>
+            </summary>
 
-                <div class="modal-solve-actions">
-                    <button data-action="ok" ${solveData}>OK</button>
-                    <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
-                    <button data-action="dnf" ${solveData}>DNF</button>
-                    <button data-action="remove" ${solveData}>✖</button>
-                </div>
+            <div class="modal-solve-actions">
+                <button data-action="ok" ${solveData}>OK</button>
+                <button id="plus2-${blockIndex}-${i}" data-action="plus2" ${solveData}>${buttonText}</button>
+                <button data-action="dnf" ${solveData}>DNF</button>
+                <button data-action="remove" ${solveData}>✖</button>
+                <button data-action="share-solve" ${solveData}>Share</button>
             </div>
 
             <div class="modal-scramble">
@@ -18347,14 +18238,13 @@ function solveRowHtml(s, i, blockIndex) {
                 Inspection: ${s.inspection}
             </div>
 
-
             <div class="modal-scramble">
-                Date: ${new Date(s.createdAt)}
+                Date: ${shortDate(s.createdAt)}
             </div>
             ${doneAtRow}
             ${doneWithRow}
             ${solutionRows}
-        </div>
+        </details>
     `;
 }
 function statsLineHtml(best, worst, sigma) {
@@ -18364,12 +18254,16 @@ function statsLineHtml(best, worst, sigma) {
         </div>
     `;
 }
-function cardHtml(headerText, statsLine, extraClass = "") {
+function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
+  modalCardHeaders[blockIndex] = { title: headerText, stats: statsLine };
   return `
         <div class="modal-average-card${extraClass}">
             <div class="modal-average-header">
-                <b>${headerText}</b>
-                ${statsLine}
+                <div>
+                    <b>${headerText}</b>
+                    ${statsLine}
+                </div>
+                <button class="modal-share-btn" data-action="share-average" data-block="${blockIndex}">Share</button>
             </div>
 
             <div class="modal-solves"></div>
@@ -18380,6 +18274,7 @@ function buildModalItems() {
   const averages = getSessionAverages();
   const items = [];
   modalBlocks = averages;
+  modalCardHeaders = {};
   const bufferSolves = averageObj.solvesArray;
   if (bufferSolves.length > 0) {
     let bufferHeader;
@@ -18395,8 +18290,9 @@ function buildModalItems() {
       const liveAvg = computeAverage(bufferSolves, averageObj.mode);
       bufferStats = statsLineHtml(liveAvg.best, liveAvg.worst, liveAvg.sigma);
     }
-    items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, " modal-buffer-card") });
-    bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1 }));
+    items.push({ type: "card", html: cardHtml(bufferHeader, bufferStats, -1, " modal-buffer-card") });
+    const bufferDropped = droppedIndexes(bufferSolves, averageObj.mode);
+    bufferSolves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex: -1, dropped: bufferDropped.has(i) }));
   }
   averages.forEach((block, blockIndex) => {
     let headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)}`;
@@ -18410,8 +18306,9 @@ function buildModalItems() {
       headerText = `${block.mode} #${wrapTimesValue(averages.length - blockIndex)}: ${wrapTimesValue(block.average)} (ao5: ${wrapTimesValue(ao5Value)})`;
     }
     const blockStats = statsLineHtml(parseTimeToSeconds(block.best), parseTimeToSeconds(block.worst), parseTimeToSeconds(block.sigma));
-    items.push({ type: "card", html: cardHtml(headerText, blockStats) });
-    block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex }));
+    items.push({ type: "card", html: cardHtml(headerText, blockStats, blockIndex) });
+    const dropped = droppedIndexes(block.solves, block.mode);
+    block.solves.forEach((s, i) => items.push({ type: "solve", s, i, blockIndex, dropped: dropped.has(i) }));
   });
   return items;
 }
@@ -18423,7 +18320,7 @@ function drawItemsUpTo(count) {
       modalBody.insertAdjacentHTML("beforeend", item.html);
       currentSolvesList = modalBody.lastElementChild.querySelector(".modal-solves");
     } else {
-      currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex));
+      currentSolvesList.insertAdjacentHTML("beforeend", solveRowHtml(item.s, item.i, item.blockIndex, item.dropped));
     }
     modalDrawnCount++;
   }
@@ -18451,7 +18348,9 @@ function openDetailsModal() {
 function refreshDetailsModal() {
   if (modal.classList.contains("hidden")) return;
   const scrollTop = modalContent.scrollTop;
+  const openKeys = [...modalBody.querySelectorAll("details[open]")].map((row) => row.dataset.key);
   drawModal(modalDrawnCount);
+  openKeys.forEach((key) => modalBody.querySelector(`details[data-key="${key}"]`)?.setAttribute("open", ""));
   modalContent.scrollTop = scrollTop;
   drawWhileNearBottom();
 }
@@ -18492,7 +18391,7 @@ function removeSolve(blockIndex, solveIndex) {
   refreshDetailsModal();
 }
 function submitSolution(blockIndex, solveIndex) {
-  const solve = blockIndex === -1 ? averageObj.solvesArray[solveIndex] : modalBlocks[blockIndex].solves[solveIndex];
+  const solve = blockSolves(blockIndex)[solveIndex];
   const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
   const value = input.value;
   applyScramble(solve.scramble, true);
@@ -18512,12 +18411,9 @@ let restoringSession = false;
 const categorySelect = document.getElementById("categorySelect");
 const eventSelect = document.getElementById("eventSelect");
 const modeSelect = document.getElementById("modeSelect");
-const validCategories = scrdata.filter(
-  ([name]) => !name.startsWith("===")
-);
 categorySelect.innerHTML = "";
 eventSelect.innerHTML = "";
-validCategories.forEach(([categoryName]) => {
+scrdata.forEach(([categoryName]) => {
   const option = document.createElement("option");
   option.value = categoryName;
   option.textContent = categoryName;
@@ -18546,13 +18442,12 @@ categorySelect.addEventListener("change", () => {
     saveSessions();
   }
   eventSelect.innerHTML = "";
-  const category = validCategories.find(
+  const category = scrdata.find(
     ([name]) => name === categorySelect.value
   );
   if (!category) return;
   const [, scrambles] = category;
   scrambles.forEach(([label, code]) => {
-    if (code === "blank") return;
     const option = document.createElement("option");
     option.value = code;
     option.textContent = label;
@@ -18578,7 +18473,7 @@ eventSelect.addEventListener("change", async (e) => {
     syncModeWithEvent(eventObj.event);
   }
   if (countdownObj.intervalId !== null) stopTimer2(countdownObj);
-  showTimerLayout(vis);
+  showTimerLayout(vis, formatTime(0, timerSettObj.timerDecimals));
   setEventInspection(eventObj.event, timerSettObj);
   await displayScramble(eventObj.event, vis);
   if (eventObj.event === "333fm") handleFMC();
@@ -18630,7 +18525,7 @@ document.addEventListener("sessionChanged", () => {
   restoringSession = true;
   changedSession();
   const session2 = getCurrentSession();
-  categorySelect.value = session2.category || validCategories[0][0];
+  categorySelect.value = session2.category || scrdata[0][0];
   categorySelect.dispatchEvent(new Event("change"));
   const ev = session2.scrambleType || "333";
   eventObj.event = ev;
@@ -19546,7 +19441,7 @@ function initTypingSubmission() {
         setTimeout(() => input.style.border = "", 1500);
         return;
       }
-      lastTime = formatSecondsToTime(seconds2);
+      lastTime = formatSeconds(seconds2, timerSettObj.timerDecimals);
       document.getElementById("timer").textContent = lastTime;
       const block = averageOfN(seconds2, currentScramble, 0, timerSettObj.inspectionType, false, false, false, void 0, "Typing");
       if (block) addAverageBlock(block);
@@ -19556,6 +19451,10 @@ function initTypingSubmission() {
       displayScramble(eventObj.event, vis);
       saveSessions();
       input.value = "";
+    });
+    input.addEventListener("input", () => {
+      const digits = input.value.replace(/\D/g, "").replace(/^0+/, "").slice(0, 6);
+      input.value = digits ? normalizeTypedTime(digits) : "";
     });
     input.addEventListener("keydown", (ev) => {
       if (ev.key === "Enter") {
@@ -19599,60 +19498,6 @@ function normalizeTypedTime(raw) {
   const result = `${minutes}:${seconds2}.${hundredths}`;
   return result;
 }
-const scriptRel = "modulepreload";
-const assetsURL = function(dep) {
-  return "/Pro-timer/" + dep;
-};
-const seen = {};
-const __vitePreload = function preload(baseModule, deps, importerUrl) {
-  let promise = Promise.resolve();
-  if (deps && deps.length > 0) {
-    let allSettled = function(promises$2) {
-      return Promise.all(promises$2.map((p) => Promise.resolve(p).then((value$1) => ({
-        status: "fulfilled",
-        value: value$1
-      }), (reason) => ({
-        status: "rejected",
-        reason
-      }))));
-    };
-    document.getElementsByTagName("link");
-    const cspNonceMeta = document.querySelector("meta[property=csp-nonce]");
-    const cspNonce = cspNonceMeta?.nonce || cspNonceMeta?.getAttribute("nonce");
-    promise = allSettled(deps.map((dep) => {
-      dep = assetsURL(dep);
-      if (dep in seen) return;
-      seen[dep] = true;
-      const isCss = dep.endsWith(".css");
-      const cssSelector = isCss ? '[rel="stylesheet"]' : "";
-      if (document.querySelector(`link[href="${dep}"]${cssSelector}`)) return;
-      const link = document.createElement("link");
-      link.rel = isCss ? "stylesheet" : scriptRel;
-      if (!isCss) link.as = "script";
-      link.crossOrigin = "";
-      link.href = dep;
-      if (cspNonce) link.setAttribute("nonce", cspNonce);
-      document.head.appendChild(link);
-      if (isCss) return new Promise((res, rej) => {
-        link.addEventListener("load", res);
-        link.addEventListener("error", () => rej(/* @__PURE__ */ new Error(`Unable to preload CSS for ${dep}`)));
-      });
-    }));
-  }
-  function handlePreloadError(err$2) {
-    const e$1 = new Event("vite:preloadError", { cancelable: true });
-    e$1.payload = err$2;
-    window.dispatchEvent(e$1);
-    if (!e$1.defaultPrevented) throw err$2;
-  }
-  return promise.then((res) => {
-    for (const item of res || []) {
-      if (item.status !== "rejected") continue;
-      handlePreloadError(item.reason);
-    }
-    return baseModule().catch(handlePreloadError);
-  });
-};
 function registerSW(options = {}) {
   const {
     immediate = false,

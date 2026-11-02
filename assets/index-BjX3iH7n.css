@@ -32,8 +32,12 @@
   /* Dimmed backdrop behind the solve details pop-up */
   --overlay-strong: rgba(0,0,0,0.75);
 
-  /* Highlight color, used on the stats page's best average card */
+  /* Highlight color, used on the stats page's best average card and the Layout switches while on */
   --accent: #4ade80;
+
+  /* Difference beside the timer: faster than the previous solve, and slower */
+  --diff-faster: #22c55e;
+  --diff-slower: #ef4444;
 
   /* Scrollbar track, thumb and hovered thumb colors */
   --scrollbar-track: #0f0f0f;
@@ -961,16 +965,33 @@ button {
   word-wrap: break-word;
 }
 
-/* Desktop cube picture, pinned to the bottom-right corner */
+/* Desktop picture: a fixed box in the bottom-right corner; cubing.js fits each puzzle inside it */
 .panel-cube {
   position: absolute;
   right: 20px;
   bottom: 20px;
+  width: 240px;
+  height: 160px;
 }
 
-/* Phone cube picture: hidden on desktop */
+/* Box the desktop picture is drawn into */
+#scrambleVis {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* Phone picture: hidden on desktop */
 #scrambleVis2 {
   display: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* Every scramble picture fills its box, instead of cubing.js's own default size */
+twisty-player {
+  width: 100%;
+  height: 100%;
 }
 
 /* "Scramble visualizer" button that opens the phone picture: hidden on desktop */
@@ -1000,9 +1021,14 @@ button {
   /* Pop-up picture above the button, hidden until the button opens it (topbar/topbarController.js) */
   .panel-cube2 {
     display: none;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr;
     position: absolute;
     bottom: 120px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    width: 90vw;
+    height: 190px;
     z-index: 1001;
   }
 
@@ -1044,12 +1070,44 @@ button {
   gap: 20px;
 }
 
+/* Timer in the middle column; both side columns get the difference's width, so the difference on the right doesn't push the timer off-center */
+.timer-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: baseline;
+  margin-top: auto;
+}
+
 /* The big running time */
 #timer {
+  grid-column: 2;
   font-size: 140px;
   font-weight: 600;
   letter-spacing: 2px;
-  margin-top: auto;
+}
+
+/* Difference to the previous solve, on the timer's right, sitting on the same baseline; no display here, or the hidden attribute FMC / MBLD use stops working */
+#time-diff {
+  grid-column: 3;
+  font-size: 32px;
+  font-weight: 600;
+  padding-left: 14px;
+  white-space: nowrap;
+}
+
+/* Faster than the previous solve */
+.time-diff-faster {
+  color: var(--diff-faster);
+}
+
+/* Slower than the previous solve */
+.time-diff-slower {
+  color: var(--diff-slower);
+}
+
+/* Same time as the previous solve */
+.time-diff-same {
+  color: var(--text-muted);
 }
 
 /* Penalty and event buttons under the timer, above the touch overlay so they stay clickable */
@@ -1067,6 +1125,12 @@ button {
   #timer {
     font-size: 72px;
     letter-spacing: 1px;
+  }
+
+  /* Smaller difference to match the smaller timer */
+  #time-diff {
+    font-size: 20px;
+    padding-left: 8px;
   }
 
   /* Buttons wrap and center */
@@ -1187,6 +1251,7 @@ button {
 /* Scramble picture */
 .mbld-visual {
   text-align: center;
+  height: 110px;
 }
 
 /* "Cubes:" label and count input */
@@ -1323,12 +1388,21 @@ button {
   margin-bottom: 14px;
 }
 
-/* Average result line at the top of the card */
+/* Average result and stats on the left, its Share button on the right */
 .modal-average-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 10px;
   margin-bottom: 8px;
   padding-bottom: 6px;
   border-bottom: 1px solid #222;
   opacity: 0.9;
+}
+
+/* Share button of an average: kept at its size next to a long header */
+.modal-share-btn {
+  flex-shrink: 0;
 }
 
 /* Best / worst / σ line under the average's result */
@@ -1345,26 +1419,71 @@ button {
   gap: 8px;
 }
 
-/* One solve */
+/* One solve: a one-line summary that opens to its buttons and details (a <details> element) */
 .modal-solve-row {
   background: var(--bg-main);
   border: 1px solid var(--border-main);
   border-radius: 8px;
-  padding: 8px;
+  padding: 0 8px;
 }
 
-/* Solve time on the left, its buttons on the right */
+/* An open solve keeps some space under its details */
+.modal-solve-row[open] {
+  padding-bottom: 8px;
+}
+
+/* Summary line: number, time and the start of the scramble, with an arrow on the right */
 .modal-solve-main {
   display: flex;
-  justify-content: space-between;
   align-items: center;
   gap: 10px;
+  padding: 8px 0;
+  cursor: pointer;
+  list-style: none;
 }
 
-/* OK / +2 / DNF / remove buttons of a solve */
+/* Hides the browser's own triangle (Safari needs its own rule) */
+.modal-solve-main::-webkit-details-marker {
+  display: none;
+}
+
+/* Arrow: down when closed, up when open */
+.modal-solve-main::after {
+  content: "▾";
+  opacity: 0.6;
+}
+.modal-solve-row[open] .modal-solve-main::after {
+  content: "▴";
+}
+
+/* Divider between an open solve's summary and its details */
+.modal-solve-row[open] .modal-solve-main {
+  border-bottom: 1px solid var(--border-main);
+}
+
+/* Solve number, faded */
+.modal-solve-number {
+  min-width: 28px;
+  opacity: 0.6;
+}
+
+/* Start of the scramble, cut with "…" where it doesn't fit */
+.modal-solve-preview {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-size: 13px;
+  opacity: 0.65;
+}
+
+/* OK / +2 / DNF / remove / Share buttons of an open solve, wrapping on narrow screens */
 .modal-solve-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 6px;
+  margin-top: 8px;
 }
 
 /* Small faded scramble under the solve */
@@ -1566,9 +1685,10 @@ button {
   display: flex;
 }
 
-/* The panel, scrolling when taller than the screen */
+/* The panel, scrolling when taller than the screen; wide on PC, narrower on phones (media query at the end) */
 .settings-panel {
-  width: 320px;
+  width: 560px;
+  max-width: calc(100vw - 32px);
   background: var(--bg-main);
   color: var(--text-strong);
   border-radius: 12px;
@@ -1679,6 +1799,67 @@ button {
   font-size: 13px;
 }
 
+/* Layout on/off switch: a hidden checkbox with a sliding knob drawn over it; full opacity, unlike the row's name label */
+.setting-row .toggle-switch {
+  opacity: 1;
+  position: relative;
+  display: inline-block;
+  width: 40px;
+  height: 22px;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+/* The real checkbox stays for clicks and the keyboard, but isn't seen (beats the shared input look) */
+.setting-control .toggle-switch input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  padding: 0;
+}
+
+/* The track, in the buttons color while off */
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--border-main);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  transition: background 0.2s, border-color 0.2s;
+}
+
+/* The round knob, on the left while off, in the panel's text color */
+.toggle-slider::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--text-strong);
+  transition: transform 0.2s;
+}
+
+/* On: accent-colored track */
+.toggle-switch input:checked + .toggle-slider {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+/* On: knob slides to the right */
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+/* Ring around the switch when reached with Tab */
+.toggle-switch input:focus-visible + .toggle-slider {
+  outline: 2px solid var(--text-strong);
+  outline-offset: 2px;
+}
+
 /* Import pop-up: a native <dialog>, so it opens on top of the settings pop-up */
 .import-dialog {
   width: 280px;
@@ -1732,8 +1913,13 @@ button {
   margin-top: 16px;
 }
 
-/* Phones: no Statistics or Session History switches, since phones never show those sidebars */
+/* Phones: the narrow panel, and no Statistics or Session History switches, since phones never show those sidebars */
 @media (max-width: 768px) {
+  /* Same width as before the PC panel got wider */
+  .settings-panel {
+    width: 320px;
+  }
+
   /* The two sidebar switch rows */
   #pc1, #pc2 {
     display: none;
