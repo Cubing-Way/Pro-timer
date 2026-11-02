@@ -46,7 +46,7 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - [x] Commit both repos, on a `cubisz-metrics` branch in each
 - [x] Deploy Cubisz first (the gh-pages branch), since the timer's live build loads its `engine.html`
 - [x] Deploy Pro Timer, then submit a solve on the live site (2026-11-02: 23 s on a cold server, same scores as local, and its link rebuilt the review with no engine call)
-- [ ] Merge `cubisz-metrics` into `main` and push, in both repos: the live sites are ahead of `main` until then
+- [x] Merge `cubisz-metrics` into `main` and push, in both repos
 - [ ] Try the device fallback on a phone: time, memory, and whether the page survives, since phones land there once the budget is spent
 
 ### Part 3: statistics for the metrics
