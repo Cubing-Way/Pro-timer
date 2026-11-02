@@ -1,6 +1,7 @@
 {
   "name": "timer-v2",
   "version": "1.0.0",
+  "private": true,
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -12,7 +13,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "GPL-3.0-or-later",
+  "license": "UNLICENSED",
   "type": "module",
   "dependencies": {
     "chart.js": "^4.5.1",

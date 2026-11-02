@@ -67,7 +67,7 @@ It builds, then serves `dist/` at http://localhost:4173/Pro-timer/. Open it once
 - `settings/`, `topbar/`, `modal/`, `timeTyping/`: settings, top bar, pop-ups and typed-in times
 - `importExport/`: the backup file, reading other timers' files (Pro Timer, csTimer, CubeDesk, Twisty Timer, lists of times) and competition files (WCIF) into sessions, and fetching WCA results
 - `offline/`: registers the service worker that makes the app work offline, and the bar that offers new versions
-- `public/`: files served as they are: the timer warning sounds (`audio/`)
+- `public/`: files served as they are: the timer warning sounds (`audio/`) and the third-party license notices (`THIRD_PARTY_NOTICES.txt`)
 
 Each folder has a `…Controller.js`. It holds the folder's state and page wiring (listeners, startup code), and it is what other folders import. The other files only export functions: when one needs state, its controller passes it in. State shared between folders lives in `…State.js` files (`avgState.js`, `sessionState.js`, `settingsState.js`, `timerState.js`, `topbarState.js`). `main/mainController.js` loads the controllers, then shows the first scramble.
 
@@ -528,23 +528,14 @@ How it works, from build to an offline visit:
 
 ### `cubisz/` and `public/`
 
-The app only uses cubisz through `cubisz/api.js`: `mountCube(element)`, `setSize`, `setView("3d")`, `setFMC(true)`, `applyScramble(scramble, skipPaint)`, `applySolution(moves, skipPaint)` (both repaint the cube unless `skipPaint` is true), `getLastMoveCount()` and `checkSolved()`. `public/` only holds the timer warning sounds.
+The app only uses cubisz through `cubisz/api.js`: `mountCube(element)`, `setSize`, `setView("3d")`, `setFMC(true)`, `applyScramble(scramble, skipPaint)`, `applySolution(moves, skipPaint)` (both repaint the cube unless `skipPaint` is true), `getLastMoveCount()` and `checkSolved()`. `public/` holds the timer warning sounds and `THIRD_PARTY_NOTICES.txt`, the licenses of the third-party software in the site.
 
 ## License
 
-Copyright (C) 2026 Caio Almeida Martins
+Copyright (C) 2026 Caio Almeida Martins. All rights reserved. See [LICENSE](LICENSE).
 
-This project is licensed under the GNU General Public License v3.0 or later (GPL-3.0-or-later).
+The code is public to read, but no part of it may be copied, modified, distributed or used in other work without written permission.
 
-This project includes code derived from csTimer:
-https://github.com/cs0x7f/cstimer
+Versions up to and including commit `fa20056` were published under GPL-3.0-or-later and stay available under it. Those versions included code derived from csTimer (https://github.com/cs0x7f/cstimer), which is licensed under GPLv3.
 
-csTimer is licensed under the GNU General Public License v3.0.
-All modifications and combined work are distributed under GPLv3.
-
-Scrambles and their pictures come from cubing.js, used as a dependency:
-https://github.com/cubing/cubing.js
-
-cubing.js is licensed under MPL-2.0 OR GPL-3.0-or-later.
-
-A copy of the license is available in the LICENSE file.
+Third-party software keeps its own license, listed in [`public/THIRD_PARTY_NOTICES.txt`](public/THIRD_PARTY_NOTICES.txt), which the site also serves. That includes cubing.js (https://github.com/cubing/cubing.js), used as a dependency under MPL-2.0.
