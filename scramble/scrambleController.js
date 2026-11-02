@@ -2,6 +2,7 @@ import { cubing } from "../main/cubing.js";
 import { cubingEvents } from "./scrData.js";
 import {
      isCubiszEvent,
+     isMetricsEvent,
      autoFitText,
      formatMegaminx,
      parseMBLDScramble,
@@ -101,6 +102,7 @@ export {
     previousScramble, 
     nextScramble, 
     isCubiszEvent,
+    isMetricsEvent,
     parseMBLDScramble,
     getCategoryOfEvent,
     getEventName

@@ -1,7 +1,9 @@
-import { timerSettObj, deviceSettObj } from "./settingsState.js";
+import { timerSettObj, deviceSettObj, reviewSettObj } from "./settingsState.js";
 import { detectDeviceType, detectDeviceModel } from "./device.js";
 import { timerObj } from "../timer/timerState.js";
 import { bindVisibilityToggle } from "./layout.js";
+import { requestMethods } from "../metrics/metricsClient.js";
+import { methodName } from "../metrics/metricsView.js";
 
 // Settings panel: open and close it
 
@@ -274,6 +276,64 @@ document.getElementById("timer-decimals").addEventListener("change", () => {
     // The select's values are text ("1", "2", "3"), so turn them into a number
     timerSettObj.timerDecimals = Number(document.getElementById("timer-decimals").value);
     localStorage.setItem("timerDecimals", timerSettObj.timerDecimals);
+});
+
+// Cubisz review's engine method: the list comes from Cubisz, and is kept for next time so the select also works offline
+
+const reviewMethodSelect = document.getElementById("reviewMethod");
+const reviewMethodNote = document.getElementById("reviewMethodNote");
+// True once this visit has asked Cubisz for the list
+let reviewMethodsAsked = false;
+
+// Shows the note in the picked method's name under the setting's name
+function showReviewMethodNote() {
+    reviewMethodNote.textContent = reviewMethodSelect.value.match(/\((.*)\)\s*$/)?.[1] ?? "";
+}
+
+// Fills the select: CFOP's methods, then the others, named without their note unless two would read the same; picks the saved one, or the one Cubisz starts on
+function fillReviewMethods({ methods, start }) {
+    const groups = [
+        ["CFOP", methods.filter(name => name.startsWith("CFOP"))],
+        ["Other methods", methods.filter(name => !name.startsWith("CFOP"))]
+    ];
+    reviewMethodSelect.replaceChildren(...groups.map(([label, names]) => {
+        const group = document.createElement("optgroup");
+        group.label = label;
+        names.forEach(name => {
+            const clash = methods.filter(other => methodName(other) === methodName(name)).length > 1;
+            group.append(new Option(clash ? name : methodName(name), name));
+        });
+        return group;
+    }));
+    reviewMethodSelect.value = methods.includes(reviewSettObj.method) ? reviewSettObj.method : start;
+    showReviewMethodNote();
+}
+
+// The list from last time, or one option until the first list arrives
+const savedReviewMethods = JSON.parse(localStorage.getItem("reviewMethods"));
+if (savedReviewMethods) fillReviewMethods(savedReviewMethods);
+else reviewMethodSelect.append(new Option(methodName(reviewSettObj.method) || "Cubisz's default", reviewSettObj.method));
+
+// Opening the panel asks Cubisz for the list once per visit; when it can't be reached, the list from last time stays and the next opening tries again
+openBtn.addEventListener("click", () => {
+    if (reviewMethodsAsked) return;
+    reviewMethodsAsked = true;
+    requestMethods().then(
+        (list) => {
+            localStorage.setItem("reviewMethods", JSON.stringify(list));
+            fillReviewMethods(list);
+        },
+        () => {
+            reviewMethodsAsked = false;
+        }
+    );
+});
+
+// A new pick applies to the next review, and solves already reviewed change when submitted again
+reviewMethodSelect.addEventListener("change", () => {
+    reviewSettObj.method = reviewMethodSelect.value;
+    localStorage.setItem("reviewMethod", reviewSettObj.method);
+    showReviewMethodNote();
 });
 
 // Number of timer phases per solve, kept in timerObj.totalSolvePhases

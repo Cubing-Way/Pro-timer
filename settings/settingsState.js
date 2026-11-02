@@ -17,4 +17,9 @@ const deviceSettObj = {
   detected: ""                                       // the device's type, then its model when the browser gives it (filled by settingsController.js)
 };
 
-export { timerSettObj, deviceSettObj };
+// Cubisz reviews (Settings → Cubisz review): the engine method's full name ("" = none picked yet, so Cubisz uses the one it starts on)
+const reviewSettObj = {
+  method: localStorage.getItem("reviewMethod") || ""
+};
+
+export { timerSettObj, deviceSettObj, reviewSettObj };

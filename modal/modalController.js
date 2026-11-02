@@ -3,7 +3,8 @@ import { computeAverage, formatSecondsToTime, parseTimeToSeconds } from "../aver
 import { averageObj, classicStats, updateClassicStats, getNeededSolves } from "../average/avgController.js";
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
-import { isCubiszEvent } from "../scramble/scrambleController.js";
+import { isCubiszEvent, isMetricsEvent } from "../scramble/scrambleController.js";
+import { solveKey, findSolve, metricsAreCurrent, updateMetrics, metricsRowHtml } from "../metrics/metricsController.js";
 import { showLastSolve } from "../timer/timerController.js";
 import { shortDate, droppedIndexes, averageShareText, solveShareText, shareOrCopy } from "./shareText.js";
 import {
@@ -128,6 +129,7 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             <div class="modal-scramble">
                 <span id="tps-${blockIndex}-${i}">Status: ${s.status || '-'} | Moves: ${s.moves || '-'} | TPS: ${s.tps ? s.tps.toFixed(2) : '-'}</span>
             </div>
+            <div data-metrics-key="${solveKey(s)}">${metricsRowHtml(s)}</div>
     ` : "";
 
     // Where it was done, only for solves that have it (solves saved before it existed don't)
@@ -394,6 +396,9 @@ function submitSolution(blockIndex, solveIndex) {
 
     const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
     const value = input.value;
+    // Only a new solution or another engine method needs a new review; with the same solution, its old metrics stay true until the new ones arrive
+    const needsReview = !metricsAreCurrent(solve, value);
+    const sameSolution = solve.solution === value;
 
     // true (skipPaint): change cubisz's cube without repainting the FMC cube on the page
     applyScramble(solve.scramble, true);
@@ -412,7 +417,18 @@ function submitSolution(blockIndex, solveIndex) {
 
     document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount} | TPS: ${tps.toFixed(2)}`;
 
+    // Sends a solved 3x3 solution to Cubisz for its metrics; any other solution has none
+    const canReview = isSolved && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
+    if (needsReview || !canReview) updateMetrics(solve, canReview ? value : null, showMetrics, canReview && sameSolution);
+
     saveSessions();
+}
+
+// Redraws a solve's metrics in the open modal, if its row is drawn
+function showMetrics(key) {
+    const row = modalBody.querySelector(`[data-metrics-key="${key}"]`);
+    const solve = findSolve(key);
+    if (row && solve) row.innerHTML = metricsRowHtml(solve);
 }
 
 export { openDetailsModal, setPenalty, removeSolve };

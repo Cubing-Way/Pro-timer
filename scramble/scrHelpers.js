@@ -34,6 +34,11 @@ function isCubiszEvent(code) {
   return CUBISZ_EVENTS.includes(code) || OLD_3X3_EVENTS.includes(code);
 }
 
+// True when Cubisz's review means something for the event: its engine and effort are for two hands solving with a speed method (so not one-handed, feet, blindfolded or Fewest Moves)
+function isMetricsEvent(code) {
+  return code === "333";
+}
+
 // Shrinks the scramble text 1px at a time until it fits its box (starting at 40px, or 30px on phones)
 function autoFitText(vis) {
   const container = document.getElementById("scrambleContainer");
@@ -86,7 +91,8 @@ function parseMBLDScramble(scrambleText) {
 }
 
 export { 
-  isCubiszEvent, 
+  isCubiszEvent,
+  isMetricsEvent,
   autoFitText, 
   formatMegaminx,
   parseMBLDScramble,

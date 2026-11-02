@@ -12,6 +12,12 @@
       "runtimeExecutable": "npm",
       "runtimeArgs": ["run", "preview"],
       "port": 4173
+    },
+    {
+      "name": "cubisz",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["--prefix", "../cubisz", "run", "dev"],
+      "port": 5173
     }
   ]
 }

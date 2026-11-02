@@ -1,0 +1,63 @@
+# Plan: Cubisz metrics and their statistics
+
+## Goal
+
+Send a solution in Pro Timer and get metrics back from Cubisz, inside the app. Then add statistics for those metrics. Reviewing one solve in depth stays on the Cubisz site.
+
+Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz solve review"): "Send the solution in the app, and it returns metrics" and "Add statistics for those metrics". Cubisz → 🔗 Integrações: "Integrate Cubisz into Pro Timer".
+
+## Decisions (2026-11-02)
+
+- **Hidden iframe, not bundling.** Pro Timer loads Cubisz's `engine.html` in a hidden iframe and talks to it with `postMessage`.
+  - Bundling would need Puzzly installed next to Pro Timer, Vite 7 vs 8 and cubing.js 0.66 vs 0.63 sorted out, and 3.5 MB more for the offline cache.
+  - With the iframe, the engine has one home, and engine updates reach the app by deploying Cubisz.
+  - Only `metrics/metricsClient.js` knows about the iframe, so a paid plan or a real backend can replace it without touching the rest.
+- **The review tries AWS first, then the device** (Caio's choice, after first trying device only). It's faster and doesn't depend on the user's device, but the server's budget is 3,600 GB-seconds a month, shared with everyone on the Cubisz site, and the account's US$0.10 limit is what caps it. When the budget runs out, reviews and the site both solve on the device until the next month.
+- **The review runs in a worker** (`engine-worker.js`). On the live sites the iframe is the same site as the timer, so it shares the timer's main thread, and a long task there could delay stopping the timer.
+- **Only `333` gets metrics** (`isMetricsEvent`). The speed model is for two hands, and the method is CFOP, so one-handed, feet, BLD and Fewest Moves would give wrong numbers.
+- **Method: picked in Settings → Cubisz review**, from the list Cubisz sends (20 methods, without its "Computer fastest" ones, which take minutes). Until one is picked, it's CFOP level 3, the one the site starts on. It's saved in `metrics.method`, so statistics can group by it.
+- **Submit is the send button.** Submitting again with another method reviews again, and the old metrics stay until the new ones arrive.
+- **"Full analysis on Cubisz" link** next to the metrics: it opens the site with the same solve and method, and `review=1` starts the review there. That review is a second one, so it costs the server again.
+
+## What I found
+
+- On AWS (measured 2026-11-02, 7-step solve, 7 calls): 11 s and 25 GB-seconds on a warm container, 18 s and 42 GB-seconds on a new one. Calls stop when under ~353 GB-seconds are left, so that's roughly 80 to 130 reviews a month in all.
+- On a 4-thread PC: 51 s the first time (builds and stores tables), 38 s after that. Other devices are untested.
+- Other methods, timed on this PC with one CFOP solve: ZZ (EOLine) 1 s, Roux 10 s, CFOP level 2 19 s, CFOP level 4 43 s, Beginner 117 s, CFOP with ZBLL 121 s. Only CFOP levels 2 and 3 have answer files on the server, so other methods' AWS cost isn't known yet and may be several times higher. A slower device could pass `REVIEW_LIMIT` (5 minutes) with the slowest ones.
+- Both give the same metrics. Check the spend with the server's GET rarely: each one is a call, and waking a cold container costs about 6.5 GB-seconds.
+- Without the engine, splitting a solution into steps and scoring your own moves takes about 250 ms, but it needs Puzzly's code, so it also goes through the engine page.
+- A full review is 185 KB; `solveMetrics` (`cubisz/metrics.js`) brings it to about 1.3 KB per solve. localStorage holds about 5 MB and also has every time, so thousands of reviewed solves would need another home.
+- Every field is listed in Cubisz's README, under "Engine for other apps". `version` is in the metrics so statistics can handle older ones.
+- `averageOfN` copies solves when an average finishes, so solves are found again by `createdAt|time` (`findSolve`).
+
+## Parts
+
+### Part 1: send and get metrics (done, not deployed)
+
+- [x] Cubisz: `engine.html`, `engine.js`, `engine-worker.js`, `metrics.js`, second page in `vite.config.js`
+- [x] Pro Timer: `metrics/` (client, controller, view, CSS), `isMetricsEvent`, Submit sends the solution
+- [x] Fixes the solution check needed: `S` turning backwards, Fewest Moves mode staying on after leaving the event
+- [x] The engine method setting (`requestMethods`, `reviewSettObj`, `APP_METHODS`) and the full analysis link (`analysisLink`, `loadSolveFromLink`)
+- [x] READMEs
+
+### Part 2: ship it
+
+- [ ] Commit both repos
+- [ ] Deploy Cubisz first (the gh-pages branch), since the timer's live build loads its `engine.html`
+- [ ] Deploy Pro Timer (`npm run deploy`), then submit a solve on the live site
+- [ ] Try the device fallback on a phone: time, memory, and whether the page survives, since phones land there once the budget is spent
+
+### Part 3: statistics for the metrics
+
+- [ ] Choose which figures to chart. Likely: effort score, net effort, execution, TPS, and each step's moves and effort. Use only `complete` solves with one `method`
+- [ ] Add helpers in `stats/statsHelpers.js` that read `solve.metrics` from `getAllSolvesFromSession`, skipping solves without it
+- [ ] Add averages per period and a chart to the stats page, following the existing period filter
+- [ ] Show the same in the sidebar or the average's card, if it's worth it
+- [ ] Add a way to review many saved solves at once (they queue already), since metrics only exist for solutions that were submitted. Batches must solve on the device: with AWS first, one batch of ~100 solves would spend the whole month's budget. This needs an option in the review message that tells `engine-worker.js` to skip the server
+
+### Part 4: later
+
+- [ ] Share engine runs between Pro Timer's review and a Cubisz tab, so the full analysis link doesn't pay for the same runs twice (on the live sites they're the same site, so IndexedDB could hold them)
+- [ ] Decide what to do for OH, feet and BLD
+- [ ] Add metrics to the share text (`modal/shareText.js`)
+- [ ] Paid plan: the boundary to gate is `metricsClient.js` and the engine page

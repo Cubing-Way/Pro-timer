@@ -1,0 +1,71 @@
+/* A reviewed solve's Cubisz metrics, in the session pop-up (metrics/metricsView.js) */
+
+.metrics {
+  margin-top: 10px;
+}
+
+/* The method on the left, the link to the full analysis on the right; they stack when there's no room */
+.metrics-title {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+
+.metrics-link {
+  color: inherit;
+  white-space: nowrap;
+}
+
+/* Tiles: as many columns as fit */
+.metrics-tiles {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 6px;
+}
+
+.metrics-tile {
+  padding: 6px 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-main);
+  border-radius: 6px;
+}
+
+.metrics-tile-label,
+.metrics-tile-note {
+  font-size: 11px;
+  opacity: 0.7;
+}
+
+.metrics-tile-value {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* Table of the solve's steps */
+.metrics-steps {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+
+.metrics-steps th,
+.metrics-steps td {
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--border-main);
+  text-align: right;
+}
+
+/* Step names on the left, figures on the right */
+.metrics-steps th:first-child,
+.metrics-steps td:first-child {
+  text-align: left;
+}
+
+.metrics-steps th {
+  font-weight: 500;
+  opacity: 0.7;
+}
