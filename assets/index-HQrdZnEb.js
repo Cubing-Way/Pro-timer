@@ -183,6 +183,9 @@ const OLD_3X3_EVENTS = [
 function isCubiszEvent(code) {
   return CUBISZ_EVENTS.includes(code) || OLD_3X3_EVENTS.includes(code);
 }
+function isMetricsEvent(code) {
+  return code === "333";
+}
 function autoFitText(vis2) {
   const container = document.getElementById("scrambleContainer");
   const text = document.getElementById("scrambleDisplay");
@@ -617,6 +620,9 @@ const deviceSettObj = {
   detected: ""
   // the device's type, then its model when the browser gives it (filled by settingsController.js)
 };
+const reviewSettObj = {
+  method: localStorage.getItem("reviewMethod") || ""
+};
 function updateClassicStats(recomputeBest = false) {
   updateClassicStats$1(recomputeBest, averageObj, classicStats);
 }
@@ -800,7 +806,7 @@ function removeLastSolve$1(averageObj2, getCurrentSession2, removeSolve2) {
     removeSolve2(target.blockIndex, target.solveIndex);
   }
 }
-function solveKey(solve) {
+function solveKey$1(solve) {
   return `${solve.createdAt}|${solve.time}`;
 }
 function byDate(a, b) {
@@ -815,9 +821,9 @@ function addSolvesToSession$1(solves, averageObj2, getCurrentSession2) {
   const seen = new Set([
     ...session2.averages.flatMap((block) => block.solves),
     ...averageObj2.solvesArray
-  ].map(solveKey));
+  ].map(solveKey$1));
   const newSolves = solves.filter((solve) => {
-    const key = solveKey(solve);
+    const key = solveKey$1(solve);
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
@@ -844,11 +850,11 @@ function addRoundsToSession$1(rounds, averageObj2, getSession) {
   const seen = new Set([
     ...session2.averages.flatMap((block) => block.solves),
     ...averageObj2.solvesArray
-  ].map(solveKey));
+  ].map(solveKey$1));
   let added = 0;
   const loose = [];
   rounds.forEach((round2) => {
-    const newSolves = round2.solves.filter((solve) => !seen.has(solveKey(solve)));
+    const newSolves = round2.solves.filter((solve) => !seen.has(solveKey$1(solve)));
     if (round2.mode && newSolves.length === round2.solves.length) {
       session2.averages.push(buildAverageBlock(round2.solves, round2.mode));
       added += newSolves.length;
@@ -1157,6 +1163,179 @@ function bindVisibilityToggle(checkboxId, targetClass) {
   });
   apply();
 }
+const ENGINE_URL = "https://cubing-way.github.io/cubisz/engine.html";
+const ENGINE_ORIGIN = new URL(ENGINE_URL).origin;
+const SITE_URL = new URL("./", ENGINE_URL).href;
+const LOAD_LIMIT = 3e4;
+const REVIEW_LIMIT = 3e5;
+const IDLE_LIMIT = 12e4;
+let frame = null;
+let frameReady = null;
+let markReady = null;
+let idleTimer = null;
+const queue = [];
+let nextId = 1;
+let methodsListener = null;
+function startIdleCountdown() {
+  clearTimeout(idleTimer);
+  idleTimer = setTimeout(removeFrame, IDLE_LIMIT);
+}
+function removeFrame() {
+  frame?.remove();
+  frame = null;
+  frameReady = null;
+  markReady = null;
+}
+function loadFrame() {
+  if (frameReady) return frameReady;
+  frameReady = new Promise((resolve2, reject) => {
+    const timer = setTimeout(() => {
+      removeFrame();
+      reject(new Error("Cubisz can't be reached"));
+    }, LOAD_LIMIT);
+    markReady = () => {
+      clearTimeout(timer);
+      resolve2();
+    };
+    frame = document.createElement("iframe");
+    frame.src = ENGINE_URL;
+    frame.hidden = true;
+    frame.title = "Cubisz engine";
+    document.body.append(frame);
+  });
+  return frameReady;
+}
+function finishReview(settle, value) {
+  const review = queue.shift();
+  clearTimeout(review.timer);
+  settle(value);
+  runNextReview();
+}
+function runNextReview() {
+  const review = queue[0];
+  if (!review) {
+    startIdleCountdown();
+    return;
+  }
+  clearTimeout(idleTimer);
+  loadFrame().then(
+    () => {
+      review.timer = setTimeout(() => {
+        removeFrame();
+        finishReview(review.reject, new Error("The review took too long"));
+      }, REVIEW_LIMIT);
+      frame.contentWindow.postMessage({ type: "cubisz-review", id: review.id, ...review.solve }, ENGINE_ORIGIN);
+    },
+    (error) => finishReview(review.reject, error)
+  );
+}
+window.addEventListener("message", ({ data, origin, source }) => {
+  if (origin !== ENGINE_ORIGIN || !frame || source !== frame.contentWindow) return;
+  if (data.type === "cubisz-ready") {
+    markReady?.();
+    return;
+  }
+  if (data.type === "cubisz-methods") {
+    methodsListener?.({ methods: data.methods, start: data.start });
+    methodsListener = null;
+    return;
+  }
+  const review = queue[0];
+  if (!review || data.id !== void 0 && data.id !== review.id) return;
+  if (data.type === "cubisz-progress") review.onProgress(data);
+  if (data.type === "cubisz-metrics") finishReview(review.resolve, data.metrics);
+  if (data.type === "cubisz-error") finishReview(review.reject, new Error(data.message));
+});
+async function requestMethods() {
+  if (!navigator.onLine) throw new Error("You're offline");
+  await loadFrame();
+  if (!queue.length) startIdleCountdown();
+  return new Promise((resolve2) => {
+    methodsListener = resolve2;
+    frame.contentWindow.postMessage({ type: "cubisz-methods" }, ENGINE_ORIGIN);
+  });
+}
+function analysisLink({ scramble, solution, time, method, runs }) {
+  const link = new URLSearchParams({ scramble, solution, time, method, runs });
+  return `${SITE_URL}#${link}`;
+}
+function requestMetrics(solve, onProgress) {
+  if (!navigator.onLine) return Promise.reject(new Error("You're offline, and reviews need Cubisz's site"));
+  return new Promise((resolve2, reject) => {
+    queue.push({ id: nextId++, solve, onProgress, resolve: resolve2, reject, timer: null });
+    if (queue.length === 1) runNextReview();
+  });
+}
+function escapeHtml(text) {
+  const box = document.createElement("div");
+  box.textContent = text;
+  return box.innerHTML.replaceAll('"', "&quot;");
+}
+function methodName(name) {
+  return name.replace(/\s*\(.*\)\s*$/, "");
+}
+function percent(score) {
+  return score === null ? "—" : `${Math.round(score * 100)}%`;
+}
+function signed(value, decimals2) {
+  if (value === null) return "—";
+  return `${value > 0 ? "+" : ""}${value.toFixed(decimals2)}`;
+}
+function fixed(value, decimals2) {
+  return value === null ? "—" : value.toFixed(decimals2);
+}
+function tileHtml(label, value, note, meaning) {
+  return `
+        <div class="metrics-tile" title="${meaning}">
+            <div class="metrics-tile-label">${label}</div>
+            <div class="metrics-tile-value">${value}</div>
+            <div class="metrics-tile-note">${note}</div>
+        </div>
+    `;
+}
+function stepRowHtml(step) {
+  const name = escapeHtml(step.name);
+  if (step.solvedBy) return `<tr><td>${name}</td><td colspan="3">solved with ${escapeHtml(step.solvedBy)}</td></tr>`;
+  return `
+        <tr>
+            <td>${name}</td>
+            <td>${step.moves ?? "—"} / ${step.engineMoves}</td>
+            <td>${fixed(step.effort, 1)} / ${fixed(step.engineEffort, 1)}</td>
+            <td>${signed(step.netEffort, 1)}</td>
+        </tr>
+    `;
+}
+function metricsHtml(m, link) {
+  const netNote = m.netTime === null ? "below 0 = better" : `≈ ${signed(m.netTime, 2)} s at your pace`;
+  const engineNote = m.engineTime === null ? "engine's own solve" : `≈ ${m.engineTime.toFixed(2)} s at your pace`;
+  return `
+        <div class="metrics">
+            <div class="metrics-title">
+                <span title="${escapeHtml(m.method)}">Cubisz review · ${escapeHtml(methodName(m.method))}</span>
+                <a class="metrics-link" href="${escapeHtml(link)}" target="_blank" rel="noopener">Full analysis on Cubisz</a>
+            </div>
+            <div class="metrics-tiles">
+                ${tileHtml("Effort score", percent(m.effortScore), "engine = 100%", "The engine's pick over yours, in effort, averaged over your steps: above 100% = easier to turn than the engine's picks")}
+                ${tileHtml("Move score", percent(m.moveScore), "engine = 100%", "The engine's pick over yours, in moves, averaged over your steps: above 100% = fewer moves than the engine's picks")}
+                ${tileHtml("Net effort", signed(m.netEffort, 1), netNote, "Your steps against the engine's picks, counting what each step left for the next ones: below 0 = better")}
+                ${tileHtml("Execution", fixed(m.execution, 2), "effort per second", "Effort per second: TPS weighted by how hard your moves are to turn")}
+                ${tileHtml("Your effort", m.effort.toFixed(1), `${m.moves} moves`, "How hard your whole solution is to turn, in easy turns: an R or a U flick is 1, regrips and awkward moves cost more")}
+                ${tileHtml("Engine's solve", m.engineEffort.toFixed(1), engineNote, `The engine's own solve from the same scramble: ${m.engineMoves} moves`)}
+            </div>
+            <table class="metrics-steps">
+                <thead>
+                    <tr><th>Step</th><th>Moves / engine</th><th>Effort / engine</th><th>Net</th></tr>
+                </thead>
+                <tbody>
+                    ${m.steps.map(stepRowHtml).join("")}
+                </tbody>
+            </table>
+        </div>
+    `;
+}
+function metricsNoteHtml(text) {
+  return `<div class="modal-scramble">${escapeHtml(text)}</div>`;
+}
 const overlay$1 = document.getElementById("settingsOverlay");
 const openBtn$1 = document.getElementById("settingsBtn");
 const closeBtn$1 = document.getElementById("closeSettings");
@@ -1334,6 +1513,50 @@ document.getElementById("timer-decimals").value = timerSettObj.timerDecimals;
 document.getElementById("timer-decimals").addEventListener("change", () => {
   timerSettObj.timerDecimals = Number(document.getElementById("timer-decimals").value);
   localStorage.setItem("timerDecimals", timerSettObj.timerDecimals);
+});
+const reviewMethodSelect = document.getElementById("reviewMethod");
+const reviewMethodNote = document.getElementById("reviewMethodNote");
+let reviewMethodsAsked = false;
+function showReviewMethodNote() {
+  reviewMethodNote.textContent = reviewMethodSelect.value.match(/\((.*)\)\s*$/)?.[1] ?? "";
+}
+function fillReviewMethods({ methods, start }) {
+  const groups = [
+    ["CFOP", methods.filter((name) => name.startsWith("CFOP"))],
+    ["Other methods", methods.filter((name) => !name.startsWith("CFOP"))]
+  ];
+  reviewMethodSelect.replaceChildren(...groups.map(([label, names2]) => {
+    const group = document.createElement("optgroup");
+    group.label = label;
+    names2.forEach((name) => {
+      const clash = methods.filter((other) => methodName(other) === methodName(name)).length > 1;
+      group.append(new Option(clash ? name : methodName(name), name));
+    });
+    return group;
+  }));
+  reviewMethodSelect.value = methods.includes(reviewSettObj.method) ? reviewSettObj.method : start;
+  showReviewMethodNote();
+}
+const savedReviewMethods = JSON.parse(localStorage.getItem("reviewMethods"));
+if (savedReviewMethods) fillReviewMethods(savedReviewMethods);
+else reviewMethodSelect.append(new Option(methodName(reviewSettObj.method) || "Cubisz's default", reviewSettObj.method));
+openBtn$1.addEventListener("click", () => {
+  if (reviewMethodsAsked) return;
+  reviewMethodsAsked = true;
+  requestMethods().then(
+    (list) => {
+      localStorage.setItem("reviewMethods", JSON.stringify(list));
+      fillReviewMethods(list);
+    },
+    () => {
+      reviewMethodsAsked = false;
+    }
+  );
+});
+reviewMethodSelect.addEventListener("change", () => {
+  reviewSettObj.method = reviewMethodSelect.value;
+  localStorage.setItem("reviewMethod", reviewSettObj.method);
+  showReviewMethodNote();
 });
 const phaseInput = document.getElementById("phase-count");
 phaseInput.value = timerObj.totalSolvePhases;
@@ -5562,15 +5785,15 @@ function computeFlexCategoryTraits(index2, ruler, options, stackCount) {
   const curr = pixels[index2];
   let prev = index2 > 0 ? pixels[index2 - 1] : null;
   let next = index2 < pixels.length - 1 ? pixels[index2 + 1] : null;
-  const percent = options.categoryPercentage;
+  const percent2 = options.categoryPercentage;
   if (prev === null) {
     prev = curr - (next === null ? ruler.end - ruler.start : next - curr);
   }
   if (next === null) {
     next = curr + curr - prev;
   }
-  const start = curr - (curr - Math.min(prev, next)) / 2 * percent;
-  const size = Math.abs(next - prev) / 2 * percent;
+  const start = curr - (curr - Math.min(prev, next)) / 2 * percent2;
+  const size = Math.abs(next - prev) / 2 * percent2;
   return {
     chunk: size / stackCount,
     ratio: options.barPercentage,
@@ -16359,8 +16582,8 @@ function renderStatsPage() {
             label: function(context) {
               const total = distribution.reduce((a, b) => a + b, 0);
               const value = context.raw;
-              const percent = total ? (value / total * 100).toFixed(1) : 0;
-              return `${context.label}: ${value} (${percent}%)`;
+              const percent2 = total ? (value / total * 100).toFixed(1) : 0;
+              return `${context.label}: ${value} (${percent2}%)`;
             }
           }
         }
@@ -17056,12 +17279,13 @@ function printScrambleMoves(scr, shouldReset = true) {
       E();
       E();
     },
-    "S": S,
-    "S'": () => {
+    // The cube's S turns like B, so standard S (turning like F) is its S three times
+    "S": () => {
       S();
       S();
       S();
     },
+    "S'": S,
     "S2": () => {
       S();
       S();
@@ -17453,6 +17677,7 @@ function renderMBLDGrid(grid2, countInput2, currentScramble2) {
   }
 }
 function showTimerLayout(vis2, zeroTime) {
+  setFMC(false);
   document.getElementById("penaltyOkBtn").style.display = "block";
   document.getElementById("penaltyPlus2Btn").style.display = "block";
   document.getElementById("penaltyDnfBtn").style.display = "block";
@@ -17542,6 +17767,7 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
   };
   const block = averageOfN(fmcObj, currentScramble, 0, timerSettObj.inspectionType, true);
   if (block) addAverageBlock(block);
+  else saveSessions();
   renderHistory();
   await displayScramble(eventObj.event, vis);
   applyScramble(currentScramble);
@@ -17564,6 +17790,7 @@ async function submitMBLD() {
   }
   const block = averageOfN(result, currentScramble, 0, timerSettObj.inspectionType, false, false, true);
   if (block) addAverageBlock(block);
+  else saveSessions();
   renderHistory();
   await displayScramble(eventObj.event, vis);
   document.getElementById("fmc-solution").value = "";
@@ -18043,6 +18270,76 @@ document.addEventListener("keyup", (e) => {
   if (e.repeat) return;
   onPressEnd();
 });
+const reviews = /* @__PURE__ */ new Map();
+const failures = /* @__PURE__ */ new Map();
+function solveKey(solve) {
+  return `${solve.createdAt}|${solve.time}`;
+}
+function findSolve(key) {
+  const lists = [averageObj.solvesArray];
+  Object.values(sessionsObj.sessions).forEach((session2) => {
+    session2.averages?.forEach((average) => lists.push(average.solves ?? []));
+    if (session2.buffer) lists.push(session2.buffer.solvesArray);
+  });
+  return lists.flat().find((solve) => solveKey(solve) === key) ?? null;
+}
+function isUnderWay(key, solution, method) {
+  const review = reviews.get(key);
+  return review?.solution === solution && review.method === method;
+}
+function metricsAreCurrent(solve, solution) {
+  if (!solve.metrics || solve.solution !== solution) return false;
+  return !reviewSettObj.method || solve.metrics.method === reviewSettObj.method;
+}
+function startReview(solve, solution, onChange) {
+  const key = solveKey(solve);
+  const method = reviewSettObj.method;
+  const isCurrent = () => isUnderWay(key, solution, method);
+  reviews.set(key, { solution, method, note: "Waiting for the review…" });
+  requestMetrics({ scramble: solve.scramble, solution, time: solve.time, method }, ({ run, runs }) => {
+    if (!isCurrent()) return;
+    reviews.get(key).note = `Reviewing: engine run ${run} of ${runs}…`;
+    onChange(key);
+  }).then(
+    (metrics) => {
+      if (!isCurrent()) return;
+      reviews.delete(key);
+      const found = findSolve(key);
+      if (found) {
+        found.metrics = metrics;
+        saveSessions();
+      }
+      onChange(key);
+    },
+    (error) => {
+      if (!isCurrent()) return;
+      reviews.delete(key);
+      failures.set(key, error.message);
+      onChange(key);
+    }
+  );
+}
+function updateMetrics(solve, solution, onChange, keepOld = false) {
+  const key = solveKey(solve);
+  if (solution && isUnderWay(key, solution, reviewSettObj.method)) return;
+  reviews.delete(key);
+  failures.delete(key);
+  if (!keepOld) delete solve.metrics;
+  if (solution) startReview(solve, solution, onChange);
+  onChange(key);
+}
+function savedMetricsHtml(solve) {
+  if (!solve.metrics) return "";
+  const { method, time, runs } = solve.metrics;
+  const link = analysisLink({ scramble: solve.scramble, solution: solve.solution, time: time ?? solve.time, method, runs: JSON.stringify(runs) });
+  return metricsHtml(solve.metrics, link);
+}
+function metricsRowHtml(solve) {
+  const key = solveKey(solve);
+  if (reviews.has(key)) return metricsNoteHtml(reviews.get(key).note);
+  if (failures.has(key)) return metricsNoteHtml(`Couldn't review this solve: ${failures.get(key)}. Press Submit to try again.`) + savedMetricsHtml(solve);
+  return savedMetricsHtml(solve);
+}
 function htmlToText(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   return doc.body.textContent.replace(/\s+/g, " ").trim();
@@ -18202,6 +18499,7 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             <div class="modal-scramble">
                 <span id="tps-${blockIndex}-${i}">Status: ${s.status || "-"} | Moves: ${s.moves || "-"} | TPS: ${s.tps ? s.tps.toFixed(2) : "-"}</span>
             </div>
+            <div data-metrics-key="${solveKey(s)}">${metricsRowHtml(s)}</div>
     ` : "";
   const doneAtRow = s.doneAt ? `
             <div class="modal-scramble">
@@ -18394,6 +18692,8 @@ function submitSolution(blockIndex, solveIndex) {
   const solve = blockSolves(blockIndex)[solveIndex];
   const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
   const value = input.value;
+  const needsReview = !metricsAreCurrent(solve, value);
+  const sameSolution = solve.solution === value;
   applyScramble(solve.scramble, true);
   applySolution(value, true);
   const moveCount2 = getLastMoveCount();
@@ -18405,7 +18705,14 @@ function submitSolution(blockIndex, solveIndex) {
   solve.moves = moveCount2;
   solve.status = status;
   document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount2} | TPS: ${tps.toFixed(2)}`;
+  const canReview = isSolved2 && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
+  if (needsReview || !canReview) updateMetrics(solve, canReview ? value : null, showMetrics, canReview && sameSolution);
   saveSessions();
+}
+function showMetrics(key) {
+  const row = modalBody.querySelector(`[data-metrics-key="${key}"]`);
+  const solve = findSolve(key);
+  if (row && solve) row.innerHTML = metricsRowHtml(solve);
 }
 let restoringSession = false;
 const categorySelect = document.getElementById("categorySelect");
