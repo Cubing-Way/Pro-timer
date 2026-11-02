@@ -1,4 +1,4 @@
-import { getCurrentSession, addAverageBlock } from "../session/sessionController.js";
+import { getCurrentSession, addAverageBlock, saveSessions } from "../session/sessionController.js";
 import { displayScramble, currentScramble, previousScramble, nextScramble } from "../scramble/scrambleController.js";
 import { timerSettObj } from "../settings/settingsState.js";
 import { timeInsertion } from "../settings/settingsController.js";
@@ -83,7 +83,9 @@ document.getElementById("submit-moves").addEventListener("click", async () => {
 
   // Fewest Moves has no inspection, so it passes 0 instead of the timer's last inspection time
   const block = averageOfN(fmcObj, currentScramble, 0, timerSettObj.inspectionType, true);
+  // A finished average saves itself; any other solve saves here, so a reload keeps it
   if (block) addAverageBlock(block);
+  else saveSessions();
   renderHistory();
   await displayScramble(eventObj.event, vis);
   applyScramble(currentScramble);
@@ -117,7 +119,9 @@ async function submitMBLD() {
 
   // Multi-Blind has no inspection, so it passes 0 instead of the timer's last inspection time
   const block = averageOfN(result, currentScramble, 0, timerSettObj.inspectionType, false, false, true);
+  // A finished average saves itself; any other solve saves here, so a reload keeps it
   if (block) addAverageBlock(block);
+  else saveSessions();
   renderHistory();
   await displayScramble(eventObj.event, vis);
   document.getElementById("fmc-solution").value = "";
