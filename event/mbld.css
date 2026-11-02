@@ -56,6 +56,7 @@
 /* Scramble picture */
 .mbld-visual {
   text-align: center;
+  height: 110px;
 }
 
 /* "Cubes:" label and count input */

@@ -25,19 +25,14 @@ const eventSelect = document.getElementById("eventSelect");
 const modeSelect = document.getElementById("modeSelect");
 
 
-// Category select, filled from csTimer's scramble list (scramble/scrData.js)
-
-// Remove divider categories like ===WCA===
-const validCategories = scrdata.filter(
-  ([name]) => !name.startsWith("===")
-);
+// Category select, filled from the scramble list (scramble/scrData.js)
 
 // Clear selects
 categorySelect.innerHTML = "";
 eventSelect.innerHTML = "";
 
 // Fill category select
-validCategories.forEach(([categoryName]) => {
+scrdata.forEach(([categoryName]) => {
   const option = document.createElement("option");
   option.value = categoryName;
   option.textContent = categoryName;
@@ -84,19 +79,17 @@ categorySelect.addEventListener("change", () => {
 
   eventSelect.innerHTML = "";
 
-  const category = validCategories.find(
+  const category = scrdata.find(
     ([name]) => name === categorySelect.value
   );
 
   if (!category) return;
 
-  // Each category is [name, [[label, code, length], …]]
+  // Each category is [name, [[label, code], …]]
   const [, scrambles] = category;
 
-  // One option per scramble type, skipping csTimer's "blank" placeholders
+  // One option per event
   scrambles.forEach(([label, code]) => {
-    if (code === "blank") return;
-
     const option = document.createElement("option");
     option.value = code;
     option.textContent = label;
@@ -221,7 +214,7 @@ document.addEventListener("sessionChanged", () => {
     const session = getCurrentSession();
 
     // A new session has no category yet: WCA, or the old category's events stay and may not include "333"
-    categorySelect.value = session.category || validCategories[0][0];
+    categorySelect.value = session.category || scrdata[0][0];
     categorySelect.dispatchEvent(new Event("change"));
 
     const ev = session.scrambleType || "333";

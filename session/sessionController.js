@@ -1,3 +1,4 @@
+import { getCategoryOfEvent } from "../scramble/scrHelpers.js";
 import { averageObj, classicStats, updateClassicStats } from "../average/avgController.js";
 import { sessionsObj } from "./sessionState.js";
 import * as solve from "./solve.js";
@@ -47,7 +48,13 @@ function getCurrentSession() {
     if (!sessionsObj.sessions[sessionsObj.currentSession]) {
         sessionsObj.sessions[sessionsObj.currentSession] = { averages: [] };
     }
-    return sessionsObj.sessions[sessionsObj.currentSession];
+    const session = sessionsObj.sessions[sessionsObj.currentSession];
+    // A session on an event Pro Timer no longer has (PLL, OLL…) continues on 3x3; its solves keep their own event
+    if (session.scrambleType && !getCategoryOfEvent(session.scrambleType)) {
+        session.scrambleType = "333";
+        session.category = "WCA";
+    }
+    return session;
 }
 
 // Session select

@@ -10,7 +10,7 @@ import { handleFMC as handleFMCWith } from "./FMC.js";
 import { handleMBLD as handleMBLDWith, calculateMBLDPoints, renderMBLDGrid } from "./MBLD.js";
 import { showTimerLayout, showTimeInsertion, setEventInspection } from "./eventLayout.js";
 
-// The event in use (a csTimer code like "333", "333fm", "r3ni"), starting with the session's
+// The event in use (a code like "333", "333fm", "r3ni"), starting with the session's
 const eventObj = {
     event: getCurrentSession().scrambleType || "333",
 };
@@ -150,7 +150,7 @@ openBtn.addEventListener("click", async () => {
 
   const cubeCount = Number(countInput.value);
 
-  // The event's default length is 5 cubes; more cubes need a longer scramble
+  // The default is 5 cubes; more cubes need more scrambles
   if (cubeCount > 5) {
     await displayScramble(eventObj.event, vis, cubeCount);
   } else {

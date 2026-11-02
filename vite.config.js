@@ -40,13 +40,21 @@ export default {
   server: {
     port: 3000
   },
-  // Web workers (csTimer's scrambler) are built as ES modules
-  worker: {
-    format: "es"
+  // Vite's dev bundling moves cubing.js's files, and it then can't find its worker file
+  optimizeDeps: {
+    exclude: ["cubing"]
   },
-  // Keep the built code readable
   build: {
-    minify: false
+    // Keep the built code readable
+    minify: false,
+    // Vite's preload helper uses document when it has files to preload, and cubing.js's worker has no document
+    modulePreload: false,
+    rollupOptions: {
+      output: {
+        // That helper goes in its own file, or cubing.js's worker would load the app's main file to get it
+        manualChunks: (id) => (id.includes("vite/preload-helper") ? "preload-helper" : undefined),
+      },
+    },
   },
   plugins: [
     htmlIncludes(),
@@ -61,8 +69,8 @@ export default {
       workbox: {
         // Precache the page, code, styles and the timer sounds (each sound is only requested when it plays)
         globPatterns: ["**/*.{js,css,html,mp3}"],
-        // main/cstimer.js loads cstimer_module.js?worker_file&type=classic, so ignore those parameters to find the cached file
-        ignoreURLParametersMatching: [/^worker_file$/, /^type$/],
+        // cubing.js's 3D pictures (three.js, almost 900 KB): the app only draws 2D ones, so they never load
+        globIgnores: ["**/twisty-dynamic-3d-*.js"],
       },
     }),
   ],

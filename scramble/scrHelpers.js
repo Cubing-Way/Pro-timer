@@ -1,22 +1,8 @@
 import { scrdata } from "./scrData.js";
 
-// Finds an event code in the scramble list: [csTimer type, default length (0 = csTimer's default)], or null
-function getScrambleConfig(code) {
-  for (const [, scrambles] of scrdata) {
-    for (const [, scrambleCode, length] of scrambles) {
-      if (scrambleCode === code) {
-        return [scrambleCode, length || 0];
-      }
-    }
-  }
-  return null;
-}
-
 // The first category that lists this event ("WCA" for "333"), or null when Pro Timer doesn't have it
 function getCategoryOfEvent(code) {
   for (const [category, scrambles] of scrdata) {
-    // Dividers like ===WCA=== only hold a "blank" placeholder
-    if (category.startsWith("===")) continue;
     if (scrambles.some(([, scrambleCode]) => scrambleCode === code)) return category;
   }
   return null;
@@ -25,8 +11,6 @@ function getCategoryOfEvent(code) {
 // An event's name in the menu ("3x3x3" for "333"), or the code itself when Pro Timer doesn't list it
 function getEventName(code) {
   for (const [category, scrambles] of scrdata) {
-    // Dividers like ===WCA=== only hold a "blank" placeholder
-    if (category.startsWith("===")) continue;
     // The first category that lists it gives its name (WCA's "3x3x3", not "random state (WCA)")
     const found = scrambles.find(([, scrambleCode]) => scrambleCode === code);
     if (found) return found[0];
@@ -35,15 +19,19 @@ function getEventName(code) {
 }
 
 // Events Cubisz can check (it only simulates a 3x3)
-const CUBISZ_CATEGORIES = ["3x3x3", "3x3x3 CFOP", "3x3x3 Roux", "3x3x3 Mehta", "3x3x3 subsets"];
-const CUBISZ_WCA_EVENTS = ["333", "333ni", "333fm", "333oh"];
+const CUBISZ_EVENTS = ["333", "333ni", "333fm", "333oh", "333ft"];
+// 3x3 training events Pro Timer no longer has: solves saved on them keep their solution box
+const OLD_3X3_EVENTS = [
+  "333o", "edges", "corners",
+  "pll", "oll", "lsll2", "ll", "zbll", "coll", "cll", "ell", "2gll", "zzll", "zbls", "eols", "wvls", "vls", "f2l", "eoline", "easyc", "easyxc",
+  "sbrx", "cmll", "lse", "lsemu",
+  "mt3qb", "mteole", "mttdr", "mt6cp", "mtcdrll", "mtl5ep", "ttll",
+  "2gen", "2genl", "roux", "3gen_F", "3gen_L", "RrU", "333drud", "half", "lsll"
+];
 
 // True when the event's scrambles are for a single 3x3, so Cubisz can apply them and check a solution
 function isCubiszEvent(code) {
-  if (CUBISZ_WCA_EVENTS.includes(code)) return true;
-  return scrdata.some(([category, scrambles]) =>
-    CUBISZ_CATEGORIES.includes(category) && scrambles.some(([, scrambleCode]) => scrambleCode === code)
-  );
+  return CUBISZ_EVENTS.includes(code) || OLD_3X3_EVENTS.includes(code);
 }
 
 // Shrinks the scramble text 1px at a time until it fits its box (starting at 40px, or 30px on phones)
@@ -89,11 +77,19 @@ function formatMegaminx(scr) {
   return out.join("\n");
 }
 
+// Splits a Multi-Blind scramble ("1) … 2) …") into one scramble per cube
+function parseMBLDScramble(scrambleText) {
+  return scrambleText
+    .split(/\d+\)/g)        // split at "1)", "2)", etc
+    .map(s => s.trim())
+    .filter(s => s.length > 0);
+}
+
 export { 
-  getScrambleConfig, 
   isCubiszEvent, 
   autoFitText, 
   formatMegaminx,
+  parseMBLDScramble,
   getCategoryOfEvent,
   getEventName
 };

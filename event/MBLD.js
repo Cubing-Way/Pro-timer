@@ -1,5 +1,6 @@
 import { updateDisplay } from "../timer/countdownTimer.js";
-import { csTimer } from "../main/cstimer.js";
+import { cubing } from "../main/cubing.js";
+import { parseMBLDScramble } from "../scramble/scrambleController.js";
 
 
 // Multi-Blind layout: the solution form becomes a "Solved / Total" result box, countdown on the timer
@@ -65,26 +66,13 @@ function calculateMBLDPoints(resultStr) {
   };
 }
 
-// Splits csTimer's Multi-Blind scramble ("1) … 2) …") into one scramble per cube
-function parseMBLDScramble(scrambleText) {
-  return scrambleText
-    .split(/\d+\)/g)        // split at "1)", "2)", etc
-    .map(s => s.trim())
-    .filter(s => s.length > 0);
-}
-
-// Fills the pop-up grid: number, scramble and half-size picture for each cube
-async function renderMBLDGrid(grid, countInput, currentScramble) {
+// Fills the pop-up grid: number, scramble and picture for each cube
+function renderMBLDGrid(grid, countInput, currentScramble) {
   grid.innerHTML = "";
 
   const scrambles = parseMBLDScramble(currentScramble);
   // No more rows than scrambles were made
   const limit = Math.min(Number(countInput.value), scrambles.length);
-
-  // All the pictures at once, from csTimer's worker
-  const images = await Promise.all(
-    scrambles.slice(0, limit).map(s => csTimer.getImage(s, "333"))
-  );
 
   for (let i = 0; i < limit; i++) {
     const indexEl = document.createElement("div");
@@ -97,13 +85,11 @@ async function renderMBLDGrid(grid, countInput, currentScramble) {
 
     const visualEl = document.createElement("div");
     visualEl.className = "mbld-visual mbld-row";
-    visualEl.innerHTML = images[i];
-    visualEl.style.transformOrigin = "top";
-    visualEl.style.transform = "scale(0.5)";
+    visualEl.innerHTML = cubing.getPicture(scrambles[i], "3x3x3");
     grid.appendChild(indexEl);
     grid.appendChild(scrambleEl);
     grid.appendChild(visualEl);
   }
 }
 
-export { handleMBLD, calculateMBLDPoints, parseMBLDScramble, renderMBLDGrid };
+export { handleMBLD, calculateMBLDPoints, renderMBLDGrid };

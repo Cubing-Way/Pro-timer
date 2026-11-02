@@ -1,10 +1,10 @@
-import { csTimer } from "../main/cstimer.js";
-import { setVisualizerScale } from "./scrVisualiser.js";
-import { 
-    getScrambleConfig,
-     isCubiszEvent, 
-     autoFitText, 
-     formatMegaminx, 
+import { cubing } from "../main/cubing.js";
+import { cubingEvents } from "./scrData.js";
+import {
+     isCubiszEvent,
+     autoFitText,
+     formatMegaminx,
+     parseMBLDScramble,
      getCategoryOfEvent,
      getEventName
 } from "./scrHelpers.js";
@@ -16,29 +16,36 @@ let currentScrambleEvent = ""; // event code currentScramble was made for
 let scrambleHistory = [];
 // Position in scrambleHistory of the scramble on screen
 let historyIndex = -1;
-// Most scrambles kept, so a long session doesn't keep every picture in memory
+// Most scrambles kept, so a long session doesn't keep them all in memory
 const MAX_HISTORY = 100;
+// Multi-Blind cube count when none is given
+const MBLD_DEFAULT_CUBES = 5;
+// A scramble taking longer than this (ms) shows a notice; shorter ones would only make the text flicker
+const SLOW_SCRAMBLE_MS = 200;
 
-// Gets a new scramble for an event from csTimer and shows its text and picture; length overrides the default (Multi-Blind cube count)
-async function displayScramble(event = "333", vis, length) {
-    // csTimer type and default length from scramble/scrData.js
-    const config = getScrambleConfig(event);
-    if (!config) return;
+// Gets a new scramble for an event from cubing.js and shows its text and picture; cubes is the Multi-Blind cube count
+async function displayScramble(event = "333", vis, cubes = MBLD_DEFAULT_CUBES) {
+    // cubing.js's event ID from scramble/scrData.js
+    const cubingEvent = cubingEvents[event];
+    if (!cubingEvent) return;
 
-    const [type, rawLength] = config;
+    // A puzzle's first scramble can take many seconds (Kilominx over 30): say so, and clear the old one so nobody scrambles their cube with it
+    const slowNotice = setTimeout(() => {
+        document.getElementById("scrambleDisplay").textContent = "Scrambling…";
+        vis.innerHTML = "";
+    }, SLOW_SCRAMBLE_MS);
 
-    const finalLength = length ?? rawLength; // override if provided
+    const scramble = event === "r3ni"
+        ? await cubing.getMultiBlindScramble(cubes)
+        : await cubing.getScramble(cubingEvent.eventId);
 
-    let scramble = await csTimer.getScramble(type, finalLength);
-
-    // Picture of the scrambled puzzle
-    const svg = await csTimer.getImage(scramble, type);
+    clearTimeout(slowNotice);
 
     // Another event's scrambles are for another puzzle, so its history starts over
     if (event !== currentScrambleEvent) scrambleHistory = [];
 
     // Add the new scramble at the end and point at it
-    scrambleHistory.push({ scramble, event, svg });
+    scrambleHistory.push({ scramble, event });
     // Past the limit, forget the oldest one
     if (scrambleHistory.length > MAX_HISTORY) scrambleHistory.shift();
     historyIndex = scrambleHistory.length - 1;
@@ -51,9 +58,9 @@ function showScramble(entry, vis) {
     currentScramble = entry.scramble;
     currentScrambleEvent = entry.event;
 
-    vis.innerHTML = entry.svg;
-
-    adjustVisualizerSize(entry.event, vis);
+    // Picture of the scrambled puzzle; Multi-Blind's shows the first cube
+    const pictureScramble = entry.event === "r3ni" ? parseMBLDScramble(entry.scramble)[0] : entry.scramble;
+    vis.innerHTML = cubing.getPicture(pictureScramble, cubingEvents[entry.event].puzzle);
 
     const textEl = document.getElementById("scrambleDisplay");
 
@@ -77,82 +84,14 @@ function previousScramble(vis) {
     showScramble(scrambleHistory[historyIndex], vis);
 }
 
-// Goes forward to a scramble already seen, or makes a new one when on the newest; length is the Multi-Blind cube count
-async function nextScramble(event, vis, length) {
+// Goes forward to a scramble already seen, or makes a new one when on the newest; cubes is the Multi-Blind cube count
+async function nextScramble(event, vis, cubes) {
     if (historyIndex < scrambleHistory.length - 1) {
         historyIndex++;
         showScramble(scrambleHistory[historyIndex], vis);
     } else {
-        await displayScramble(event, vis, length);
+        await displayScramble(event, vis, cubes);
     }
-}
-
-// Scales and places the picture for the event's puzzle: setVisualizerScale(scale, right offset, bottom offset)
-function adjustVisualizerSize(event, vis) {
-    const category = document.getElementById("categorySelect").value;
-    // WCA category: size by event
-    if (category === "WCA") {
-      if (
-            ["333", "333ni", "333oh", "333fm"].includes(event)
-        ) {
-            setVisualizerScale(0.45, 75, 70, vis);
-        } else if (event === "222so") {
-            setVisualizerScale(0.6, -43, -10, vis);
-        } else if (event === "pyrso") {
-            setVisualizerScale(0.4, 55, 70, vis);
-        }
-        else if (["444wca", "444bld"].includes(event)) {
-            setVisualizerScale(0.35, 130, 110, vis);
-        } else if (event === "skbso") {
-            setVisualizerScale(0.4, 65, 75, vis);
-        }
-        else if (["555wca", "555bld"].includes(event)) {
-            setVisualizerScale(0.30, 165, 135, vis);
-        }
-        else if (event === "666wca") {
-            setVisualizerScale(0.25, 180, 150, vis);
-        } else if (event === "777wca") {
-            setVisualizerScale(0.22, 195, 155, vis);
-        }
-        else if (event === "mgmp") {
-            setVisualizerScale(0.5, 105, 40, vis);
-        }
-        else if (event === "clkwca") {
-            setVisualizerScale(0.5, 60, 15, vis);
-        } else if (event === "sqrs") {
-            setVisualizerScale(0.4, 105, 55, vis);
-        } else if (event === "r3ni") {
-            setVisualizerScale(0.45, 105, 140, vis);
-        }
-    }
-
-    // Other categories: size by puzzle
-    if (
-        [
-        "3x3x3",
-        "3x3x3 CFOP",
-        "3x3x3 Roux",
-        "3x3x3 Mehta",
-        "Crazy Puzzle",
-        "Helicopter Cube",
-        "Redi Cube",
-        "3x3x3 subsets"
-    ].includes(category)) setVisualizerScale(0.45, 75, 70, vis);
-    if (category === "2x2x2") setVisualizerScale(0.6, -43, -10, vis);
-    if (["4x4x4", "4x4x4 Yau/Hoya"].includes(category)) setVisualizerScale(0.35, 130, 110, vis);;
-    if (category === "5x5x5") setVisualizerScale(0.30, 165, 135, vis);
-    if (category === "6x6x6") setVisualizerScale(0.25, 180, 150, vis);
-    if (category === "7x7x7") setVisualizerScale(0.22, 195, 155, vis);
-    if (category === "Clock") setVisualizerScale(0.5, 60, 15, vis);;
-    if (["Megaminx", "Kilominx", "Gigaminx", "Pyraminx Crystal"].includes(category)) setVisualizerScale(0.5, 105, 40, vis);
-    if (["Pyraminx", "Master Pyraminx"].includes(category)) setVisualizerScale(0.4, 55, 70, vis);
-    if (category === "Skewb") setVisualizerScale(0.4, 65, 75, vis);
-    if (["Square-1", "Square"].includes(category)) setVisualizerScale(0.4, 105, 55, vis);
-    if (category === "15 puzzle") setVisualizerScale(0.4, 20, 55, vis);
-    if (category === "8 puzzle") setVisualizerScale(0.5, -30, 20, vis);
-    if (category === "FTO") setVisualizerScale(0.35, 125, 70, vis);
-    if (category === "Icosahedron") setVisualizerScale(0.55, 105, 25, vis);
-    if (category === "Relays") setVisualizerScale(0.45, 105, 140, vis);
 }
 
 export { 
@@ -162,6 +101,7 @@ export {
     previousScramble, 
     nextScramble, 
     isCubiszEvent,
+    parseMBLDScramble,
     getCategoryOfEvent,
     getEventName
 };
