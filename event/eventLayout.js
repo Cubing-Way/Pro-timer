@@ -1,5 +1,10 @@
+// Fewest Moves mode is switched off when the event changes
+import { setFMC } from "../cubisz/api.js";
+
 // Layout for every event timed with the timer (Fewest Moves and Multi-Blind have handleFMC and handleMBLD instead); zeroTime is "0.00" with the chosen decimals
 function showTimerLayout(vis, zeroTime) {
+    // Slice moves count again; handleFMC runs after this and turns the mode back on for Fewest Moves
+    setFMC(false);
     // Penalty buttons on, Fewest Moves / Multi-Blind controls off, touch timing on
     document.getElementById("penaltyOkBtn").style.display = "block";
     document.getElementById("penaltyPlus2Btn").style.display = "block";
