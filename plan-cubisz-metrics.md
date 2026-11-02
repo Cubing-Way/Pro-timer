@@ -33,7 +33,7 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 
 ## Parts
 
-### Part 1: send and get metrics (done, not deployed)
+### Part 1: send and get metrics (done, live)
 
 - [x] Cubisz: `engine.html`, `engine.js`, `engine-worker.js`, `metrics.js`, second page in `vite.config.js`
 - [x] Pro Timer: `metrics/` (client, controller, view, CSS), `isMetricsEvent`, Submit sends the solution
@@ -43,9 +43,10 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 
 ### Part 2: ship it
 
-- [ ] Commit both repos
-- [ ] Deploy Cubisz first (the gh-pages branch), since the timer's live build loads its `engine.html`
-- [ ] Deploy Pro Timer (`npm run deploy`), then submit a solve on the live site
+- [x] Commit both repos, on a `cubisz-metrics` branch in each
+- [x] Deploy Cubisz first (the gh-pages branch), since the timer's live build loads its `engine.html`
+- [x] Deploy Pro Timer, then submit a solve on the live site (2026-11-02: 23 s on a cold server, same scores as local, and its link rebuilt the review with no engine call)
+- [ ] Merge `cubisz-metrics` into `main` and push, in both repos: the live sites are ahead of `main` until then
 - [ ] Try the device fallback on a phone: time, memory, and whether the page survives, since phones land there once the budget is spent
 
 ### Part 3: statistics for the metrics
