@@ -88,4 +88,14 @@ function metricsNoteHtml(text) {
     return `<div class="modal-scramble">${escapeHtml(text)}</div>`;
 }
 
-export { methodName, metricsHtml, metricsNoteHtml };
+// The line on an average's card: its mean effort score, how many of its solves that covers, and their method (nothing = none reviewed)
+function averageMetricsHtml(figures, solveCount) {
+    if (!figures) return "";
+    return `
+        <div class="modal-average-stats" title="${escapeHtml(figures.method)}">
+            Effort score: ${percent(figures.effortScore)} (${figures.count}/${solveCount} solves, ${escapeHtml(methodName(figures.method))})
+        </div>
+    `;
+}
+
+export { escapeHtml, methodName, percent, signed, fixed, metricsHtml, metricsNoteHtml, averageMetricsHtml };

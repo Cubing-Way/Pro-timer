@@ -19,6 +19,8 @@ let frameReady = null;
 let markReady = null;
 // Timer that removes the engine when it's been idle
 let idleTimer = null;
+// Whether the loaded engine page honours deviceOnly (an older page would ignore it and spend the server's budget)
+let honoursDeviceOnly = false;
 
 // Reviews asked for, the one under way first: { id, solve, onProgress, resolve, reject, timer }
 const queue = [];
@@ -81,6 +83,11 @@ function runNextReview() {
     clearTimeout(idleTimer);
     loadFrame().then(
         () => {
+            // A device-only review never goes to a page that could send it to the server
+            if (review.solve.deviceOnly && !honoursDeviceOnly) {
+                finishReview(review.reject, new Error("Cubisz's site needs updating before it can review on this device only"));
+                return;
+            }
             // Past the limit the engine is stopped, since it may still be working
             review.timer = setTimeout(() => {
                 removeFrame();
@@ -96,6 +103,7 @@ function runNextReview() {
 window.addEventListener("message", ({ data, origin, source }) => {
     if (origin !== ENGINE_ORIGIN || !frame || source !== frame.contentWindow) return;
     if (data.type === "cubisz-ready") {
+        honoursDeviceOnly = data.deviceOnly === true;
         markReady?.();
         return;
     }
@@ -131,7 +139,7 @@ function analysisLink({ scramble, solution, time, method, runs }) {
     return `${SITE_URL}#${link}`;
 }
 
-// Asks for a solve's metrics ({ scramble, solution, time, method }; method "" = the one Cubisz starts on); onProgress hears { run, runs, step } as the engine goes; resolves with the metrics
+// Asks for a solve's metrics ({ scramble, solution, time, method, deviceOnly }; method "" = the one Cubisz starts on, deviceOnly = never call Cubisz's server); onProgress hears { run, runs, step } as the engine goes; resolves with the metrics
 function requestMetrics(solve, onProgress) {
     // A failed iframe takes the whole load limit to notice, so offline fails right away
     if (!navigator.onLine) return Promise.reject(new Error("You're offline, and reviews need Cubisz's site"));

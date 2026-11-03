@@ -51,11 +51,13 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 
 ### Part 3: statistics for the metrics
 
-- [ ] Choose which figures to chart. Likely: effort score, net effort, execution, TPS, and each step's moves and effort. Use only `complete` solves with one `method`
-- [ ] Add helpers in `stats/statsHelpers.js` that read `solve.metrics` from `getAllSolvesFromSession`, skipping solves without it
-- [ ] Add averages per period and a chart to the stats page, following the existing period filter
-- [ ] Show the same in the sidebar or the average's card, if it's worth it
-- [ ] Add a way to review many saved solves at once (they queue already), since metrics only exist for solutions that were submitted. Batches must solve on the device: with AWS first, one batch of ~100 solves would spend the whole month's budget. This needs an option in the review message that tells `engine-worker.js` to skip the server
+- [x] Choose which figures to chart (Caio's choice, 2026-11-02): effort score, move score, net effort, execution, TPS, and each step's moves and effort. Use only `complete` solves with one `method`
+- [x] Add helpers in `stats/statsHelpers.js` that read `solve.metrics` from `getAllSolvesFromSession`, skipping solves without it
+- [x] Add averages per period and charts to the stats page, following the existing period filter, with a method picker
+- [x] Show the mean effort score on the average's card (Caio's choice: the card, not the sidebar)
+- [x] Add a way to review many saved solves at once, since metrics only exist for solutions that were submitted. Batches solve on the device: with AWS first, one batch of ~100 solves would spend the whole month's budget. The review message's `deviceOnly` tells `engine-worker.js` to skip the server, and the engine page's `cubisz-ready` says it honours that, so the timer sends a batch to no older page
+- [ ] Commit both repos, then deploy Cubisz first and Pro Timer after it. In the other order batches just stop with "Cubisz's site needs updating", and nothing reaches the server
+- [ ] Try a batch on the live site and on a phone: batches lean on the same device solving as the phone item in Part 2
 
 ### Part 4: later
 

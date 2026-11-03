@@ -372,6 +372,107 @@ function buildAvgMaps(classicStats) {
   return maps;
 }
 
+// Cubisz review figures (solve.metrics, saved by metrics/metricsController.js)
+
+// Solves whose review covers the whole solution; the rest have no metrics, or scores that don't compare
+function getReviewedSolves(solves) {
+  return solves.filter(solve => solve.metrics?.complete === true);
+}
+
+// The methods these reviewed solves used, most used first (scores from different methods don't compare)
+function getMetricsMethods(reviewed) {
+  const counts = new Map();
+
+  reviewed.forEach(solve => {
+    const { method } = solve.metrics;
+    counts.set(method, (counts.get(method) ?? 0) + 1);
+  });
+
+  // sort keeps the order for equal counts, so a tie goes to the method seen first
+  return [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+}
+
+// Mean of the figures that exist (null = none: a solve with no time has no pace figures, for example)
+function meanOfFigures(values) {
+  const figures = values.filter(value => value != null);
+  return figures.length ? figures.reduce((a, b) => a + b, 0) / figures.length : null;
+}
+
+// Mean of each charted figure over reviewed solves of one method
+function getMetricsAverages(reviewed) {
+  // Mean of one field across the solves
+  const meanOf = field => meanOfFigures(reviewed.map(solve => solve.metrics[field]));
+
+  return {
+    effortScore: meanOf("effortScore"),
+    moveScore: meanOf("moveScore"),
+    netEffort: meanOf("netEffort"),
+    execution: meanOf("execution"),
+    tps: meanOf("tps")
+  };
+}
+
+// Each charted figure per solve, oldest first (a missing figure stays null, so the chart leaves a gap)
+function getMetricsSeries(reviewed) {
+  const sorted = [...reviewed].sort((a, b) => a.createdAt - b.createdAt);
+  // One field's value on every solve
+  const fieldOf = field => sorted.map(solve => solve.metrics[field]);
+  // A score as a whole percentage, where the engine is 100
+  const percentOf = field => fieldOf(field).map(score => score === null ? null : Math.round(score * 100));
+
+  return {
+    labels: sorted.map((_, i) => i + 1),
+    effortScore: percentOf("effortScore"),
+    moveScore: percentOf("moveScore"),
+    netEffort: fieldOf("netEffort"),
+    execution: fieldOf("execution"),
+    tps: fieldOf("tps")
+  };
+}
+
+// Each step of one method with its mean moves and effort, the engine's, and the net, in the method's order
+function getStepAverages(reviewed) {
+  const stepsByName = new Map();
+
+  // A Map keeps the steps in the order they first appear
+  reviewed.forEach(solve => {
+    solve.metrics.steps.forEach(step => {
+      if (!stepsByName.has(step.name)) stepsByName.set(step.name, []);
+      stepsByName.get(step.name).push(step);
+    });
+  });
+
+  return [...stepsByName].map(([name, steps]) => {
+    // Mean of one field across this step's solves
+    const meanOf = field => meanOfFigures(steps.map(step => step[field]));
+
+    return {
+      name,
+      moves: meanOf("moves"),
+      engineMoves: meanOf("engineMoves"),
+      effort: meanOf("effort"),
+      engineEffort: meanOf("engineEffort"),
+      // A step other moves already solved has no net of its own, so it counts as 0 and the steps add up to the solve's net effort
+      netEffort: meanOfFigures(steps.map(step => step.netEffort ?? 0))
+    };
+  });
+}
+
+// An average's mean effort score, over its reviewed solves of their most used method: { method, count, effortScore } (null = none reviewed)
+function getAverageCardMetrics(solves) {
+  const reviewed = getReviewedSolves(solves);
+  if (reviewed.length === 0) return null;
+
+  const [method] = getMetricsMethods(reviewed);
+  const sameMethod = reviewed.filter(solve => solve.metrics.method === method);
+
+  return {
+    method,
+    count: sameMethod.length,
+    effortScore: meanOfFigures(sameMethod.map(solve => solve.metrics.effortScore))
+  };
+}
+
 export {
   pickBest,
   getUserOffsetMs,
@@ -388,5 +489,11 @@ export {
   getDistributionLabels,
   filterEmptyBuckets,
   generateSmartThresholds,
-  buildAvgMaps
+  buildAvgMaps,
+  getReviewedSolves,
+  getMetricsMethods,
+  getMetricsAverages,
+  getMetricsSeries,
+  getStepAverages,
+  getAverageCardMetrics
 };

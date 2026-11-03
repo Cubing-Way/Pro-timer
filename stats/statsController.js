@@ -17,12 +17,42 @@ import {
   getDistributionLabels,
   filterEmptyBuckets,
   generateSmartThresholds,
-  buildAvgMaps
+  buildAvgMaps,
+  getReviewedSolves,
+  getMetricsMethods,
+  getMetricsAverages,
+  getMetricsSeries,
+  getStepAverages
 } from "./statsHelpers.js";
+import { escapeHtml, methodName, percent, signed, fixed } from "../metrics/metricsView.js";
+import { findSolve, getBatchableSolves, onBatchChange, startBatch, stopBatch, getBatch, getBatchResult } from "../metrics/metricsController.js";
+
+// Chart.js's first two colors, set by hand because a chart with any color of its own gets no default ones
+const SERIES_COLORS = ["#36A2EB", "#FF6384"];
+// The engine's color on every Cubisz chart, so it reads as the same thing on each
+const ENGINE_COLOR = "#868C96";
 
 // A new period redraws the page
 document.getElementById("date-filter").addEventListener("change", () => {
   renderStatsPage();
+});
+
+// Another method redraws only the Cubisz section
+document.getElementById("metrics-method-filter").addEventListener("change", () => {
+  renderMetricsStats();
+});
+
+// The batch button starts a batch of the session's saved solutions, or stops the one under way
+document.getElementById("metrics-batch-btn").addEventListener("click", () => {
+  if (getBatch()) stopBatch();
+  else startBatch(getSessionBatchableSolves());
+});
+
+// A batch redraws its line on every change, and the whole section when a solve's metrics arrive
+onBatchChange((key) => {
+  if (!statsPage.classList.contains("open")) return;
+  if (key && findSolve(key)?.metrics) renderMetricsStats();
+  else renderMetricsBatch();
 });
 
 // Open and close the statistics page (it's redrawn every time it opens)
@@ -518,6 +548,184 @@ const sortedSolves = [...filteredSolves].sort(
   });
 
 }
+
+// The Cubisz review section, for the same period
+renderMetricsStats();
+}
+
+// Puts the review methods of the period in the picker and returns the one to show ("" = none)
+function fillMethodPicker(methods) {
+  const picker = document.getElementById("metrics-method-filter");
+  const wanted = picker.value;
+
+  picker.innerHTML = "";
+
+  methods.forEach(name => {
+    // Short names, unless two methods would look the same (like the settings panel)
+    const clash = methods.filter(other => methodName(other) === methodName(name)).length > 1;
+    picker.append(new Option(clash ? name : methodName(name), name));
+  });
+
+  // Keep the method already picked if this period has it, or else the most used
+  picker.value = methods.includes(wanted) ? wanted : (methods[0] ?? "");
+  // The full name, with its note in brackets, shows on hover
+  picker.title = picker.value;
+  picker.hidden = methods.length === 0;
+
+  return picker.value;
+}
+
+// One line of a per-solve chart
+function lineDataset(label, data, color) {
+  return { label, data, borderColor: color, backgroundColor: color, tension: 0.25, spanGaps: true };
+}
+
+// The engine's level as a dashed line across a per-solve chart
+function engineLevelDataset(label, value, count) {
+  return {
+    label,
+    data: new Array(count).fill(value),
+    borderColor: ENGINE_COLOR,
+    // No fill, so the legend's box shows the dashes too
+    backgroundColor: "transparent",
+    borderDash: [6, 4],
+    pointRadius: 0
+  };
+}
+
+// Draws a chart from its type, data and axis titles (Chart.js allows one chart per canvas, so the old one goes first)
+function drawMetricsChart(canvasId, type, labels, datasets, xTitle, yTitle) {
+  Chart.getChart(canvasId)?.destroy();
+
+  new Chart(document.getElementById(canvasId), {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true }
+      },
+      scales: {
+        y: { title: { display: true, text: yTitle } },
+        x: { title: { display: true, text: xTitle } }
+      }
+    }
+  });
+}
+
+// One step's row in the section's table: its means next to the engine's, then the net
+function stepAverageRowHtml(step) {
+  return `
+    <tr>
+      <td>${escapeHtml(step.name)}</td>
+      <td><span class="times-color-number">${fixed(step.moves, 1)} / ${fixed(step.engineMoves, 1)}</span></td>
+      <td><span class="times-color-number">${fixed(step.effort, 1)} / ${fixed(step.engineEffort, 1)}</span></td>
+      <td><span class="times-color-number">${signed(step.netEffort, 1)}</span></td>
+    </tr>
+  `;
+}
+
+// The current session's solves a batch can review, whatever the period
+function getSessionBatchableSolves() {
+  const session = getCurrentSession();
+  return getBatchableSolves(getAllSolvesFromSession(session, averageObj), session.scrambleType);
+}
+
+// The batch line: the button with how many solves are waiting and what it does, or how the batch under way is going
+function renderMetricsBatch() {
+  const button = document.getElementById("metrics-batch-btn");
+  const note = document.getElementById("metrics-batch-note");
+  const batch = getBatch();
+
+  // Under way: the button stops it
+  if (batch) {
+    button.hidden = false;
+    button.disabled = batch.stopping;
+    button.textContent = batch.stopping ? "Stopping…" : "Stop";
+    note.textContent = batch.stopping
+      ? "Finishing this solve, and its metrics will be kept."
+      : `Solve ${batch.at} of ${batch.total}, on this device. ${batch.note}`;
+    document.getElementById("metrics-batch").hidden = false;
+    return;
+  }
+
+  const waiting = getSessionBatchableSolves().length;
+  const result = getBatchResult();
+
+  button.hidden = waiting === 0;
+  button.disabled = false;
+  button.textContent = `Review ${waiting} saved ${waiting === 1 ? "solve" : "solves"}`;
+  // How the last batch went, then what the button does; it never uses the server, whose budget one batch would spend
+  const hint = waiting ? "Solutions saved with no metrics yet. They run on this device, not the server: about 40 seconds each on a PC, with this page open." : "";
+  note.textContent = [result, hint].filter(Boolean).join(" ");
+  // Nothing to do or to say: no line
+  document.getElementById("metrics-batch").hidden = !waiting && !result;
+}
+
+// Fills the Cubisz section for the chosen period and method: the batch line, the means, the 4 charts and the steps table
+function renderMetricsStats() {
+  renderMetricsBatch();
+
+  const range = document.getElementById("date-filter").value;
+  const allSolves = getAllSolvesFromSession(getCurrentSession(), averageObj);
+  const filteredSolves = filterSolvesByRange(allSolves, range);
+  const reviewed = getReviewedSolves(filteredSolves);
+  const method = fillMethodPicker(getMetricsMethods(reviewed));
+  const count = document.getElementById("metrics-count");
+  const body = document.getElementById("metrics-stats-body");
+
+  // No reviewed solves in the period: only say why, and where to find some
+  body.hidden = reviewed.length === 0;
+  if (reviewed.length === 0) {
+    const sessionTotal = getReviewedSolves(allSolves).length;
+    count.textContent = sessionTotal > 0
+      ? `No reviewed solves in this period. This session has ${sessionTotal}, so try a longer period.`
+      : "No reviewed solves yet. Press Submit on a solved 3x3 solution in Open Session to get its review.";
+    return;
+  }
+
+  // Only one method at a time, since scores from different methods don't compare
+  const solves = reviewed.filter(solve => solve.metrics.method === method);
+  count.textContent = `${solves.length} of ${filteredSolves.length} solves reviewed with this method`;
+
+  // The period's means
+  const averages = getMetricsAverages(solves);
+  document.getElementById("stat-effort-score").innerHTML = `<span class="times-color-number">${percent(averages.effortScore)}</span>`;
+  document.getElementById("stat-move-score").innerHTML = `<span class="times-color-number">${percent(averages.moveScore)}</span>`;
+  document.getElementById("stat-net-effort").innerHTML = `<span class="times-color-number">${signed(averages.netEffort, 1)}</span>`;
+  document.getElementById("stat-execution").innerHTML = `<span class="times-color-number">${fixed(averages.execution, 2)}</span>`;
+  document.getElementById("stat-tps").innerHTML = `<span class="times-color-number">${fixed(averages.tps, 2)}</span>`;
+
+  // Per-solve charts, each with a figure that shares its axis
+  const series = getMetricsSeries(solves);
+  const solveCount = series.labels.length;
+
+  drawMetricsChart("metricsScoresChart", "line", series.labels, [
+    lineDataset("Effort score", series.effortScore, SERIES_COLORS[0]),
+    lineDataset("Move score", series.moveScore, SERIES_COLORS[1]),
+    engineLevelDataset("Engine", 100, solveCount)
+  ], "Reviewed solve #", "Score (%)");
+
+  drawMetricsChart("metricsNetChart", "line", series.labels, [
+    lineDataset("Net effort", series.netEffort, SERIES_COLORS[0]),
+    engineLevelDataset("Engine", 0, solveCount)
+  ], "Reviewed solve #", "Net effort");
+
+  drawMetricsChart("metricsPaceChart", "line", series.labels, [
+    lineDataset("Execution (effort per second)", series.execution, SERIES_COLORS[0]),
+    lineDataset("TPS (moves per second)", series.tps, SERIES_COLORS[1])
+  ], "Reviewed solve #", "Per second");
+
+  // Each step's mean effort next to the engine's
+  const steps = getStepAverages(solves);
+
+  drawMetricsChart("metricsStepsChart", "bar", steps.map(step => step.name), [
+    { label: "You", data: steps.map(step => step.effort), backgroundColor: SERIES_COLORS[0] },
+    { label: "Engine", data: steps.map(step => step.engineEffort), backgroundColor: ENGINE_COLOR }
+  ], "Step", "Mean effort");
+
+  // The steps table
+  document.getElementById("metrics-steps-body").innerHTML = steps.map(stepAverageRowHtml).join("");
 }
 
 

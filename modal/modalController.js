@@ -4,7 +4,9 @@ import { averageObj, classicStats, updateClassicStats, getNeededSolves } from ".
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
 import { isCubiszEvent, isMetricsEvent } from "../scramble/scrambleController.js";
-import { solveKey, findSolve, metricsAreCurrent, updateMetrics, metricsRowHtml } from "../metrics/metricsController.js";
+import { solveKey, findSolve, metricsAreCurrent, updateMetrics, metricsRowHtml, onBatchChange } from "../metrics/metricsController.js";
+import { averageMetricsHtml } from "../metrics/metricsView.js";
+import { getAverageCardMetrics } from "../stats/statsHelpers.js";
 import { showLastSolve } from "../timer/timerController.js";
 import { shortDate, droppedIndexes, averageShareText, solveShareText, shareOrCopy } from "./shareText.js";
 import {
@@ -193,9 +195,16 @@ function statsLineHtml(best, worst, sigma) {
     `;
 }
 
+// HTML of a card's Cubisz line (nothing for classic's card, which is the whole session and not an average)
+function cardMetricsHtml(blockIndex) {
+    if (blockIndex === -1 && averageObj.mode === "classic") return "";
+    const solves = blockSolves(blockIndex);
+    return averageMetricsHtml(getAverageCardMetrics(solves), solves.length);
+}
+
 // HTML of an average card with its header, stats line and Share button, and an empty solves list the solves are drawn into
 function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
-    // Saved for the Share button, which shares the header as shown
+    // Saved for the Share button, which shares the header as shown (the Cubisz line stays out of it, since shares have no metrics yet)
     modalCardHeaders[blockIndex] = { title: headerText, stats: statsLine };
     return `
         <div class="modal-average-card${extraClass}">
@@ -203,6 +212,7 @@ function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
                 <div>
                     <b>${headerText}</b>
                     ${statsLine}
+                    <div data-card-metrics>${cardMetricsHtml(blockIndex)}</div>
                 </div>
                 <button class="modal-share-btn" data-action="share-average" data-block="${blockIndex}">Share</button>
             </div>
@@ -424,11 +434,22 @@ function submitSolution(blockIndex, solveIndex) {
     saveSessions();
 }
 
-// Redraws a solve's metrics in the open modal, if its row is drawn
+// Redraws a solve's metrics and its average's Cubisz line in the open modal, if its row is drawn
 function showMetrics(key) {
     const row = modalBody.querySelector(`[data-metrics-key="${key}"]`);
     const solve = findSolve(key);
-    if (row && solve) row.innerHTML = metricsRowHtml(solve);
+    if (!row || !solve) return;
+    row.innerHTML = metricsRowHtml(solve);
+
+    // The card around the row, whose Share button knows which average it is
+    const card = row.closest(".modal-average-card");
+    const blockIndex = Number(card.querySelector("[data-action='share-average']").dataset.block);
+    card.querySelector("[data-card-metrics]").innerHTML = cardMetricsHtml(blockIndex);
 }
+
+// A batch of reviews (started on the stats page) shows in the open modal too
+onBatchChange((key) => {
+    if (key) showMetrics(key);
+});
 
 export { openDetailsModal, setPenalty, removeSolve };
