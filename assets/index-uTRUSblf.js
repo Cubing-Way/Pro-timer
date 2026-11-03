@@ -1,4 +1,4 @@
-import { M as Move, Q as QuantumMove } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { M as Move, Q as QuantumMove } from "./index-6lt5Usf4.js";
 import "./preload-helper-DN2scbUx.js";
 var PGColors = {
   White: "#ffffff",

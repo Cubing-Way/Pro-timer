@@ -1,4 +1,4 @@
-import { A as Alg, G as Grouping } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { A as Alg, G as Grouping } from "./index-6lt5Usf4.js";
 import "./preload-helper-DN2scbUx.js";
 function puzzleOrientationBigCubeIdx(pattern) {
   const idxUFR = pattern.patternData["CORNERS"].pieces[0];

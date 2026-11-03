@@ -3116,7 +3116,7 @@ function getCached(getValue) {
   return () => lazyPromise;
 }
 async function asyncGetPuzzleGeometry(puzzleName) {
-  const puzzleGeometry = await __vitePreload(() => import("./index-BALLIX6B.js"), true ? [] : void 0);
+  const puzzleGeometry = await __vitePreload(() => import("./index-uTRUSblf.js"), true ? [] : void 0);
   return puzzleGeometry.getPuzzleGeometryByName(puzzleName, {
     allMoves: true,
     orientCenters: true,
@@ -3124,14 +3124,14 @@ async function asyncGetPuzzleGeometry(puzzleName) {
   });
 }
 async function asyncGetBasePuzzleGeometry(puzzleName) {
-  const puzzleGeometry = await __vitePreload(() => import("./index-BALLIX6B.js"), true ? [] : void 0);
+  const puzzleGeometry = await __vitePreload(() => import("./index-uTRUSblf.js"), true ? [] : void 0);
   return puzzleGeometry.getPuzzleGeometryByName(puzzleName);
 }
 async function asyncGetKPuzzle(pgPromise, puzzleName, setOrientationModTo1ForPiecesOfOrbits) {
   const pg = await pgPromise;
   const kpuzzleDefinition = pg.getKPuzzleDefinition(true);
   kpuzzleDefinition.name = puzzleName;
-  const puzzleGeometry = await __vitePreload(() => import("./index-BALLIX6B.js"), true ? [] : void 0);
+  const puzzleGeometry = await __vitePreload(() => import("./index-uTRUSblf.js"), true ? [] : void 0);
   const pgNotation = new puzzleGeometry.ExperimentalPGNotation(
     pg,
     pg.getOrbitsDef(true)
@@ -3626,7 +3626,7 @@ var TransformAlg = class extends TraversalDownUp {
 };
 functionFromTraversal(TransformAlg);
 async function descAsyncGetPuzzleGeometry(desc, options) {
-  const puzzleGeometry = await __vitePreload(() => import("./index-BALLIX6B.js"), true ? [] : void 0);
+  const puzzleGeometry = await __vitePreload(() => import("./index-uTRUSblf.js"), true ? [] : void 0);
   return puzzleGeometry.getPuzzleGeometryByDesc(desc, {
     allMoves: options?.allMoves ?? true,
     orientCenters: options?.orientCenters ?? true,
@@ -3714,7 +3714,7 @@ var experimental3x3x3KPuzzle = new KPuzzle(
 );
 cube3x3x3KPuzzleDefinition.experimentalIsPatternSolved = experimentalIs3x3x3Solved;
 var bigCubePuzzleOrientation = getCached(
-  () => __vitePreload(() => import("./big-puzzle-orientation-KJL4OFV2-E-uzFFK6.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./big-puzzle-orientation-KJL4OFV2-DA5ZfqA-.js"), true ? [] : void 0)
 );
 var cube3x3x3KeyMapping = {
   KeyI: new Move("R"),
@@ -4781,6 +4781,13 @@ var puzzles = {
   tri_quad,
   baby_fto
 };
+const index = /* @__PURE__ */ Object.freeze(/* @__PURE__ */ Object.defineProperty({
+  __proto__: null,
+  cube2x2x2,
+  cube3x3x3,
+  puzzles,
+  wcaEvents
+}, Symbol.toStringTag, { value: "Module" }));
 export {
   Alg as A,
   Conjugate as C,
@@ -4813,5 +4820,6 @@ export {
   Pause as r,
   startCharIndexKey as s,
   getFaceletStickeringMask as t,
+  index as u,
   wcaEvents as w
 };

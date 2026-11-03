@@ -1,6 +1,6 @@
 import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
-import { L as LazyPromise, A as Alg, s as startCharIndexKey, e as endCharIndexKey, I as IterationDirection, p as puzzles, T as TraversalUp, f as functionFromTraversal, g as TraversalDownUp, h as directedGenerator, M as Move, i as experimentalAppendMove, j as getPartialAppendOptionsForPuzzleSpecificSimplifyOptions, k as customPGPuzzleLoader, l as cube3x3x3, o as offsetMod, m as getPieceStickeringMask, P as PieceStickering, n as LineComment, N as Newline, G as Grouping, C as Conjugate, q as direct, r as Pause, b as AlgBuilder } from "./chunk-6R47S6MP-Z24vZYkR.js";
-import { a as countAnimatedLeaves, b as countLeavesInExpansionForSimultaneousMoveIndexer, d as countMetricMoves, C as CommonMetric } from "./chunk-UKAXYOG2-VAMV9PAy.js";
+import { L as LazyPromise, A as Alg, s as startCharIndexKey, e as endCharIndexKey, I as IterationDirection, p as puzzles, T as TraversalUp, f as functionFromTraversal, g as TraversalDownUp, h as directedGenerator, M as Move, i as experimentalAppendMove, j as getPartialAppendOptionsForPuzzleSpecificSimplifyOptions, k as customPGPuzzleLoader, l as cube3x3x3, o as offsetMod, m as getPieceStickeringMask, P as PieceStickering, n as LineComment, N as Newline, G as Grouping, C as Conjugate, q as direct, r as Pause, b as AlgBuilder } from "./index-6lt5Usf4.js";
+import { a as countAnimatedLeaves, b as countLeavesInExpansionForSimultaneousMoveIndexer, d as countMetricMoves, C as CommonMetric } from "./chunk-UKAXYOG2-CJww9EzC.js";
 var twistyDebugGlobals = {
   shareAllNewRenderers: "auto",
   showRenderStats: false
@@ -511,7 +511,7 @@ var StatsPanel = class {
   }
 };
 var bulk3DCode = new LazyPromise(
-  () => __vitePreload(() => import("./twisty-dynamic-3d-HSYJR5CM-CFYlM8HA.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./twisty-dynamic-3d-HSYJR5CM-DgHUM_az.js"), true ? [] : void 0)
 );
 function pixelRatio() {
   return devicePixelRatio || 1;
@@ -6887,7 +6887,7 @@ var TwizzleLink = class extends ManagedCustomElement {
       const isExplorer = pathname === "/explore/";
       if (config.puzzle && !(config.puzzle in puzzles)) {
         const puzzleDescription = (await __vitePreload(async () => {
-          const { getPuzzleDescriptionString } = await import("./index-BALLIX6B.js");
+          const { getPuzzleDescriptionString } = await import("./index-uTRUSblf.js");
           return { getPuzzleDescriptionString };
         }, true ? [] : void 0)).getPuzzleDescriptionString(config.puzzle);
         delete config.puzzle;

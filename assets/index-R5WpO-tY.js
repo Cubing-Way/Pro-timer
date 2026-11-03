@@ -1,14 +1,14 @@
 import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
 async function loadCubing() {
   const [{ randomScrambleForEvent }, { setSearchDebug }] = await Promise.all([
-    __vitePreload(() => import("./index-BhF7j1GY.js").then((n) => n.q), true ? [] : void 0),
-    __vitePreload(() => import("./index-BNYZJfXW.js"), true ? [] : void 0)
+    __vitePreload(() => import("./index-gQ5L7cms.js").then((n) => n.q), true ? [] : void 0),
+    __vitePreload(() => import("./index-BX87bOeb.js"), true ? [] : void 0)
   ]);
   setSearchDebug({ prioritizeEsbuildWorkaroundForWorkerInstantiation: true, logPerf: false });
   return randomScrambleForEvent;
 }
 const cubingLoaded = loadCubing();
-__vitePreload(() => import("./index-DeYO63xS.js").then((n) => n.i), true ? [] : void 0);
+__vitePreload(() => import("./index-LDIAc7O6.js").then((n) => n.i), true ? [] : void 0);
 async function getScramble(eventId) {
   const randomScrambleForEvent = await cubingLoaded;
   const alg = await randomScrambleForEvent(eventId);
@@ -26,7 +26,23 @@ const cubing = {
     return scrambles.join("\n");
   },
   // HTML of a flat picture of a puzzle ("3x3x3", "megaminx"…) after a scramble; it fills the box it's put in
-  getPicture: (scramble, puzzle) => `<twisty-player puzzle="${puzzle}" experimental-setup-alg="${scramble}" visualization="2D" hint-facelets="none" control-panel="none" background="none"></twisty-player>`
+  getPicture: (scramble, puzzle) => `<twisty-player puzzle="${puzzle}" experimental-setup-alg="${scramble}" visualization="2D" hint-facelets="none" control-panel="none" background="none"></twisty-player>`,
+  // True when a text is a scramble for a puzzle: cubing.js can read it and the puzzle has its moves
+  isValidScramble: async (scramble, puzzle) => {
+    if (!scramble || /["<>&]/.test(scramble)) return false;
+    if (!puzzle) return true;
+    const { puzzles } = await __vitePreload(async () => {
+      const { puzzles: puzzles2 } = await import("./index-6lt5Usf4.js").then((n) => n.u);
+      return { puzzles: puzzles2 };
+    }, true ? [] : void 0);
+    const kpuzzle = await puzzles[puzzle].kpuzzle();
+    try {
+      kpuzzle.algToTransformation(scramble);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 };
 const cubingEvents = {
   "333": { eventId: "333", puzzle: "3x3x3" },
@@ -186,6 +202,12 @@ function isCubiszEvent(code) {
 function isMetricsEvent(code) {
   return code === "333";
 }
+const CUBISZ_MOVE = /^([UDRLFB]w?|[MESxyz])['2]?$/;
+const FMC_MOVE = /^([UDRLFB]w?|[xyz])['2]?$/;
+function isCubiszScramble(scramble, event) {
+  const allowedMove = event === "333fm" ? FMC_MOVE : CUBISZ_MOVE;
+  return scramble.split(" ").every((move) => allowedMove.test(move));
+}
 function autoFitText(vis2) {
   const container = document.getElementById("scrambleContainer");
   const text = document.getElementById("scrambleDisplay");
@@ -265,6 +287,17 @@ async function nextScramble(event, vis2, cubes) {
   } else {
     await displayScramble(event, vis2, cubes);
   }
+}
+async function parseTypedScramble(text, event) {
+  const parts = event === "r3ni" ? text.split("\n").flatMap(parseMBLDScramble) : [text];
+  const scrambles = parts.map((part) => part.replace(/\s+/g, " ").trim());
+  if (scrambles.length === 0) return null;
+  const puzzle = cubingEvents[event]?.puzzle ?? (isCubiszEvent(event) ? "3x3x3" : null);
+  for (const scramble of scrambles) {
+    if (!await cubing.isValidScramble(scramble, puzzle)) return null;
+    if (isCubiszEvent(event) && !isCubiszScramble(scramble, event)) return null;
+  }
+  return event === "r3ni" ? scrambles.map((part, i) => `${i + 1}) ${part}`).join("\n") : scrambles[0];
 }
 function parseTimeToSeconds(str) {
   if (str == null) {
@@ -626,14 +659,14 @@ const reviewSettObj = {
 function updateClassicStats(recomputeBest = false) {
   updateClassicStats$1(recomputeBest, averageObj, classicStats);
 }
-function averageOfN(time, scramble, inspection3, inspectionType, isFMC = false, modeFlag = false, isMBLD = false, solvePhases, doneWith) {
+function averageOfN(time, scramble, inspection3, inspectionType, isFMC2 = false, modeFlag = false, isMBLD = false, solvePhases, doneWith) {
   let inspecPenalty = null;
   if (inspectionType === "WCA") {
     if (inspection3 >= 15) inspecPenalty = 2;
     if (inspection3 >= 17) inspecPenalty = "DNF";
   }
   let seconds2 = null;
-  if (isFMC) {
+  if (isFMC2) {
     seconds2 = time.moveCount;
     if (!time.solved) inspecPenalty = "DNF";
   } else if (isMBLD) {
@@ -1028,7 +1061,7 @@ function changedSession() {
   averageObj.mode = session2.buffer.mode;
   averageObj.solveCounter = session2.buffer.solveCounter;
   averageObj.solvesArray = [...session2.buffer.solvesArray];
-  if (!session2.classicStats && averageObj.mode === "classic") updateClassicStats(true);
+  if (averageObj.mode === "classic") updateClassicStats(true);
   const sel = document.getElementById("modeSelect");
   if (sel) sel.value = averageObj.mode;
 }
@@ -1173,6 +1206,7 @@ let frame = null;
 let frameReady = null;
 let markReady = null;
 let idleTimer = null;
+let honoursDeviceOnly = false;
 const queue = [];
 let nextId = 1;
 let methodsListener = null;
@@ -1220,6 +1254,10 @@ function runNextReview() {
   clearTimeout(idleTimer);
   loadFrame().then(
     () => {
+      if (review.solve.deviceOnly && !honoursDeviceOnly) {
+        finishReview(review.reject, new Error("Cubisz's site needs updating before it can review on this device only"));
+        return;
+      }
       review.timer = setTimeout(() => {
         removeFrame();
         finishReview(review.reject, new Error("The review took too long"));
@@ -1232,6 +1270,7 @@ function runNextReview() {
 window.addEventListener("message", ({ data, origin, source }) => {
   if (origin !== ENGINE_ORIGIN || !frame || source !== frame.contentWindow) return;
   if (data.type === "cubisz-ready") {
+    honoursDeviceOnly = data.deviceOnly === true;
     markReady?.();
     return;
   }
@@ -1335,6 +1374,14 @@ function metricsHtml(m, link) {
 }
 function metricsNoteHtml(text) {
   return `<div class="modal-scramble">${escapeHtml(text)}</div>`;
+}
+function averageMetricsHtml(figures, solveCount) {
+  if (!figures) return "";
+  return `
+        <div class="modal-average-stats" title="${escapeHtml(figures.method)}">
+            Effort score: ${percent(figures.effortScore)} (${figures.count}/${solveCount} solves, ${escapeHtml(methodName(figures.method))})
+        </div>
+    `;
 }
 const overlay$1 = document.getElementById("settingsOverlay");
 const openBtn$1 = document.getElementById("settingsBtn");
@@ -16319,8 +16366,250 @@ function buildAvgMaps(classicStats2) {
   });
   return maps;
 }
+function getReviewedSolves(solves) {
+  return solves.filter((solve) => solve.metrics?.complete === true);
+}
+function getMetricsMethods(reviewed) {
+  const counts = /* @__PURE__ */ new Map();
+  reviewed.forEach((solve) => {
+    const { method } = solve.metrics;
+    counts.set(method, (counts.get(method) ?? 0) + 1);
+  });
+  return [...counts.keys()].sort((a, b) => counts.get(b) - counts.get(a));
+}
+function meanOfFigures(values) {
+  const figures = values.filter((value) => value != null);
+  return figures.length ? figures.reduce((a, b) => a + b, 0) / figures.length : null;
+}
+function getMetricsAverages(reviewed) {
+  const meanOf = (field) => meanOfFigures(reviewed.map((solve) => solve.metrics[field]));
+  return {
+    effortScore: meanOf("effortScore"),
+    moveScore: meanOf("moveScore"),
+    netEffort: meanOf("netEffort"),
+    execution: meanOf("execution"),
+    tps: meanOf("tps")
+  };
+}
+function getMetricsSeries(reviewed) {
+  const sorted = [...reviewed].sort((a, b) => a.createdAt - b.createdAt);
+  const fieldOf = (field) => sorted.map((solve) => solve.metrics[field]);
+  const percentOf = (field) => fieldOf(field).map((score) => score === null ? null : Math.round(score * 100));
+  return {
+    labels: sorted.map((_, i) => i + 1),
+    effortScore: percentOf("effortScore"),
+    moveScore: percentOf("moveScore"),
+    netEffort: fieldOf("netEffort"),
+    execution: fieldOf("execution"),
+    tps: fieldOf("tps")
+  };
+}
+function getStepAverages(reviewed) {
+  const stepsByName = /* @__PURE__ */ new Map();
+  reviewed.forEach((solve) => {
+    solve.metrics.steps.forEach((step) => {
+      if (!stepsByName.has(step.name)) stepsByName.set(step.name, []);
+      stepsByName.get(step.name).push(step);
+    });
+  });
+  return [...stepsByName].map(([name, steps2]) => {
+    const meanOf = (field) => meanOfFigures(steps2.map((step) => step[field]));
+    return {
+      name,
+      moves: meanOf("moves"),
+      engineMoves: meanOf("engineMoves"),
+      effort: meanOf("effort"),
+      engineEffort: meanOf("engineEffort"),
+      // A step other moves already solved has no net of its own, so it counts as 0 and the steps add up to the solve's net effort
+      netEffort: meanOfFigures(steps2.map((step) => step.netEffort ?? 0))
+    };
+  });
+}
+function getAverageCardMetrics(solves) {
+  const reviewed = getReviewedSolves(solves);
+  if (reviewed.length === 0) return null;
+  const [method] = getMetricsMethods(reviewed);
+  const sameMethod = reviewed.filter((solve) => solve.metrics.method === method);
+  return {
+    method,
+    count: sameMethod.length,
+    effortScore: meanOfFigures(sameMethod.map((solve) => solve.metrics.effortScore))
+  };
+}
+const BATCH_FAILURE_LIMIT = 3;
+const STORAGE_LIMIT = 5e6;
+const STORAGE_ROOM = 5e5;
+const reviews = /* @__PURE__ */ new Map();
+const failures = /* @__PURE__ */ new Map();
+let batch = null;
+let batchResult = "";
+const batchListeners = [];
+function solveKey(solve) {
+  return `${solve.createdAt}|${solve.time}`;
+}
+function findSolve(key) {
+  const lists = [averageObj.solvesArray];
+  Object.values(sessionsObj.sessions).forEach((session2) => {
+    session2.averages?.forEach((average) => lists.push(average.solves ?? []));
+    if (session2.buffer) lists.push(session2.buffer.solvesArray);
+  });
+  return lists.flat().find((solve) => solveKey(solve) === key) ?? null;
+}
+function isUnderWay(key, solution, method) {
+  const review = reviews.get(key);
+  return review?.solution === solution && review.method === method;
+}
+function metricsAreCurrent(solve, solution) {
+  if (!solve.metrics || solve.solution !== solution) return false;
+  return !reviewSettObj.method || solve.metrics.method === reviewSettObj.method;
+}
+function startReview(solve, solution, onChange, deviceOnly = false) {
+  const key = solveKey(solve);
+  const method = reviewSettObj.method;
+  const isCurrent = () => isUnderWay(key, solution, method);
+  reviews.set(key, { solution, method, note: "Waiting for the review…" });
+  return requestMetrics({ scramble: solve.scramble, solution, time: solve.time, method, deviceOnly }, ({ run, runs }) => {
+    if (!isCurrent()) return;
+    reviews.get(key).note = `Reviewing: engine run ${run} of ${runs}…`;
+    onChange(key);
+  }).then(
+    (metrics) => {
+      if (!isCurrent()) return;
+      reviews.delete(key);
+      const found = findSolve(key);
+      if (found) {
+        found.metrics = metrics;
+        saveSessions();
+      }
+      onChange(key);
+    },
+    (error) => {
+      if (!isCurrent()) return;
+      reviews.delete(key);
+      failures.set(key, error.message);
+      onChange(key);
+    }
+  );
+}
+function updateMetrics(solve, solution, onChange, keepOld = false) {
+  const key = solveKey(solve);
+  if (solution && isUnderWay(key, solution, reviewSettObj.method)) return;
+  reviews.delete(key);
+  failures.delete(key);
+  if (!keepOld) delete solve.metrics;
+  if (solution) startReview(solve, solution, onChange);
+  onChange(key);
+}
+function getBatchableSolves(solves, sessionEvent) {
+  return solves.filter((solve) => solve.status === "Solved" && solve.solution && !solve.metrics && isMetricsEvent(solve.event ?? sessionEvent));
+}
+function onBatchChange(listener) {
+  batchListeners.push(listener);
+}
+function notifyBatch(key = null) {
+  batchListeners.forEach((listener) => listener(key));
+}
+function storageIsNearlyFull() {
+  let used = 0;
+  for (let i = 0; i < localStorage.length; i++) {
+    const name = localStorage.key(i);
+    used += name.length + localStorage.getItem(name).length;
+  }
+  return used > STORAGE_LIMIT - STORAGE_ROOM;
+}
+async function reviewBatchSolve(solve) {
+  const key = solveKey(solve);
+  failures.delete(key);
+  const finished = startReview(solve, solve.solution, (changedKey) => {
+    batch.note = reviews.get(changedKey)?.note ?? "";
+    notifyBatch(changedKey);
+  }, true);
+  batch.note = reviews.get(key).note;
+  notifyBatch(key);
+  await finished;
+  return failures.get(key) ?? "";
+}
+async function startBatch(solves) {
+  const keys = solves.map(solveKey);
+  let reviewed = 0;
+  let failed = 0;
+  let failedInARow = 0;
+  let stoppedBy = "";
+  batch = { at: 0, total: keys.length, note: "", stopping: false };
+  batchResult = "";
+  try {
+    for (const key of keys) {
+      batch.at++;
+      if (batch.stopping) {
+        stoppedBy = "Stopped";
+        break;
+      }
+      if (storageIsNearlyFull()) {
+        stoppedBy = "Stopped because this browser's storage is nearly full";
+        break;
+      }
+      const solve = findSolve(key);
+      if (!solve || solve.metrics || solve.status !== "Solved" || reviews.has(key)) continue;
+      const failure = await reviewBatchSolve(solve);
+      if (!failure) {
+        reviewed++;
+        failedInARow = 0;
+        continue;
+      }
+      failed++;
+      failedInARow++;
+      if (failedInARow === BATCH_FAILURE_LIMIT) {
+        stoppedBy = `Stopped after ${BATCH_FAILURE_LIMIT} failures in a row (${failure})`;
+        break;
+      }
+    }
+  } catch (error) {
+    stoppedBy = `Stopped because the metrics couldn't be saved (${error.message})`;
+  }
+  const failedText = failed ? ` ${failed} failed, and Open Session says why under each.` : "";
+  batchResult = `${stoppedBy ? `${stoppedBy}. ` : ""}Reviewed ${reviewed} of ${keys.length}.${failedText}`;
+  batch = null;
+  notifyBatch();
+}
+function stopBatch() {
+  if (!batch) return;
+  batch.stopping = true;
+  notifyBatch();
+}
+function getBatch() {
+  return batch;
+}
+function getBatchResult() {
+  return batchResult;
+}
+function savedMetricsHtml(solve) {
+  if (!solve.metrics) return "";
+  const { method, time, runs } = solve.metrics;
+  const link = analysisLink({ scramble: solve.scramble, solution: solve.solution, time: time ?? solve.time, method, runs: JSON.stringify(runs) });
+  return metricsHtml(solve.metrics, link);
+}
+function metricsRowHtml(solve) {
+  const key = solveKey(solve);
+  if (reviews.has(key)) return metricsNoteHtml(reviews.get(key).note);
+  if (failures.has(key)) return metricsNoteHtml(`Couldn't review this solve: ${failures.get(key)}. Press Submit to try again.`) + savedMetricsHtml(solve);
+  return savedMetricsHtml(solve);
+}
+const SERIES_COLORS = ["#36A2EB", "#FF6384"];
+const ENGINE_COLOR = "#868C96";
 document.getElementById("date-filter").addEventListener("change", () => {
   renderStatsPage();
+});
+document.getElementById("metrics-method-filter").addEventListener("change", () => {
+  renderMetricsStats();
+});
+document.getElementById("metrics-batch-btn").addEventListener("click", () => {
+  if (getBatch()) stopBatch();
+  else startBatch(getSessionBatchableSolves());
+});
+onBatchChange((key) => {
+  if (!statsPage.classList.contains("open")) return;
+  if (key && findSolve(key)?.metrics) renderMetricsStats();
+  else renderMetricsBatch();
 });
 const statsPage = document.getElementById("stats-page");
 const openStatsBtn = document.getElementById("open-stats-btn");
@@ -16661,6 +16950,131 @@ function renderStatsPage() {
       tbody.appendChild(tr);
     });
   }
+  renderMetricsStats();
+}
+function fillMethodPicker(methods) {
+  const picker = document.getElementById("metrics-method-filter");
+  const wanted = picker.value;
+  picker.innerHTML = "";
+  methods.forEach((name) => {
+    const clash = methods.filter((other) => methodName(other) === methodName(name)).length > 1;
+    picker.append(new Option(clash ? name : methodName(name), name));
+  });
+  picker.value = methods.includes(wanted) ? wanted : methods[0] ?? "";
+  picker.title = picker.value;
+  picker.hidden = methods.length === 0;
+  return picker.value;
+}
+function lineDataset(label, data, color2) {
+  return { label, data, borderColor: color2, backgroundColor: color2, tension: 0.25, spanGaps: true };
+}
+function engineLevelDataset(label, value, count) {
+  return {
+    label,
+    data: new Array(count).fill(value),
+    borderColor: ENGINE_COLOR,
+    // No fill, so the legend's box shows the dashes too
+    backgroundColor: "transparent",
+    borderDash: [6, 4],
+    pointRadius: 0
+  };
+}
+function drawMetricsChart(canvasId, type, labels, datasets, xTitle, yTitle) {
+  Chart.getChart(canvasId)?.destroy();
+  new Chart(document.getElementById(canvasId), {
+    type,
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: true }
+      },
+      scales: {
+        y: { title: { display: true, text: yTitle } },
+        x: { title: { display: true, text: xTitle } }
+      }
+    }
+  });
+}
+function stepAverageRowHtml(step) {
+  return `
+    <tr>
+      <td>${escapeHtml(step.name)}</td>
+      <td><span class="times-color-number">${fixed(step.moves, 1)} / ${fixed(step.engineMoves, 1)}</span></td>
+      <td><span class="times-color-number">${fixed(step.effort, 1)} / ${fixed(step.engineEffort, 1)}</span></td>
+      <td><span class="times-color-number">${signed(step.netEffort, 1)}</span></td>
+    </tr>
+  `;
+}
+function getSessionBatchableSolves() {
+  const session2 = getCurrentSession();
+  return getBatchableSolves(getAllSolvesFromSession(session2, averageObj), session2.scrambleType);
+}
+function renderMetricsBatch() {
+  const button = document.getElementById("metrics-batch-btn");
+  const note = document.getElementById("metrics-batch-note");
+  const batch2 = getBatch();
+  if (batch2) {
+    button.hidden = false;
+    button.disabled = batch2.stopping;
+    button.textContent = batch2.stopping ? "Stopping…" : "Stop";
+    note.textContent = batch2.stopping ? "Finishing this solve, and its metrics will be kept." : `Solve ${batch2.at} of ${batch2.total}, on this device. ${batch2.note}`;
+    document.getElementById("metrics-batch").hidden = false;
+    return;
+  }
+  const waiting = getSessionBatchableSolves().length;
+  const result = getBatchResult();
+  button.hidden = waiting === 0;
+  button.disabled = false;
+  button.textContent = `Review ${waiting} saved ${waiting === 1 ? "solve" : "solves"}`;
+  const hint = waiting ? "Solutions saved with no metrics yet. They run on this device, not the server: about 40 seconds each on a PC, with this page open." : "";
+  note.textContent = [result, hint].filter(Boolean).join(" ");
+  document.getElementById("metrics-batch").hidden = !waiting && !result;
+}
+function renderMetricsStats() {
+  renderMetricsBatch();
+  const range = document.getElementById("date-filter").value;
+  const allSolves = getAllSolvesFromSession(getCurrentSession(), averageObj);
+  const filteredSolves = filterSolvesByRange(allSolves, range);
+  const reviewed = getReviewedSolves(filteredSolves);
+  const method = fillMethodPicker(getMetricsMethods(reviewed));
+  const count = document.getElementById("metrics-count");
+  const body = document.getElementById("metrics-stats-body");
+  body.hidden = reviewed.length === 0;
+  if (reviewed.length === 0) {
+    const sessionTotal = getReviewedSolves(allSolves).length;
+    count.textContent = sessionTotal > 0 ? `No reviewed solves in this period. This session has ${sessionTotal}, so try a longer period.` : "No reviewed solves yet. Press Submit on a solved 3x3 solution in Open Session to get its review.";
+    return;
+  }
+  const solves = reviewed.filter((solve) => solve.metrics.method === method);
+  count.textContent = `${solves.length} of ${filteredSolves.length} solves reviewed with this method`;
+  const averages = getMetricsAverages(solves);
+  document.getElementById("stat-effort-score").innerHTML = `<span class="times-color-number">${percent(averages.effortScore)}</span>`;
+  document.getElementById("stat-move-score").innerHTML = `<span class="times-color-number">${percent(averages.moveScore)}</span>`;
+  document.getElementById("stat-net-effort").innerHTML = `<span class="times-color-number">${signed(averages.netEffort, 1)}</span>`;
+  document.getElementById("stat-execution").innerHTML = `<span class="times-color-number">${fixed(averages.execution, 2)}</span>`;
+  document.getElementById("stat-tps").innerHTML = `<span class="times-color-number">${fixed(averages.tps, 2)}</span>`;
+  const series = getMetricsSeries(solves);
+  const solveCount = series.labels.length;
+  drawMetricsChart("metricsScoresChart", "line", series.labels, [
+    lineDataset("Effort score", series.effortScore, SERIES_COLORS[0]),
+    lineDataset("Move score", series.moveScore, SERIES_COLORS[1]),
+    engineLevelDataset("Engine", 100, solveCount)
+  ], "Reviewed solve #", "Score (%)");
+  drawMetricsChart("metricsNetChart", "line", series.labels, [
+    lineDataset("Net effort", series.netEffort, SERIES_COLORS[0]),
+    engineLevelDataset("Engine", 0, solveCount)
+  ], "Reviewed solve #", "Net effort");
+  drawMetricsChart("metricsPaceChart", "line", series.labels, [
+    lineDataset("Execution (effort per second)", series.execution, SERIES_COLORS[0]),
+    lineDataset("TPS (moves per second)", series.tps, SERIES_COLORS[1])
+  ], "Reviewed solve #", "Per second");
+  const steps2 = getStepAverages(solves);
+  drawMetricsChart("metricsStepsChart", "bar", steps2.map((step) => step.name), [
+    { label: "You", data: steps2.map((step) => step.effort), backgroundColor: SERIES_COLORS[0] },
+    { label: "Engine", data: steps2.map((step) => step.engineEffort), backgroundColor: ENGINE_COLOR }
+  ], "Step", "Mean effort");
+  document.getElementById("metrics-steps-body").innerHTML = steps2.map(stepAverageRowHtml).join("");
 }
 function wrapTimesValue(value) {
   return `<span class="times-color-number">${value}</span>`;
@@ -17189,11 +17603,17 @@ function isSolved() {
 }
 let _moveCount = 0;
 let _isFMC = false;
+function isFMC() {
+  return _isFMC;
+}
 function setFMC(value) {
   _isFMC = Boolean(value);
 }
 function getMoveCount() {
   return _moveCount;
+}
+function setMoveCount(value) {
+  _moveCount = value;
 }
 function printScrambleMoves(scr, shouldReset = true) {
   const displayedScramble = scr;
@@ -17543,6 +17963,21 @@ function getLastMoveCount() {
 }
 function checkSolved() {
   return isSolved();
+}
+function checkAside(scr, sol, fmc = false) {
+  const savedCube = cloneCubeState();
+  const savedMoveCount = getMoveCount();
+  const savedFMC = isFMC();
+  try {
+    setFMC(fmc);
+    printScrambleMoves(scr, true);
+    printScrambleMoves(sol, false);
+    return { moves: getMoveCount(), solved: isSolved() };
+  } finally {
+    restoreCubeState(savedCube);
+    setMoveCount(savedMoveCount);
+    setFMC(savedFMC);
+  }
 }
 const ONE_HOUR = 60 * 60;
 function formatCountdown(seconds2) {
@@ -18270,76 +18705,6 @@ document.addEventListener("keyup", (e) => {
   if (e.repeat) return;
   onPressEnd();
 });
-const reviews = /* @__PURE__ */ new Map();
-const failures = /* @__PURE__ */ new Map();
-function solveKey(solve) {
-  return `${solve.createdAt}|${solve.time}`;
-}
-function findSolve(key) {
-  const lists = [averageObj.solvesArray];
-  Object.values(sessionsObj.sessions).forEach((session2) => {
-    session2.averages?.forEach((average) => lists.push(average.solves ?? []));
-    if (session2.buffer) lists.push(session2.buffer.solvesArray);
-  });
-  return lists.flat().find((solve) => solveKey(solve) === key) ?? null;
-}
-function isUnderWay(key, solution, method) {
-  const review = reviews.get(key);
-  return review?.solution === solution && review.method === method;
-}
-function metricsAreCurrent(solve, solution) {
-  if (!solve.metrics || solve.solution !== solution) return false;
-  return !reviewSettObj.method || solve.metrics.method === reviewSettObj.method;
-}
-function startReview(solve, solution, onChange) {
-  const key = solveKey(solve);
-  const method = reviewSettObj.method;
-  const isCurrent = () => isUnderWay(key, solution, method);
-  reviews.set(key, { solution, method, note: "Waiting for the review…" });
-  requestMetrics({ scramble: solve.scramble, solution, time: solve.time, method }, ({ run, runs }) => {
-    if (!isCurrent()) return;
-    reviews.get(key).note = `Reviewing: engine run ${run} of ${runs}…`;
-    onChange(key);
-  }).then(
-    (metrics) => {
-      if (!isCurrent()) return;
-      reviews.delete(key);
-      const found = findSolve(key);
-      if (found) {
-        found.metrics = metrics;
-        saveSessions();
-      }
-      onChange(key);
-    },
-    (error) => {
-      if (!isCurrent()) return;
-      reviews.delete(key);
-      failures.set(key, error.message);
-      onChange(key);
-    }
-  );
-}
-function updateMetrics(solve, solution, onChange, keepOld = false) {
-  const key = solveKey(solve);
-  if (solution && isUnderWay(key, solution, reviewSettObj.method)) return;
-  reviews.delete(key);
-  failures.delete(key);
-  if (!keepOld) delete solve.metrics;
-  if (solution) startReview(solve, solution, onChange);
-  onChange(key);
-}
-function savedMetricsHtml(solve) {
-  if (!solve.metrics) return "";
-  const { method, time, runs } = solve.metrics;
-  const link = analysisLink({ scramble: solve.scramble, solution: solve.solution, time: time ?? solve.time, method, runs: JSON.stringify(runs) });
-  return metricsHtml(solve.metrics, link);
-}
-function metricsRowHtml(solve) {
-  const key = solveKey(solve);
-  if (reviews.has(key)) return metricsNoteHtml(reviews.get(key).note);
-  if (failures.has(key)) return metricsNoteHtml(`Couldn't review this solve: ${failures.get(key)}. Press Submit to try again.`) + savedMetricsHtml(solve);
-  return savedMetricsHtml(solve);
-}
 function htmlToText(html) {
   const doc = new DOMParser().parseFromString(html, "text/html");
   return doc.body.textContent.replace(/\s+/g, " ").trim();
@@ -18431,6 +18796,7 @@ let modalBlocks = [];
 const modalPenaltyCounters = {};
 let modalCardHeaders = {};
 const SHARE_FEEDBACK_TIME = 1500;
+const SAVE_FEEDBACK_TIME = 1500;
 const modalContent = modal.querySelector(".modal-content");
 const MODAL_BATCH_SIZE = 30;
 const MODAL_LOAD_DISTANCE = 300;
@@ -18442,6 +18808,18 @@ modal.onclick = (e) => {
   if (e.target === modal) modal.classList.add("hidden");
 };
 modalContent.addEventListener("scroll", drawWhileNearBottom);
+function fitTextBoxes() {
+  if (modal.classList.contains("hidden")) return;
+  const scrollTop = modalContent.scrollTop;
+  modalBody.querySelectorAll("details[open] textarea").forEach((box) => {
+    box.style.height = "auto";
+    box.style.height = `${box.scrollHeight + box.offsetHeight - box.clientHeight}px`;
+  });
+  modalContent.scrollTop = scrollTop;
+}
+modalBody.addEventListener("toggle", fitTextBoxes, true);
+modalBody.addEventListener("input", fitTextBoxes);
+window.addEventListener("resize", fitTextBoxes);
 modalBody.addEventListener("click", (e) => {
   const button = e.target.closest("button[data-action]");
   if (!button) return;
@@ -18452,6 +18830,7 @@ modalBody.addEventListener("click", (e) => {
   if (button.dataset.action === "dnf") setPenalty(blockIndex, solveIndex, "DNF");
   if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
   if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
+  if (button.dataset.action === "scramble") saveScramble(blockIndex, solveIndex);
   if (button.dataset.action === "share-average") shareAverage(button, blockIndex);
   if (button.dataset.action === "share-solve") shareSolve(button, blockIndex, solveIndex);
 });
@@ -18486,12 +18865,15 @@ function solveRowHtml(s, i, blockIndex, dropped) {
   const canCheck = isCubiszEvent(s.event ?? getCurrentSession().scrambleType);
   const solutionRows = canCheck ? `
             <div class="modal-scramble">
-                Solution: <input
-                    type="text"
+                Solution:
+                <textarea
                     id="solution-input-${blockIndex}-${i}"
+                    rows="1"
                     placeholder="Enter solution"
-                    value="${s.solution || ""}"
-                />
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                >${escapeHtml(s.solution || "")}</textarea>
                 <button data-action="solution" ${solveData}>
                     Submit
                 </button>
@@ -18517,7 +18899,7 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             <summary class="modal-solve-main">
                 <span class="modal-solve-number">#${i + 1}</span>
                 <span class="modal-solve-time">${timeHtml}</span>
-                <span class="modal-solve-preview">${s.scramble}</span>
+                <span class="modal-solve-preview">${escapeHtml(s.scramble ?? "")}</span>
             </summary>
 
             <div class="modal-solve-actions">
@@ -18529,8 +18911,17 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             </div>
 
             <div class="modal-scramble">
-                Scramble: ${s.scramble}
+                Scramble:
+                <textarea
+                    id="scramble-input-${blockIndex}-${i}"
+                    rows="1"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                >${escapeHtml(s.scramble ?? "")}</textarea>
+                <button data-action="scramble" ${solveData}>Save</button>
             </div>
+            <div id="scramble-error-${blockIndex}-${i}" class="modal-scramble-error" hidden>That isn't a scramble for this event. Check the moves and the spaces between them.</div>
 
             <div class="modal-scramble">
                 Inspection: ${s.inspection}
@@ -18552,6 +18943,11 @@ function statsLineHtml(best, worst, sigma) {
         </div>
     `;
 }
+function cardMetricsHtml(blockIndex) {
+  if (blockIndex === -1 && averageObj.mode === "classic") return "";
+  const solves = blockSolves(blockIndex);
+  return averageMetricsHtml(getAverageCardMetrics(solves), solves.length);
+}
 function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
   modalCardHeaders[blockIndex] = { title: headerText, stats: statsLine };
   return `
@@ -18560,6 +18956,7 @@ function cardHtml(headerText, statsLine, blockIndex, extraClass = "") {
                 <div>
                     <b>${headerText}</b>
                     ${statsLine}
+                    <div data-card-metrics>${cardMetricsHtml(blockIndex)}</div>
                 </div>
                 <button class="modal-share-btn" data-action="share-average" data-block="${blockIndex}">Share</button>
             </div>
@@ -18649,6 +19046,7 @@ function refreshDetailsModal() {
   const openKeys = [...modalBody.querySelectorAll("details[open]")].map((row) => row.dataset.key);
   drawModal(modalDrawnCount);
   openKeys.forEach((key) => modalBody.querySelector(`details[data-key="${key}"]`)?.setAttribute("open", ""));
+  fitTextBoxes();
   modalContent.scrollTop = scrollTop;
   drawWhileNearBottom();
 }
@@ -18688,32 +19086,55 @@ function removeSolve(blockIndex, solveIndex) {
   showLastSolve();
   refreshDetailsModal();
 }
+async function saveScramble(blockIndex, solveIndex) {
+  const solve = blockSolves(blockIndex)[solveIndex];
+  const typed = document.getElementById(`scramble-input-${blockIndex}-${solveIndex}`).value;
+  const scramble = await parseTypedScramble(typed, solve.event ?? getCurrentSession().scrambleType);
+  document.getElementById(`scramble-error-${blockIndex}-${solveIndex}`).hidden = scramble !== null;
+  if (scramble === null) return;
+  if (scramble !== solve.scramble) {
+    solve.scramble = scramble;
+    updateMetrics(solve, null, showMetrics);
+    if (solve.status) checkSolution(solve, solve.solution);
+    saveSessions();
+    refreshDetailsModal();
+  }
+  const button = modalBody.querySelector(`[data-action="scramble"][data-block="${blockIndex}"][data-solve="${solveIndex}"]`);
+  button.textContent = "Saved";
+  setTimeout(() => button.textContent = "Save", SAVE_FEEDBACK_TIME);
+}
+function checkSolution(solve, solution) {
+  const isFMCSolve = (solve.event ?? getCurrentSession().scrambleType) === "333fm";
+  const { moves, solved } = checkAside(solve.scramble, solution, isFMCSolve);
+  solve.solution = solution;
+  solve.tps = moves / solve.time;
+  solve.moves = moves;
+  solve.status = solved ? "Solved" : "DNF";
+}
 function submitSolution(blockIndex, solveIndex) {
   const solve = blockSolves(blockIndex)[solveIndex];
   const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
-  const value = input.value;
+  const value = input.value.replace(/\n/g, " ");
   const needsReview = !metricsAreCurrent(solve, value);
   const sameSolution = solve.solution === value;
-  applyScramble(solve.scramble, true);
-  applySolution(value, true);
-  const moveCount2 = getLastMoveCount();
-  const tps = moveCount2 / solve.time;
-  const isSolved2 = checkSolved();
-  const status = isSolved2 ? "Solved" : "DNF";
-  solve.solution = value;
-  solve.tps = tps;
-  solve.moves = moveCount2;
-  solve.status = status;
-  document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount2} | TPS: ${tps.toFixed(2)}`;
-  const canReview = isSolved2 && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
+  checkSolution(solve, value);
+  document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${solve.status} | Moves: ${solve.moves} | TPS: ${solve.tps.toFixed(2)}`;
+  const canReview = solve.status === "Solved" && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
   if (needsReview || !canReview) updateMetrics(solve, canReview ? value : null, showMetrics, canReview && sameSolution);
   saveSessions();
 }
 function showMetrics(key) {
   const row = modalBody.querySelector(`[data-metrics-key="${key}"]`);
   const solve = findSolve(key);
-  if (row && solve) row.innerHTML = metricsRowHtml(solve);
+  if (!row || !solve) return;
+  row.innerHTML = metricsRowHtml(solve);
+  const card = row.closest(".modal-average-card");
+  const blockIndex = Number(card.querySelector("[data-action='share-average']").dataset.block);
+  card.querySelector("[data-card-metrics]").innerHTML = cardMetricsHtml(blockIndex);
 }
+onBatchChange((key) => {
+  if (key) showMetrics(key);
+});
 let restoringSession = false;
 const categorySelect = document.getElementById("categorySelect");
 const eventSelect = document.getElementById("eventSelect");

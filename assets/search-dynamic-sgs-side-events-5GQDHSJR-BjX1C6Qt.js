@@ -1,6 +1,6 @@
 import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
-import { p as parseSGS } from "./chunk-7LEVC3YR-DohRXq4h.js";
-import { c as cube2x2x2, K as KPuzzle, p as puzzles } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { p as parseSGS } from "./chunk-7LEVC3YR-CPu0-TLC.js";
+import { c as cube2x2x2, K as KPuzzle, p as puzzles } from "./index-6lt5Usf4.js";
 var cachedData = null;
 async function cachedData222() {
   return cachedData ??= data222();
@@ -112,7 +112,7 @@ Alg F D F' D L2 F R' F' D' B2 U'`
 }
 async function megaminxKPuzzleWithoutMO() {
   const { getPuzzleGeometryByName, ExperimentalPGNotation } = await __vitePreload(async () => {
-    const { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 } = await import("./index-BALLIX6B.js");
+    const { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 } = await import("./index-uTRUSblf.js");
     return { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 };
   }, true ? [] : void 0);
   const pg = getPuzzleGeometryByName("megaminx", {
@@ -1756,7 +1756,7 @@ Alg u'`
 }
 async function skewbKPuzzleWithoutMO() {
   const { getPuzzleGeometryByName, ExperimentalPGNotation } = await __vitePreload(async () => {
-    const { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 } = await import("./index-BALLIX6B.js");
+    const { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 } = await import("./index-uTRUSblf.js");
     return { getPuzzleGeometryByName: getPuzzleGeometryByName2, ExperimentalPGNotation: ExperimentalPGNotation2 };
   }, true ? [] : void 0);
   const pg = getPuzzleGeometryByName("skewb", {

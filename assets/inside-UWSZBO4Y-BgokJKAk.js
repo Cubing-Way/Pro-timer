@@ -1,7 +1,7 @@
 import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
-import { c as countMoves } from "./chunk-UKAXYOG2-VAMV9PAy.js";
-import { h as expose, i as solve333, m as mustBeInsideWorker, j as random333OrientedScramble, k as random333Scramble, l as addOrientationSuffix, n as setIsInsideWorker, o as initialize333 } from "./index-BhF7j1GY.js";
-import { K as KPuzzle, a as KPattern, p as puzzles, L as LazyPromise, c as cube2x2x2, w as wcaEvents, A as Alg, b as AlgBuilder, M as Move } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { c as countMoves } from "./chunk-UKAXYOG2-CJww9EzC.js";
+import { h as expose, i as solve333, m as mustBeInsideWorker, j as random333OrientedScramble, k as random333Scramble, l as addOrientationSuffix, n as setIsInsideWorker, o as initialize333 } from "./index-gQ5L7cms.js";
+import { K as KPuzzle, a as KPattern, p as puzzles, L as LazyPromise, c as cube2x2x2, w as wcaEvents, A as Alg, b as AlgBuilder, M as Move } from "./index-6lt5Usf4.js";
 var DEFAULT_STAGE1_DEPTH_LIMIT = 2;
 function calculateMoves(kpuzzle, moveNames) {
   const searchMoves = [];
@@ -125,7 +125,7 @@ var TrembleSolver = class {
   }
 };
 var twipsPromise = new LazyPromise(
-  async () => __vitePreload(() => import("./twips-IMF5RNH5-CXPP2IRW.js"), true ? [] : void 0)
+  async () => __vitePreload(() => import("./twips-IMF5RNH5-CmosGkMt.js"), true ? [] : void 0)
 );
 async function wasmTwips(def, pattern, options) {
   const { wasmTwips: wasmTwips2 } = await twipsPromise;
@@ -144,7 +144,7 @@ async function wasmDeriveScrambleForEvent(derivationSeedHex, derivationSaltHiera
   );
 }
 var searchDynamicSideEvents = new LazyPromise(
-  () => __vitePreload(() => import("./search-dynamic-sgs-side-events-5GQDHSJR-C3gd5bdE.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./search-dynamic-sgs-side-events-5GQDHSJR-BjX1C6Qt.js"), true ? [] : void 0)
 );
 var cachedTrembleSolver = null;
 async function getCachedTrembleSolver() {
@@ -167,7 +167,7 @@ async function solve222(pattern) {
   });
 }
 var dynamic4x4x4Solver = new LazyPromise(
-  () => __vitePreload(() => import("./search-dynamic-solve-4x4x4-KNSBAM7Q-DIr6MAJZ.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./search-dynamic-solve-4x4x4-KNSBAM7Q-B62PTnrq.js"), true ? [] : void 0)
 );
 var randomSuffixes = [
   [null, "x", "x2", "x'", "z", "z'"],
@@ -184,19 +184,19 @@ async function random444OrientedScramble() {
   return addOrientationSuffix(await random444Scramble(), randomSuffixes);
 }
 var dynamicFTO = new LazyPromise(
-  () => __vitePreload(() => import("./search-dynamic-solve-fto-CSXJYISF-Dmh7U5FW.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./search-dynamic-solve-fto-CSXJYISF-DSh4MhrQ.js"), true ? [] : void 0)
 );
 async function randomFTOScramble() {
   mustBeInsideWorker();
   return new Alg(await (await dynamicFTO).getRandomFTOScramble());
 }
-var dynamicKilominxSolver = new LazyPromise(() => __vitePreload(() => import("./search-dynamic-solve-kilominx-EHAUQJXS-CDYBIkRR.js"), true ? [] : void 0));
+var dynamicKilominxSolver = new LazyPromise(() => __vitePreload(() => import("./search-dynamic-solve-kilominx-EHAUQJXS-XH6jLUla.js"), true ? [] : void 0));
 async function randomKilominxScramble() {
   mustBeInsideWorker();
   return (await dynamicKilominxSolver).getRandomKilominxScramble();
 }
 var dynamicMasterTetraminxSolver = new LazyPromise(
-  () => __vitePreload(() => import("./search-dynamic-solve-master_tetraminx-ZQ25QK7E-DDCmt_hZ.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./search-dynamic-solve-master_tetraminx-ZQ25QK7E-BlNeHt-Q.js"), true ? [] : void 0)
 );
 async function randomMasterTetraminxScramble() {
   mustBeInsideWorker();
@@ -254,7 +254,7 @@ async function solvePyraminx(pattern) {
   return alg;
 }
 var searchDynamicUnofficial = new LazyPromise(
-  () => __vitePreload(() => import("./search-dynamic-sgs-unofficial-YM23KVCN-BkHeCzsu.js"), true ? [] : void 0)
+  () => __vitePreload(() => import("./search-dynamic-sgs-unofficial-YM23KVCN-DYQP1tYK.js"), true ? [] : void 0)
 );
 async function randomRediCubeScramble() {
   mustBeInsideWorker();

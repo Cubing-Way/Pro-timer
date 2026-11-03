@@ -4,9 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pro Timer v1</title>
-    <!-- Imports every folder's CSS (main/style.css lists them) -->
-  <script type="module" crossorigin src="/Pro-timer/assets/index-HQrdZnEb.js"></script>
-  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-C8g9vteX.css">
+    <!-- Imports every folder's CSS (main/style.css lists them) -->
+  <script type="module" crossorigin src="/Pro-timer/assets/index-R5WpO-tY.js"></script>
+  <link rel="stylesheet" crossorigin href="/Pro-timer/assets/index-BgINQq_9.css">
 </head>
 <body>
     <!-- Page skeleton: each <include> is swapped for that file's HTML by the plugin in vite.config.js -->
@@ -243,6 +243,62 @@
     <div class="stat-card"><div class="stat-label">Mean</div><div class="stat-value" id="stat-mean">-</div></div>
     <div class="stat-card"><div class="stat-label">σ</div><div class="stat-value" id="stat-sigma">-</div></div>
     <div class="stat-card highlight"><div class="stat-label">Best Ao5</div><div class="stat-value" id="stat-best-avg">-</div></div>
+  </section>
+
+  <!-- Cubisz review figures of the period's reviewed solves, one method at a time; filled in JS -->
+  <section class="stats-metrics">
+    <div class="stats-metrics-head">
+      <h2>Cubisz Review</h2>
+      <select id="metrics-method-filter" aria-label="Review method"></select>
+      <span class="stats-metrics-count" id="metrics-count"></span>
+    </div>
+
+    <!-- Reviews this session's saved solutions with no metrics yet, in a batch on this device; hidden with nothing to say -->
+    <div class="stats-metrics-batch" id="metrics-batch">
+      <button id="metrics-batch-btn"></button>
+      <span class="stats-metrics-count" id="metrics-batch-note"></span>
+    </div>
+
+    <!-- Hidden while the period has no reviewed solves -->
+    <div id="metrics-stats-body">
+      <div class="stats-overview">
+        <div class="stat-card"><div class="stat-label">Effort score (engine = 100%)</div><div class="stat-value" id="stat-effort-score">-</div></div>
+        <div class="stat-card"><div class="stat-label">Move score (engine = 100%)</div><div class="stat-value" id="stat-move-score">-</div></div>
+        <div class="stat-card"><div class="stat-label">Net effort (below 0 = better)</div><div class="stat-value" id="stat-net-effort">-</div></div>
+        <div class="stat-card"><div class="stat-label">Execution (effort per second)</div><div class="stat-value" id="stat-execution">-</div></div>
+        <div class="stat-card"><div class="stat-label">TPS (moves per second)</div><div class="stat-value" id="stat-tps">-</div></div>
+      </div>
+
+      <!-- Your choices per solve: scores against the engine, and the net effort -->
+      <div class="charts-grid">
+        <div class="chart-container">
+          <canvas id="metricsScoresChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="metricsNetChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Your turning speed per solve, and where the effort goes -->
+      <div class="charts-grid">
+        <div class="chart-container">
+          <canvas id="metricsPaceChart"></canvas>
+        </div>
+        <div class="chart-container">
+          <canvas id="metricsStepsChart"></canvas>
+        </div>
+      </div>
+
+      <!-- Each step's means next to the engine's -->
+      <div class="table-scroll">
+        <table class="avg-table">
+          <thead>
+            <tr><th>Step</th><th>Moves / engine</th><th>Effort / engine</th><th>Net effort</th></tr>
+          </thead>
+          <tbody id="metrics-steps-body"></tbody>
+        </table>
+      </div>
+    </div>
   </section>
 
   <!-- Table of every average (or every solve in classic mode); its head and rows are built in JS -->
@@ -824,6 +880,6 @@
 </div>
 
 
-    <!-- Entry script: loads every folder's controller, then shows the first scramble -->
+    <!-- Entry script: loads every folder's controller, then shows the first scramble -->
 </body>
 </html>

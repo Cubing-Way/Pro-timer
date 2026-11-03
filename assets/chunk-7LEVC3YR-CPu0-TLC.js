@@ -1,4 +1,4 @@
-import { A as Alg } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { A as Alg } from "./index-6lt5Usf4.js";
 function parseSGS(kpuzzle, sgs) {
   const subgroupSizes = [];
   const sgsActions = [];

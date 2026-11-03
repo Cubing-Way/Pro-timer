@@ -726,6 +726,7 @@ body {
 .setting-control button,
 .setting-control input,
 .modal input,
+.modal textarea,
 .stats-page button,
 .stats-page select {
   background: var(--border-main);
@@ -1494,6 +1495,25 @@ twisty-player {
   word-break: break-word;
 }
 
+/* A solve's scramble and solution boxes: as wide as the row, and modal/modalController.js makes them as tall as their text */
+.modal-scramble textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 6px 0;
+  resize: none;
+  overflow: hidden;
+  font: inherit;
+  cursor: text;
+}
+
+/* Message when the text isn't a scramble for the solve's event */
+.modal-scramble-error {
+  margin-top: 4px;
+  color: var(--diff-slower);
+  font-size: 13px;
+}
+
 /* Phones: wider box with less padding */
 @media (max-width: 768px) {
   /* Almost full width */
@@ -1622,10 +1642,10 @@ twisty-player {
   margin: 10px;
 }
 
-/* Two charts per row, one when narrower than 800px */
+/* Two charts per row, one when narrower than 800px; on a phone the column shrinks to the screen */
 .charts-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(min(400px, 100%), 1fr));
   gap: 20px;
 }
 
@@ -1672,6 +1692,55 @@ twisty-player {
   font-size: 24px;
   font-weight: bold;
   margin-top: 6px;
+}
+
+/* Cubisz review section: the figures of the period's reviewed solves */
+.stats-metrics {
+  padding: 16px;
+}
+
+/* Title, method picker and how many solves they cover; they stack when there's no room */
+.stats-metrics-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 16px;
+}
+
+/* Section title, lined up with the picker */
+.stats-metrics-head h2 {
+  margin: 0;
+}
+
+/* Solve count, or why the section is empty */
+.stats-metrics-count {
+  font-size: 13px;
+  opacity: 0.7;
+}
+
+/* Batch button and how it's going; the attribute is restated since display would override it */
+.stats-metrics-batch {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 10px;
+}
+
+.stats-metrics-batch[hidden],
+.stats-metrics-batch button[hidden] {
+  display: none;
+}
+
+/* Long method names stay inside the page */
+#metrics-method-filter {
+  max-width: 100%;
+}
+
+/* Space between the section's two rows of charts, and above its table */
+.stats-metrics .charts-grid + .charts-grid,
+.stats-metrics .table-scroll {
+  margin-top: 20px;
 }
 
 /* "Averages History" section, filling the rest of the page */
@@ -1724,6 +1793,11 @@ twisty-player {
   /* Two overview cards per row */
   .stats-overview {
     grid-template-columns: repeat(2, 1fr);
+  }
+
+  /* A chart's box fits the chart, which is shorter than 300px on a phone */
+  .chart-container {
+    height: auto;
   }
 
   /* Smaller card values */

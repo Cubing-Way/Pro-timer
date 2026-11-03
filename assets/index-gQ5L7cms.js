@@ -1,5 +1,5 @@
 import { _ as __vitePreload } from "./preload-helper-DN2scbUx.js";
-import { p as puzzles, A as Alg, M as Move, a as KPattern, L as LazyPromise, b as AlgBuilder } from "./chunk-6R47S6MP-Z24vZYkR.js";
+import { p as puzzles, A as Alg, M as Move, a as KPattern, L as LazyPromise, b as AlgBuilder } from "./index-6lt5Usf4.js";
 var MAX_JS_PRECISE_INT = 2 ** 53;
 var UPPER_HALF_MULTIPLIER = 2097152;
 var LOWER_HALF_RIGHT_SHIFT_BITS = 11;
@@ -1064,7 +1064,7 @@ function searchWorkerURLNewURLImportMetaURL() {
 async function searchWorkerURLEsbuildWorkaround() {
   exposeAPI.expose = false;
   return (await __vitePreload(async () => {
-    const { WORKER_ENTRY_FILE_URL } = await import("./search-worker-entry-B4aiRvU5.js");
+    const { WORKER_ENTRY_FILE_URL } = await import("./search-worker-entry-BpE16fGB.js");
     return { WORKER_ENTRY_FILE_URL };
   }, true ? [] : void 0)).WORKER_ENTRY_FILE_URL;
 }
