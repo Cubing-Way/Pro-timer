@@ -39,4 +39,21 @@ export const cubing = {
   // HTML of a flat picture of a puzzle ("3x3x3", "megaminx"…) after a scramble; it fills the box it's put in
   getPicture: (scramble, puzzle) =>
     `<twisty-player puzzle="${puzzle}" experimental-setup-alg="${scramble}" visualization="2D" hint-facelets="none" control-panel="none" background="none"></twisty-player>`,
+  // True when a text is a scramble for a puzzle: cubing.js can read it and the puzzle has its moves
+  isValidScramble: async (scramble, puzzle) => {
+    // cubing.js reads empty text as no moves, and allows anything inside a comment, which could break the HTML a saved scramble is drawn into
+    if (!scramble || /["<>&]/.test(scramble)) return false;
+    // No puzzle (an event Pro Timer no longer has): there are no moves to check against
+    if (!puzzle) return true;
+    // On demand too, since making scrambles doesn't need it
+    const { puzzles } = await import("cubing/puzzles");
+    const kpuzzle = await puzzles[puzzle].kpuzzle();
+    // cubing.js throws on text it can't read and on moves the puzzle doesn't have
+    try {
+      kpuzzle.algToTransformation(scramble);
+      return true;
+    } catch {
+      return false;
+    }
+  },
 };

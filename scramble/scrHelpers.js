@@ -39,6 +39,17 @@ function isMetricsEvent(code) {
   return code === "333";
 }
 
+// Moves cubisz's cube can do; it skips any others, so a solution check on a scramble with them would be wrong
+const CUBISZ_MOVE = /^([UDRLFB]w?|[MESxyz])['2]?$/;
+// In Fewest Moves its cube also skips slice moves
+const FMC_MOVE = /^([UDRLFB]w?|[xyz])['2]?$/;
+
+// True when cubisz's cube can do every move of a scramble for this event
+function isCubiszScramble(scramble, event) {
+  const allowedMove = event === "333fm" ? FMC_MOVE : CUBISZ_MOVE;
+  return scramble.split(" ").every((move) => allowedMove.test(move));
+}
+
 // Shrinks the scramble text 1px at a time until it fits its box (starting at 40px, or 30px on phones)
 function autoFitText(vis) {
   const container = document.getElementById("scrambleContainer");
@@ -93,7 +104,8 @@ function parseMBLDScramble(scrambleText) {
 export { 
   isCubiszEvent,
   isMetricsEvent,
-  autoFitText, 
+  isCubiszScramble,
+  autoFitText,
   formatMegaminx,
   parseMBLDScramble,
   getCategoryOfEvent,

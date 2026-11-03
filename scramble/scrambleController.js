@@ -3,6 +3,7 @@ import { cubingEvents } from "./scrData.js";
 import {
      isCubiszEvent,
      isMetricsEvent,
+     isCubiszScramble,
      autoFitText,
      formatMegaminx,
      parseMBLDScramble,
@@ -95,12 +96,36 @@ async function nextScramble(event, vis, cubes) {
     }
 }
 
+// Reads a scramble the user typed for an event: gives it tidied up, or null when it isn't a scramble for the event
+async function parseTypedScramble(text, event) {
+    // Multi-Blind has one scramble per cube, each on its own line or numbered like its own scrambles; any other event has just one
+    const parts = event === "r3ni" ? text.split("\n").flatMap(parseMBLDScramble) : [text];
+    // Line breaks and repeated spaces (a pasted Megaminx scramble) become single spaces, like cubing.js's own scrambles
+    const scrambles = parts.map((part) => part.replace(/\s+/g, " ").trim());
+
+    // Multi-Blind's list is empty when nothing was typed
+    if (scrambles.length === 0) return null;
+
+    // Events Pro Timer no longer has aren't in cubingEvents; the old 3x3 training ones are still 3x3s, and the others have no puzzle to check against
+    const puzzle = cubingEvents[event]?.puzzle ?? (isCubiszEvent(event) ? "3x3x3" : null);
+
+    for (const scramble of scrambles) {
+        if (!await cubing.isValidScramble(scramble, puzzle)) return null;
+        // Solution checks run the scramble on cubisz's cube, so it has to know every move
+        if (isCubiszEvent(event) && !isCubiszScramble(scramble, event)) return null;
+    }
+
+    // Multi-Blind's text is numbered ("1) … 2) …"), the text parseMBLDScramble reads
+    return event === "r3ni" ? scrambles.map((part, i) => `${i + 1}) ${part}`).join("\n") : scrambles[0];
+}
+
 export { 
     currentScramble, 
     currentScrambleEvent, 
     displayScramble, 
     previousScramble, 
-    nextScramble, 
+    nextScramble,
+    parseTypedScramble,
     isCubiszEvent,
     isMetricsEvent,
     parseMBLDScramble,

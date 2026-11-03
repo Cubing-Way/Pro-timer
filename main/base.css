@@ -61,6 +61,7 @@ body {
 .setting-control button,
 .setting-control input,
 .modal input,
+.modal textarea,
 .stats-page button,
 .stats-page select {
   background: var(--border-main);

@@ -153,6 +153,25 @@
   word-break: break-word;
 }
 
+/* A solve's scramble and solution boxes: as wide as the row, and modal/modalController.js makes them as tall as their text */
+.modal-scramble textarea {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  margin: 4px 0 6px 0;
+  resize: none;
+  overflow: hidden;
+  font: inherit;
+  cursor: text;
+}
+
+/* Message when the text isn't a scramble for the solve's event */
+.modal-scramble-error {
+  margin-top: 4px;
+  color: var(--diff-slower);
+  font-size: 13px;
+}
+
 /* Phones: wider box with less padding */
 @media (max-width: 768px) {
   /* Almost full width */

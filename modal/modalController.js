@@ -3,9 +3,9 @@ import { computeAverage, formatSecondsToTime, parseTimeToSeconds } from "../aver
 import { averageObj, classicStats, updateClassicStats, getNeededSolves } from "../average/avgController.js";
 import { formatStatValue, renderHistory, wrapTimesValue } from "../render/renderController.js";
 import { saveSessions } from "../session/sessionController.js";
-import { isCubiszEvent, isMetricsEvent } from "../scramble/scrambleController.js";
+import { isCubiszEvent, isMetricsEvent, parseTypedScramble } from "../scramble/scrambleController.js";
 import { solveKey, findSolve, metricsAreCurrent, updateMetrics, metricsRowHtml, onBatchChange } from "../metrics/metricsController.js";
-import { averageMetricsHtml } from "../metrics/metricsView.js";
+import { averageMetricsHtml, escapeHtml } from "../metrics/metricsView.js";
 import { getAverageCardMetrics } from "../stats/statsHelpers.js";
 import { showLastSolve } from "../timer/timerController.js";
 import { shortDate, droppedIndexes, averageShareText, solveShareText, shareOrCopy } from "./shareText.js";
@@ -28,6 +28,8 @@ let modalCardHeaders = {};
 
 // How long a Share button shows how it went ("Copied") before going back to "Share" (ms)
 const SHARE_FEEDBACK_TIME = 1500;
+// How long a scramble's Save button says "Saved" (ms)
+const SAVE_FEEDBACK_TIME = 1500;
 
 // The box that scrolls (the modal itself is the dimmed backdrop)
 const modalContent = modal.querySelector(".modal-content");
@@ -53,6 +55,25 @@ modal.onclick = e => {
 // Scrolling near the bottom draws the next solves
 modalContent.addEventListener("scroll", drawWhileNearBottom);
 
+// Makes open solves' text boxes as tall as their text, so every move shows (a closed row's boxes have no height to measure)
+function fitTextBoxes() {
+    // Hidden, the boxes have no height to measure either
+    if (modal.classList.contains("hidden")) return;
+    // Shrinking a box to measure it can make the pop-up scroll, so its position goes back after
+    const scrollTop = modalContent.scrollTop;
+    modalBody.querySelectorAll("details[open] textarea").forEach((box) => {
+        box.style.height = "auto";
+        // scrollHeight leaves out the borders, which the box's height counts
+        box.style.height = `${box.scrollHeight + box.offsetHeight - box.clientHeight}px`;
+    });
+    modalContent.scrollTop = scrollTop;
+}
+
+// A row opening, typing and a new window width can change the lines a box needs; toggle doesn't bubble, so it's caught on the way down
+modalBody.addEventListener("toggle", fitTextBoxes, true);
+modalBody.addEventListener("input", fitTextBoxes);
+window.addEventListener("resize", fitTextBoxes);
+
 // Buttons inside the modal (it is rebuilt on every change)
 modalBody.addEventListener("click", (e) => {
     const button = e.target.closest("button[data-action]");
@@ -67,6 +88,7 @@ modalBody.addEventListener("click", (e) => {
     if (button.dataset.action === "dnf") setPenalty(blockIndex, solveIndex, "DNF");
     if (button.dataset.action === "remove") removeSolve(blockIndex, solveIndex);
     if (button.dataset.action === "solution") submitSolution(blockIndex, solveIndex);
+    if (button.dataset.action === "scramble") saveScramble(blockIndex, solveIndex);
     if (button.dataset.action === "share-average") shareAverage(button, blockIndex);
     if (button.dataset.action === "share-solve") shareSolve(button, blockIndex, solveIndex);
 });
@@ -99,7 +121,7 @@ async function shareSolve(button, blockIndex, solveIndex) {
     showShareResult(button, await shareOrCopy(text));
 }
 
-// HTML of one solve row: a line with its number, time and scramble that opens to its buttons, scramble, inspection, date, done at, with and, for 3x3, the solution box
+// HTML of one solve row: a line with its number, time and scramble that opens to its buttons, scramble box, inspection, date, done at, with and, for 3x3, the solution box
 function solveRowHtml(s, i, blockIndex, dropped) {
     // Start this solve's +2 counter at its current penalty
     const counterKey = `${blockIndex}-${i}`;
@@ -118,12 +140,15 @@ function solveRowHtml(s, i, blockIndex, dropped) {
     // Solution box and its result (status, moves, TPS), only for 3x3 solves
     const solutionRows = canCheck ? `
             <div class="modal-scramble">
-                Solution: <input
-                    type="text"
+                Solution:
+                <textarea
                     id="solution-input-${blockIndex}-${i}"
+                    rows="1"
                     placeholder="Enter solution"
-                    value="${s.solution || ''}"
-                />
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                >${escapeHtml(s.solution || "")}</textarea>
                 <button data-action="solution" ${solveData}>
                     Submit
                 </button>
@@ -157,7 +182,7 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             <summary class="modal-solve-main">
                 <span class="modal-solve-number">#${i + 1}</span>
                 <span class="modal-solve-time">${timeHtml}</span>
-                <span class="modal-solve-preview">${s.scramble}</span>
+                <span class="modal-solve-preview">${escapeHtml(s.scramble ?? "")}</span>
             </summary>
 
             <div class="modal-solve-actions">
@@ -169,8 +194,17 @@ function solveRowHtml(s, i, blockIndex, dropped) {
             </div>
 
             <div class="modal-scramble">
-                Scramble: ${s.scramble}
+                Scramble:
+                <textarea
+                    id="scramble-input-${blockIndex}-${i}"
+                    rows="1"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                >${escapeHtml(s.scramble ?? "")}</textarea>
+                <button data-action="scramble" ${solveData}>Save</button>
             </div>
+            <div id="scramble-error-${blockIndex}-${i}" class="modal-scramble-error" hidden>That isn't a scramble for this event. Check the moves and the spaces between them.</div>
 
             <div class="modal-scramble">
                 Inspection: ${s.inspection}
@@ -344,6 +378,7 @@ function refreshDetailsModal() {
     drawModal(modalDrawnCount);
     // Open them again, before scrolling back, since open rows are taller
     openKeys.forEach(key => modalBody.querySelector(`details[data-key="${key}"]`)?.setAttribute("open", ""));
+    fitTextBoxes();
     modalContent.scrollTop = scrollTop;
     drawWhileNearBottom();
 }
@@ -399,36 +434,66 @@ function removeSolve(blockIndex, solveIndex) {
     refreshDetailsModal();
 }
 
-// Checks a typed solution on cubisz: scramble, apply the moves, count them, and work out TPS
+// Saves a typed scramble on a solve, if it's a scramble for its event
+async function saveScramble(blockIndex, solveIndex) {
+    const solve = blockSolves(blockIndex)[solveIndex];
+    const typed = document.getElementById(`scramble-input-${blockIndex}-${solveIndex}`).value;
+    // Solves saved before solves had an event use the session's event
+    const scramble = await parseTypedScramble(typed, solve.event ?? getCurrentSession().scrambleType);
+
+    // Not a scramble: say so, and change nothing
+    document.getElementById(`scramble-error-${blockIndex}-${solveIndex}`).hidden = scramble !== null;
+    if (scramble === null) return;
+
+    // Saving the same scramble keeps its check and metrics
+    if (scramble !== solve.scramble) {
+        solve.scramble = scramble;
+        // The old metrics, and any review under way, were for the old scramble; Submit asks for new ones
+        updateMetrics(solve, null, showMetrics);
+        // A checked solution is checked again, since it may not solve this scramble
+        if (solve.status) checkSolution(solve, solve.solution);
+        saveSessions();
+        refreshDetailsModal();
+    }
+
+    // The box looks the same either way, so the button says it worked
+    const button = modalBody.querySelector(`[data-action="scramble"][data-block="${blockIndex}"][data-solve="${solveIndex}"]`);
+    button.textContent = "Saved";
+    setTimeout(() => button.textContent = "Save", SAVE_FEEDBACK_TIME);
+}
+
+// Runs a solution on cubisz from the solve's scramble: apply the moves, count them, work out TPS, and save the result on the solve
+function checkSolution(solve, solution) {
+    // true (skipPaint): change cubisz's cube without repainting the FMC cube on the page
+    applyScramble(solve.scramble, true);
+    applySolution(solution, true);
+    const moveCount = getLastMoveCount();
+
+    solve.solution = solution;
+    // Turns per second over the solve's time
+    solve.tps = moveCount / solve.time;
+    solve.moves = moveCount;
+    solve.status = checkSolved() ? "Solved" : "DNF";
+}
+
+// Checks a typed solution on cubisz and shows the result
 function submitSolution(blockIndex, solveIndex) {
     // A solve of the average in progress (blockIndex -1) is in the buffer, the others in their saved average
     const solve = blockSolves(blockIndex)[solveIndex];
 
     const input = document.getElementById(`solution-input-${blockIndex}-${solveIndex}`);
-    const value = input.value;
+    // Line breaks become spaces, since cubisz splits the moves at spaces
+    const value = input.value.replace(/\n/g, " ");
     // Only a new solution or another engine method needs a new review; with the same solution, its old metrics stay true until the new ones arrive
     const needsReview = !metricsAreCurrent(solve, value);
     const sameSolution = solve.solution === value;
 
-    // true (skipPaint): change cubisz's cube without repainting the FMC cube on the page
-    applyScramble(solve.scramble, true);
-    applySolution(value, true);
-    const moveCount = getLastMoveCount();
-    // Turns per second over the solve's time
-    const tps = moveCount / solve.time;
-    const isSolved = checkSolved();
-    const status = isSolved ? "Solved" : "DNF";
+    checkSolution(solve, value);
 
-    // Save the result on the solve
-    solve.solution = value;
-    solve.tps = tps;
-    solve.moves = moveCount;
-    solve.status = status;
-
-    document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${status} | Moves: ${moveCount} | TPS: ${tps.toFixed(2)}`;
+    document.getElementById(`tps-${blockIndex}-${solveIndex}`).innerHTML = `Status: ${solve.status} | Moves: ${solve.moves} | TPS: ${solve.tps.toFixed(2)}`;
 
     // Sends a solved 3x3 solution to Cubisz for its metrics; any other solution has none
-    const canReview = isSolved && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
+    const canReview = solve.status === "Solved" && isMetricsEvent(solve.event ?? getCurrentSession().scrambleType);
     if (needsReview || !canReview) updateMetrics(solve, canReview ? value : null, showMetrics, canReview && sameSolution);
 
     saveSessions();
