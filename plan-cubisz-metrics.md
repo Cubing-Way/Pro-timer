@@ -56,7 +56,8 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - [x] Add averages per period and charts to the stats page, following the existing period filter, with a method picker
 - [x] Show the mean effort score on the average's card (Caio's choice: the card, not the sidebar)
 - [x] Add a way to review many saved solves at once, since metrics only exist for solutions that were submitted. Batches solve on the device: with AWS first, one batch of ~100 solves would spend the whole month's budget. The review message's `deviceOnly` tells `engine-worker.js` to skip the server, and the engine page's `cubisz-ready` says it honours that, so the timer sends a batch to no older page
-- [ ] Commit both repos, then deploy Cubisz first and Pro Timer after it. In the other order batches just stop with "Cubisz's site needs updating", and nothing reaches the server
+- [x] Commit and deploy Pro Timer (2026-11-03, on `scramble-edit-and-review-stats`). It went out before Cubisz because Caio is still editing Cubisz
+- [ ] Commit and deploy Cubisz's `deviceOnly` changes. Until then batches just stop with "Cubisz's site needs updating", and nothing reaches the server. Its build bundles `../puzzly`, whose uncommitted speed model changes would go along, so settle those first
 - [ ] Try a batch on the live site and on a phone: batches lean on the same device solving as the phone item in Part 2
 
 ### Part 4: later
