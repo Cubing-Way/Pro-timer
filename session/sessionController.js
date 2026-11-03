@@ -257,8 +257,8 @@ function changedSession() {
     averageObj.solveCounter = session.buffer.solveCounter;
     averageObj.solvesArray = [...session.buffer.solvesArray];
 
-    // No saved classic stats but classic mode: rebuild them from the buffer's solves
-    if (!session.classicStats && averageObj.mode === "classic") updateClassicStats(true);
+    // Classic mode always rebuilds them from the buffer's solves, because the saved copy can be older (only some saves update it)
+    if (averageObj.mode === "classic") updateClassicStats(true);
 
     const sel = document.getElementById("modeSelect");
     if (sel) sel.value = averageObj.mode;
@@ -326,7 +326,7 @@ function addRoundsToSession(name, rounds) {
     // Any other session keeps its solves in progress in its buffer (one never opened may not have one yet)
     if (!session.buffer) session.buffer = { mode: session.mode || "ao5", solveCounter: 0, solvesArray: [] };
     const added = solve.addRoundsToSession(rounds, session.buffer, () => session);
-    // Its copy of the rolling averages is out of date; without it, opening the session rebuilds them (changedSession)
+    // Its copy of the rolling averages is out of date, so it goes; opening the session rebuilds them (changedSession)
     if (session.buffer.mode === "classic") delete session.classicStats;
     return added;
 }
