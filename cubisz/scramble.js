@@ -51,6 +51,11 @@ function getMoveCount() {
   return _moveCount;
 }
 
+// Puts a saved move count back (checkAside in api.js)
+function setMoveCount(value) {
+  _moveCount = value;
+}
+
 
 function printScrambleMoves(scr, shouldReset = true) {
   const displayedScramble = scr;
@@ -132,6 +137,7 @@ function printScrambleMoves(scr, shouldReset = true) {
 export {
   scramble,
   getMoveCount,
+  setMoveCount,
   genRanState,
   printScrambleMoves,
   isFMC,

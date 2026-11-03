@@ -9,12 +9,7 @@ import { averageMetricsHtml, escapeHtml } from "../metrics/metricsView.js";
 import { getAverageCardMetrics } from "../stats/statsHelpers.js";
 import { showLastSolve } from "../timer/timerController.js";
 import { shortDate, droppedIndexes, averageShareText, solveShareText, shareOrCopy } from "./shareText.js";
-import {
-  applyScramble,
-  applySolution,
-  getLastMoveCount,
-  checkSolved
-} from "../cubisz/api.js";
+import { checkAside } from "../cubisz/api.js";
 
 const modal = document.getElementById("detailsModal");
 const modalBody = document.getElementById("modalBody");
@@ -462,18 +457,17 @@ async function saveScramble(blockIndex, solveIndex) {
     setTimeout(() => button.textContent = "Save", SAVE_FEEDBACK_TIME);
 }
 
-// Runs a solution on cubisz from the solve's scramble: apply the moves, count them, work out TPS, and save the result on the solve
+// Runs a solution on cubisz from the solve's scramble, leaving a live Fewest Moves attempt as it was: count the moves, work out TPS, and save the result on the solve
 function checkSolution(solve, solution) {
-    // true (skipPaint): change cubisz's cube without repainting the FMC cube on the page
-    applyScramble(solve.scramble, true);
-    applySolution(solution, true);
-    const moveCount = getLastMoveCount();
+    // Only Fewest Moves solves ignore slice moves, whatever the event in use; solves saved before solves had an event use the session's event
+    const isFMCSolve = (solve.event ?? getCurrentSession().scrambleType) === "333fm";
+    const { moves, solved } = checkAside(solve.scramble, solution, isFMCSolve);
 
     solve.solution = solution;
     // Turns per second over the solve's time
-    solve.tps = moveCount / solve.time;
-    solve.moves = moveCount;
-    solve.status = checkSolved() ? "Solved" : "DNF";
+    solve.tps = moves / solve.time;
+    solve.moves = moves;
+    solve.status = solved ? "Solved" : "DNF";
 }
 
 // Checks a typed solution on cubisz and shows the result
