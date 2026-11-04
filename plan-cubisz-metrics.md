@@ -56,9 +56,11 @@ Notion (Pro Timer → Próximos passos → 🚀 V2 → "Integrate with cubisz so
 - [x] Add averages per period and charts to the stats page, following the existing period filter, with a method picker
 - [x] Show the mean effort score on the average's card (Caio's choice: the card, not the sidebar)
 - [x] Add a way to review many saved solves at once, since metrics only exist for solutions that were submitted. Batches solve on the device: with AWS first, one batch of ~100 solves would spend the whole month's budget. The review message's `deviceOnly` tells `engine-worker.js` to skip the server, and the engine page's `cubisz-ready` says it honours that, so the timer sends a batch to no older page
-- [x] Commit and deploy Pro Timer (2026-11-03, on `scramble-edit-and-review-stats`). It went out before Cubisz because Caio is still editing Cubisz
-- [ ] Commit and deploy Cubisz's `deviceOnly` changes. Until then batches just stop with "Cubisz's site needs updating", and nothing reaches the server. Its build bundles `../puzzly`, whose uncommitted speed model changes would go along, so settle those first
-- [ ] Try a batch on the live site and on a phone: batches lean on the same device solving as the phone item in Part 2
+- [x] Commit and deploy Pro Timer (2026-11-03), then Puzzly's solve server and Cubisz (2026-11-04), with Puzzly's new speed model (f528b2a) in both
+- [x] Try a batch on the live site (2026-11-04: 1 solve, 36 s on a PC, and the server's call count didn't move), and a normal review (9 s, 2 calls, 41 GB-seconds)
+- [ ] Try a batch on a phone: batches lean on the same device solving as the phone item in Part 2
+- [ ] Regenerate Puzzly's pair answer files once fingertricks are fully fixed (it's in Puzzly's Notion page), then `npm run server-deploy` (Puzzly's README, *Answer files*: move the old shards away first; about 2¼ hours on the old model, likely more now). Until then the server scores with the new costs but picks which pair answers to score by the old ones
+- Reviews saved before 2026-11-04 keep their old numbers until they're reviewed again
 
 ### Part 4: later
 
