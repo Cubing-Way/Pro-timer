@@ -1,7 +1,7 @@
 // Talks to Cubisz's engine in a hidden iframe: sends a solve and gets its metrics back, one solve at a time
 
-// Cubisz's engine page: the local dev server while developing, the live site once built
-const ENGINE_URL = import.meta.env.DEV ? "http://localhost:5173/engine.html" : "https://cubing-way.github.io/cubisz/engine.html";
+// Cubisz's engine page: the local dev server while developing, the live site on Cloudflare Pages once built
+const ENGINE_URL = import.meta.env.DEV ? "http://localhost:5173/engine.html" : "https://cubisz.pages.dev/engine.html";
 const ENGINE_ORIGIN = new URL(ENGINE_URL).origin;
 // Cubisz's site, in the same folder as the engine page
 const SITE_URL = new URL("./", ENGINE_URL).href;
