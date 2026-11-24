@@ -1196,7 +1196,7 @@ function bindVisibilityToggle(checkboxId, targetClass) {
   });
   apply();
 }
-const ENGINE_URL = "https://cubing-way.github.io/cubisz/engine.html";
+const ENGINE_URL = "https://cubisz.pages.dev/engine.html";
 const ENGINE_ORIGIN = new URL(ENGINE_URL).origin;
 const SITE_URL = new URL("./", ENGINE_URL).href;
 const LOAD_LIMIT = 3e4;
